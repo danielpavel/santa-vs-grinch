@@ -1,4 +1,4 @@
-import { web3 } from "@coral-xyz/anchor";
+import { web3, BN } from "@coral-xyz/anchor";
 
 export const confirmOpts: web3.ConfirmOptions = {
   preflightCommitment: "confirmed",
@@ -21,4 +21,8 @@ export const confirmTx = async (signature: string) => {
 
 export const confirmTxs = async (signatures: string[]) => {
   await Promise.all(signatures.map(confirmTx));
+};
+
+export const calculateFee = (amount: BN, fee_bp: number) => {
+  return amount.mul(new BN(fee_bp)).div(new BN(10_000));
 };

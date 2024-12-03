@@ -5,6 +5,7 @@ declare_id!("BZGCW6asmdxFTxo1xNpgBPnX9Seb5oLfPDEy3QqLpPPE");
 mod contexts;
 mod errors;
 mod state;
+mod utils;
 
 use contexts::*;
 
@@ -13,12 +14,10 @@ pub mod santa_vs_grinch {
 
     use super::*;
 
-    pub fn initialize(ctx: Context<Initialize>) -> Result<()> {
+    pub fn initialize(ctx: Context<Initialize>, admin_fee_percentage_bp: u16) -> Result<()> {
         msg!("Initailize!");
 
-        ctx.accounts.initialize(&ctx.bumps);
-
-        Ok(())
+        ctx.accounts.initialize(&ctx.bumps, admin_fee_percentage_bp)
     }
 
     pub fn deposit(ctx: Context<Deposit>, amount: u64) -> Result<()> {

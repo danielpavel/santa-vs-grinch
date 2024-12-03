@@ -4,6 +4,7 @@ import { airdropIfRequired, makeKeypairs } from "@solana-developers/helpers";
 import { Keypair, LAMPORTS_PER_SOL, PublicKey } from "@solana/web3.js";
 import { assert, expect } from "chai";
 import { SantaVsGrinch } from "../target/types/santa_vs_grinch";
+import { calculateFee, confirmTx } from "./utils";
 
 describe("santa-vs-grinch", () => {
   // Configure the client to use the local cluster.
@@ -12,8 +13,8 @@ describe("santa-vs-grinch", () => {
   const program = anchor.workspace.SantaVsGrinch as Program<SantaVsGrinch>;
   const provider = anchor.getProvider();
 
-  let accounts: Record<string, PublicKey | Keypair> = {};
-  let bumps: Record<string, unknown> = {};
+  let accounts: Record<string, unknown> = {};
+  let bumps: Record<string, number> = {};
 
   before(async () => {
     const [user1, user2] = makeKeypairs(2);
@@ -46,10 +47,16 @@ describe("santa-vs-grinch", () => {
         program.programId
       );
 
+    const [feesVault, feesVaultBump] = web3.PublicKey.findProgramAddressSync(
+      [Buffer.from("vault"), configState.toBuffer(), Buffer.from("fees")],
+      program.programId
+    );
+
     // Save accounts
     accounts.configState = configState;
     accounts.santaVault = santaVault;
     accounts.grinchVault = grinchVault;
+    accounts.feesVault = feesVault;
 
     accounts.user1 = user1;
     accounts.user2 = user2;
@@ -58,24 +65,39 @@ describe("santa-vs-grinch", () => {
     bumps.configStateBump = configStateBump;
     bumps.santaVaultBump = santaVaultBump;
     bumps.grinchVaultBump = grinchVaultBump;
+    bumps.feesVaultBump = feesVaultBump;
+
+    // NOTE: depositing too little of a fee in feeVault results in:
+    // `Transaction results in an account (2) with insufficient funds for rent.`
+    // so we're topping up
+    await airdropIfRequired(
+      provider.connection,
+      accounts.feesVault,
+      1 * LAMPORTS_PER_SOL,
+      0.1 * LAMPORTS_PER_SOL
+    );
   });
 
   it("Is initialized!", async () => {
     // Add your test here.
 
+    const fee_bp = 100;
     const tx = await program.methods
-      .initialize()
+      .initialize(fee_bp)
       .accounts({
         admin: provider.publicKey,
         state: accounts.configState,
         santaVault: accounts.santaVault,
         grinchVault: accounts.grinchVault,
+        feesVault: accounts.feesVault,
       })
       .rpc();
 
     console.log("Tx sig:", tx);
 
-    const config = await program.account.config.fetch(accounts.configState);
+    const config = await program.account.config.fetch(
+      accounts.configState as PublicKey
+    );
 
     assert.equal(config.admin.toBase58(), provider.publicKey.toBase58());
     assert.equal(
@@ -86,11 +108,18 @@ describe("santa-vs-grinch", () => {
       config.grinchVault,
       (accounts.grinchVault as PublicKey).toBase58()
     );
+    assert.equal(
+      config.feesVault,
+      (accounts.feesVault as PublicKey).toBase58()
+    );
+    assert.equal(config.adminFeePercentageBp, fee_bp);
+    assert.equal(config.santaPot.toNumber(), 0);
+    assert.equal(config.santaBoxes.toNumber(), 0);
+    assert.equal(config.grinchPot.toNumber(), 0);
+    assert.equal(config.grinchBoxes.toNumber(), 0);
     assert.equal(config.bump, bumps.configStateBump);
     assert.equal(config.santaVaultBump, bumps.santaVaultBump);
     assert.equal(config.grinchVaultBump, bumps.grinchVaultBump);
-
-    // Save grinchVault and santaVault;
   });
 
   it("Deposit into Santa Vault", async () => {
@@ -99,67 +128,106 @@ describe("santa-vs-grinch", () => {
       program.programId
     );
 
-    const amount = new anchor.BN(0.05 * LAMPORTS_PER_SOL);
+    let config = await program.account.config.fetch(
+      accounts.configState as PublicKey
+    );
+
+    const adminFeePercentageBp = config.adminFeePercentageBp;
+    const amount = new anchor.BN(0.1 * LAMPORTS_PER_SOL);
+    const fee = calculateFee(amount, adminFeePercentageBp);
+    const depositAmount = amount.sub(fee);
+
     const tx = await program.methods
       .deposit(amount)
       .accounts({
         user: (accounts.user1 as Keypair).publicKey,
         state: accounts.configState,
         vault: accounts.santaVault,
-        userState: user1UserStatePubkey,
+        feesVault: accounts.feesVault,
+        userBet: user1UserStatePubkey,
       })
       .signers(accounts.user1)
       .rpc();
 
-    const user1UserStateAccount = await program.account.user.fetch(
+    const feeVaultBalance = await provider.connection.getBalance(
+      accounts.feesVault
+    );
+    assert.equal(feeVaultBalance, LAMPORTS_PER_SOL + fee.toNumber());
+
+    config = await program.account.config.fetch(
+      accounts.configState as PublicKey
+    );
+
+    assert.equal(config.santaPot.toNumber(), depositAmount.toNumber());
+
+    const user1UserStateAccount = await program.account.userBet.fetch(
       user1UserStatePubkey
     );
 
     assert.equal(
-      user1UserStateAccount.santaPoints.toNumber(),
-      amount.toNumber()
+      user1UserStateAccount.amount.toNumber(),
+      depositAmount.toNumber()
     );
-    assert.equal(
-      user1UserStateAccount.grinchPoints.toNumber(),
-      new anchor.BN(0).toNumber()
+    assert.deepEqual(user1UserStateAccount.side, { santa: {} });
+    assert.deepEqual(
+      user1UserStateAccount.owner,
+      (accounts.user1 as Keypair).publicKey
     );
   });
 
   it("Deposit into Grinch Vault", async () => {
-    const [user1UserStatePubkey, _bump] = web3.PublicKey.findProgramAddressSync(
-      [Buffer.from("user"), (accounts.user1 as Keypair).publicKey.toBuffer()],
+    const [user2UserStatePubkey, _bump] = web3.PublicKey.findProgramAddressSync(
+      [Buffer.from("user"), (accounts.user2 as Keypair).publicKey.toBuffer()],
       program.programId
     );
 
-    let user1UserStateAccount = await program.account.user.fetch(
-      user1UserStatePubkey
+    const feeVaultBalanceOld = await provider.connection.getBalance(
+      accounts.feesVault
     );
 
-    const oldSantaPoints = user1UserStateAccount.santaPoints;
+    let config = await program.account.config.fetch(
+      accounts.configState as PublicKey
+    );
 
+    const adminFeePercentageBp = config.adminFeePercentageBp;
     const amount = new anchor.BN(0.1 * LAMPORTS_PER_SOL);
+    const fee = calculateFee(amount, adminFeePercentageBp);
+    const depositAmount = amount.sub(fee);
+
     const tx = await program.methods
       .deposit(amount)
       .accounts({
-        user: (accounts.user1 as Keypair).publicKey,
+        user: (accounts.user2 as Keypair).publicKey,
         state: accounts.configState,
         vault: accounts.grinchVault,
-        userState: user1UserStatePubkey,
+        feesVault: accounts.feesVault,
+        userBet: user2UserStatePubkey,
       })
-      .signers(accounts.user1)
+      .signers(accounts.user2)
       .rpc();
 
-    user1UserStateAccount = await program.account.user.fetch(
-      user1UserStatePubkey
+    const feeVaultBalance = await provider.connection.getBalance(
+      accounts.feesVault
+    );
+    assert.equal(feeVaultBalance, feeVaultBalanceOld + fee.toNumber());
+
+    config = await program.account.config.fetch(
+      accounts.configState as PublicKey
+    );
+    assert.equal(config.grinchPot.toNumber(), depositAmount.toNumber());
+
+    const user2UserStateAccount = await program.account.userBet.fetch(
+      user2UserStatePubkey
     );
 
     assert.equal(
-      user1UserStateAccount.santaPoints.toNumber(),
-      oldSantaPoints.toNumber()
+      user2UserStateAccount.amount.toNumber(),
+      depositAmount.toNumber()
     );
-    assert.equal(
-      user1UserStateAccount.grinchPoints.toNumber(),
-      amount.toNumber()
+    assert.deepEqual(user2UserStateAccount.side, { grinch: {} });
+    assert.deepEqual(
+      user2UserStateAccount.owner,
+      (accounts.user2 as Keypair).publicKey
     );
   });
 
@@ -177,7 +245,8 @@ describe("santa-vs-grinch", () => {
           user: (accounts.user1 as Keypair).publicKey,
           state: accounts.configState,
           vault: PublicKey.unique(),
-          userState: user1UserStatePubkey,
+          feesVault: accounts.feesVault,
+          userBet: user1UserStatePubkey,
         })
         .signers(accounts.user1)
         .rpc();

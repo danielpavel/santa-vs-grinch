@@ -1,9 +1,12 @@
 use anchor_lang::prelude::*;
 
+use super::BettingSide;
+
 #[account]
 #[derive(InitSpace)]
-pub struct User {
-    pub santa_points: u64,
-    pub grinch_points: u64,
-    pub bump: u8,
+pub struct UserBet {
+    pub owner: Pubkey,
+    pub amount: u64,
+    pub side: BettingSide,
+    pub claimed: bool,
 }
