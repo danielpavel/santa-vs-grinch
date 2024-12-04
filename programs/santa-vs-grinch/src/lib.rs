@@ -36,4 +36,8 @@ pub mod santa_vs_grinch {
     pub fn buy_mystery_box(ctx: Context<MysteryBox>, side: BettingSide) -> Result<()> {
         ctx.accounts.buy_mystery_box(side)
     }
+
+    pub fn end_game(ctx: Context<EndGame>) -> Result<()> {
+        ctx.accounts.end_game()
+    }
 }

@@ -266,7 +266,7 @@ describe("santa-vs-grinch", () => {
     }
   });
 
-  it("Buy Mystery Box Santa", async () => {
+  it("Buy a Mystery Box for Santa", async () => {
     const side = { santa: {} }; // On-chain BettingSide Enum Representation
     const BOX_PRICE = 500_000_000;
 
@@ -296,7 +296,7 @@ describe("santa-vs-grinch", () => {
     assert.equal(feeVaultBalance, feeVaultBalanceOld + BOX_PRICE);
   });
 
-  it("Buy Mystery Box Grinch", async () => {
+  it("Buy 2 Mystery Boxes for Grinch", async () => {
     const side = { grinch: {} }; // On-chain BettingSide Enum Representation
     const BOX_PRICE = 500_000_000;
 
@@ -315,14 +315,110 @@ describe("santa-vs-grinch", () => {
       .rpc();
 
     const configStateAccount = await program.account.config.fetch(
-      accounts.configState
+      accounts.configState as PublicKey
     );
 
     assert.equal(configStateAccount.grinchBoxes.toNumber(), 1);
 
     const feeVaultBalance = await provider.connection.getBalance(
-      accounts.feesVault
+      accounts.feesVault as PublicKey
     );
     assert.equal(feeVaultBalance, feeVaultBalanceOld + BOX_PRICE);
+
+    const tx2 = await program.methods
+      .buyMysteryBox(side)
+      .accounts({
+        user: (accounts.user2 as Keypair).publicKey,
+        state: accounts.configState,
+        feesVault: accounts.feesVault,
+      })
+      .signers([accounts.user2])
+      .rpc();
+
+    const configStateAccountNew = await program.account.config.fetch(
+      accounts.configState as PublicKey
+    );
+
+    assert.equal(configStateAccountNew.grinchBoxes.toNumber(), 2);
+
+    const feeVaultBalanceNew = await provider.connection.getBalance(
+      accounts.feesVault as PublicKey
+    );
+    assert.equal(feeVaultBalanceNew, feeVaultBalance + BOX_PRICE);
+  });
+
+  it("End Game", async () => {
+    const tx = await program.methods
+      .endGame()
+      .accounts({
+        admin: provider.publicKey,
+        state: accounts.configState as PublicKey,
+      })
+      .rpc();
+
+    const configStateAccount = await program.account.config.fetch(
+      accounts.configState as PublicKey
+    );
+
+    assert.equal(configStateAccount.gameEnded, true);
+    assert.deepEqual(configStateAccount.winningSide, { grinch: {} });
+  });
+
+  it("Buy Mystery Box after game ended - should fail!", async () => {
+    const side = { santa: {} }; // On-chain BettingSide Enum Representation
+
+    try {
+      const tx = await program.methods
+        .buyMysteryBox(side)
+        .accounts({
+          user: (accounts.user1 as Keypair).publicKey,
+          state: accounts.configState,
+          feesVault: accounts.feesVault,
+        })
+        .signers([accounts.user1])
+        .rpc();
+
+      expect.fail("Transaction should have failed");
+    } catch (err) {
+      if (err instanceof anchor.AnchorError) {
+        expect(err.error.errorCode.code).to.equal("GameEnded");
+        expect(err.error.errorCode.number).to.equal(6004); // Your error number
+        // Optionally check the error message
+        expect(err.error.errorMessage).to.equal("Game has already ended");
+      } else {
+        throw err;
+      }
+    }
+  });
+
+  it("Deposit into Grinch Vault After Game Ended - Should fail!", async () => {
+    const [user2UserStatePubkey, _bump] = web3.PublicKey.findProgramAddressSync(
+      [Buffer.from("user"), (accounts.user2 as Keypair).publicKey.toBuffer()],
+      program.programId
+    );
+
+    try {
+      const amount = new anchor.BN(0.1 * LAMPORTS_PER_SOL);
+      const tx = await program.methods
+        .deposit(amount)
+        .accounts({
+          user: (accounts.user2 as Keypair).publicKey,
+          state: accounts.configState,
+          vault: accounts.grinchVault,
+          feesVault: accounts.feesVault,
+          userBet: user2UserStatePubkey,
+        })
+        .signers(accounts.user2)
+        .rpc();
+    } catch (err) {
+      if (err instanceof anchor.AnchorError) {
+        expect(err.error.errorCode.code).to.equal("GameEnded");
+        expect(err.error.errorCode.number).to.equal(6004); // Your error number
+        // Optionally check the error message
+        expect(err.error.errorMessage).to.equal("Game has already ended");
+      } else {
+        throw err;
+      }
+    }
   });
 });

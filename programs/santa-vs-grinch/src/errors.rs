@@ -5,6 +5,9 @@ pub enum SantaVsGrinchErrorCode {
     #[msg("Invalid deposit vault account")]
     InvalidVaultDepositAccount,
 
+    #[msg("Invalid admin")]
+    InvalidAdmin,
+
     #[msg("Invalid fees vault account")]
     InvalidFeesVaultDepositAccount,
 
