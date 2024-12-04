@@ -265,4 +265,64 @@ describe("santa-vs-grinch", () => {
       }
     }
   });
+
+  it("Buy Mystery Box Santa", async () => {
+    const side = { santa: {} }; // On-chain BettingSide Enum Representation
+    const BOX_PRICE = 500_000_000;
+
+    let feeVaultBalanceOld = await provider.connection.getBalance(
+      accounts.feesVault
+    );
+
+    const tx = await program.methods
+      .buyMysteryBox(side)
+      .accounts({
+        user: (accounts.user1 as Keypair).publicKey,
+        state: accounts.configState,
+        feesVault: accounts.feesVault,
+      })
+      .signers([accounts.user1])
+      .rpc();
+
+    const configStateAccount = await program.account.config.fetch(
+      accounts.configState
+    );
+
+    assert.equal(configStateAccount.santaBoxes.toNumber(), 1);
+
+    const feeVaultBalance = await provider.connection.getBalance(
+      accounts.feesVault
+    );
+    assert.equal(feeVaultBalance, feeVaultBalanceOld + BOX_PRICE);
+  });
+
+  it("Buy Mystery Box Grinch", async () => {
+    const side = { grinch: {} }; // On-chain BettingSide Enum Representation
+    const BOX_PRICE = 500_000_000;
+
+    let feeVaultBalanceOld = await provider.connection.getBalance(
+      accounts.feesVault
+    );
+
+    const tx = await program.methods
+      .buyMysteryBox(side)
+      .accounts({
+        user: (accounts.user2 as Keypair).publicKey,
+        state: accounts.configState,
+        feesVault: accounts.feesVault,
+      })
+      .signers([accounts.user2])
+      .rpc();
+
+    const configStateAccount = await program.account.config.fetch(
+      accounts.configState
+    );
+
+    assert.equal(configStateAccount.grinchBoxes.toNumber(), 1);
+
+    const feeVaultBalance = await provider.connection.getBalance(
+      accounts.feesVault
+    );
+    assert.equal(feeVaultBalance, feeVaultBalanceOld + BOX_PRICE);
+  });
 });

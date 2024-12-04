@@ -8,6 +8,7 @@ mod state;
 mod utils;
 
 use contexts::*;
+use state::BettingSide;
 
 #[program]
 pub mod santa_vs_grinch {
@@ -30,5 +31,9 @@ pub mod santa_vs_grinch {
         }
 
         ctx.accounts.deposit(amount)
+    }
+
+    pub fn buy_mystery_box(ctx: Context<MysteryBox>, side: BettingSide) -> Result<()> {
+        ctx.accounts.buy_mystery_box(side)
     }
 }
