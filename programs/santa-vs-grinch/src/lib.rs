@@ -17,7 +17,6 @@ pub mod santa_vs_grinch {
 
     pub fn initialize(ctx: Context<Initialize>, admin_fee_percentage_bp: u16) -> Result<()> {
         msg!("Initailize!");
-
         ctx.accounts.initialize(&ctx.bumps, admin_fee_percentage_bp)
     }
 
@@ -39,5 +38,9 @@ pub mod santa_vs_grinch {
 
     pub fn end_game(ctx: Context<EndGame>) -> Result<()> {
         ctx.accounts.end_game()
+    }
+
+    pub fn claim_winnings(ctx: Context<ClaimWinnings>) -> Result<()> {
+        ctx.accounts.claim_winnings()
     }
 }

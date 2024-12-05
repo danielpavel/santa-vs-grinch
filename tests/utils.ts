@@ -26,3 +26,5 @@ export const confirmTxs = async (signatures: string[]) => {
 export const calculateFee = (amount: BN, fee_bp: number) => {
   return amount.mul(new BN(fee_bp)).div(new BN(10_000));
 };
+
+export function prettyPrintConfigState(config: any) {}

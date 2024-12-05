@@ -9,3 +9,6 @@ pub use mystery_box::*;
 
 pub mod end_game;
 pub use end_game::*;
+
+pub mod claim_winnings;
+pub use claim_winnings::*;

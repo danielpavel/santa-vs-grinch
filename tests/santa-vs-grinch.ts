@@ -382,7 +382,7 @@ describe("santa-vs-grinch", () => {
     } catch (err) {
       if (err instanceof anchor.AnchorError) {
         expect(err.error.errorCode.code).to.equal("GameEnded");
-        expect(err.error.errorCode.number).to.equal(6004); // Your error number
+        expect(err.error.errorCode.number).to.equal(6005); // Your error number
         // Optionally check the error message
         expect(err.error.errorMessage).to.equal("Game has already ended");
       } else {
@@ -413,12 +413,47 @@ describe("santa-vs-grinch", () => {
     } catch (err) {
       if (err instanceof anchor.AnchorError) {
         expect(err.error.errorCode.code).to.equal("GameEnded");
-        expect(err.error.errorCode.number).to.equal(6004); // Your error number
+        expect(err.error.errorCode.number).to.equal(6005); // Your error number
         // Optionally check the error message
         expect(err.error.errorMessage).to.equal("Game has already ended");
       } else {
         throw err;
       }
     }
+  });
+
+  it("User1 Withdraw winnings - Santa Bet", async () => {
+    const [user1UserStatePubkey, _bump] = web3.PublicKey.findProgramAddressSync(
+      [Buffer.from("user"), (accounts.user1 as Keypair).publicKey.toBuffer()],
+      program.programId
+    );
+
+    // const configStateOld = await program.account.config.fetch(
+    //   accounts.configState
+    // );
+    // console.log("configStateOld:", configStateOld);
+
+    const tx = await program.methods
+      .claimWinnings()
+      .accounts({
+        claimer: (accounts.user1 as Keypair).publicKey,
+        state: accounts.configState,
+        vault: accounts.santaVault,
+        userBet: user1UserStatePubkey,
+      })
+      .signers(accounts.user1)
+      .rpc();
+
+    // const configState = await program.account.config.fetch(
+    //   accounts.configState
+    // );
+    // console.log("configState:", configState);
+
+    // Check user bet has been claimed
+    const userBet = await program.account.userBet.fetch(user1UserStatePubkey);
+    assert.equal(userBet.claimed, true);
+
+    // TODO: check oposing vault has been deducted the correct amount.
+    // TODO: check user has been credited the correct amount.
   });
 });

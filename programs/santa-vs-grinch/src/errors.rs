@@ -5,6 +5,9 @@ pub enum SantaVsGrinchErrorCode {
     #[msg("Invalid deposit vault account")]
     InvalidVaultDepositAccount,
 
+    #[msg("Invalid winnings vault account")]
+    InvalidVaultWinningsAccount,
+
     #[msg("Invalid admin")]
     InvalidAdmin,
 
@@ -16,4 +19,10 @@ pub enum SantaVsGrinchErrorCode {
 
     #[msg("Game has already ended")]
     GameEnded,
+
+    #[msg("Game has not ended yet")]
+    GameNotEnded,
+
+    #[msg("User has already claimed")]
+    AlreadyClaimed,
 }

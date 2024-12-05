@@ -1,7 +1,7 @@
 use anchor_lang::prelude::*;
 
 use crate::errors::SantaVsGrinchErrorCode;
-use crate::state::Config;
+use crate::state::{BettingSide, Config};
 
 pub fn assert_game_is_active(config: &Account<Config>) -> Result<()> {
     require!(!config.game_ended, SantaVsGrinchErrorCode::GameEnded);
@@ -47,5 +47,37 @@ pub fn calculate_final_pots(
         ))
     } else {
         Ok((santa_pot, grinch_pot))
+    }
+}
+
+pub fn calculate_winnings(bet_amount: u64, bet_side: BettingSide, config: &Config) -> Result<u64> {
+    match config.winning_side {
+        Some(winning_side) => {
+            if winning_side == bet_side {
+                // Calculate winner's share of the losing pot
+                let (winning_pot, losing_pot) = match winning_side {
+                    BettingSide::Santa => (config.santa_pot, config.grinch_pot),
+                    BettingSide::Grinch => (config.grinch_pot, config.santa_pot),
+                };
+
+                // Calculate the share of the losing pot (75% to winners)
+                let losing_pot_share = (losing_pot as u128 * 75) / 100;
+
+                // Calculate individual winner's share based on their contribution to winning pot
+                let winner_share = (bet_amount as u128 * losing_pot_share) / winning_pot as u128;
+
+                // Return original bet plus winnings
+                Ok(bet_amount
+                    .checked_add(winner_share as u64)
+                    .ok_or(ProgramError::ArithmeticOverflow)?)
+            } else {
+                // Losing side gets nothing
+                Ok(0)
+            }
+        }
+        None => {
+            // In case of a true tie, return 87.5% of original bet (12.5% penalty)
+            Ok((bet_amount as u128 * 875 / 1000) as u64)
+        }
     }
 }
