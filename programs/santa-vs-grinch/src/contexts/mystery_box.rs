@@ -24,6 +24,8 @@ pub struct MysteryBox<'info> {
     #[account(
         mut,
         address = state.fees_vault @ SantaVsGrinchErrorCode::InvalidFeesVaultDepositAccount,
+        seeds = [b"vault", state.key().as_ref(), b"fees"],
+        bump = state.fees_vault_bump
     )]
     pub fees_vault: SystemAccount<'info>,
 

@@ -11,6 +11,9 @@ pub enum SantaVsGrinchErrorCode {
     #[msg("Invalid admin")]
     InvalidAdmin,
 
+    #[msg("Invalid bet side")]
+    InvalidBetSide,
+
     #[msg("Invalid fees vault account")]
     InvalidFeesVaultDepositAccount,
 

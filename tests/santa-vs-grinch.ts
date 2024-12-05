@@ -4,7 +4,7 @@ import { airdropIfRequired, makeKeypairs } from "@solana-developers/helpers";
 import { Keypair, LAMPORTS_PER_SOL, PublicKey } from "@solana/web3.js";
 import { assert, expect } from "chai";
 import { SantaVsGrinch } from "../target/types/santa_vs_grinch";
-import { calculateFee, confirmTx } from "./utils";
+import { calculateFee, calculateWinnings } from "./utils";
 
 describe("santa-vs-grinch", () => {
   // Configure the client to use the local cluster.
@@ -36,16 +36,14 @@ describe("santa-vs-grinch", () => {
         program.programId
       );
 
-    const [santaVault, santaVaultBump] = web3.PublicKey.findProgramAddressSync(
-      [Buffer.from("vault"), configState.toBuffer(), Buffer.from("santa")],
+    const [vault, vaultBump] = web3.PublicKey.findProgramAddressSync(
+      [
+        Buffer.from("vault"),
+        configState.toBuffer(),
+        Buffer.from("santa-vs-grinch"),
+      ],
       program.programId
     );
-
-    const [grinchVault, grinchVaultBump] =
-      web3.PublicKey.findProgramAddressSync(
-        [Buffer.from("vault"), configState.toBuffer(), Buffer.from("grinch")],
-        program.programId
-      );
 
     const [feesVault, feesVaultBump] = web3.PublicKey.findProgramAddressSync(
       [Buffer.from("vault"), configState.toBuffer(), Buffer.from("fees")],
@@ -54,8 +52,7 @@ describe("santa-vs-grinch", () => {
 
     // Save accounts
     accounts.configState = configState;
-    accounts.santaVault = santaVault;
-    accounts.grinchVault = grinchVault;
+    accounts.vault = vault;
     accounts.feesVault = feesVault;
 
     accounts.user1 = user1;
@@ -63,13 +60,12 @@ describe("santa-vs-grinch", () => {
 
     // Save bumps
     bumps.configStateBump = configStateBump;
-    bumps.santaVaultBump = santaVaultBump;
-    bumps.grinchVaultBump = grinchVaultBump;
+    bumps.vaultBump = vaultBump;
     bumps.feesVaultBump = feesVaultBump;
 
     // NOTE: depositing too little of a fee in feeVault results in:
     // `Transaction results in an account (2) with insufficient funds for rent.`
-    // so we're topping up
+    // so we're topping up before 1st deposit.
     await airdropIfRequired(
       provider.connection,
       accounts.feesVault,
@@ -87,8 +83,7 @@ describe("santa-vs-grinch", () => {
       .accounts({
         admin: provider.publicKey,
         state: accounts.configState,
-        santaVault: accounts.santaVault,
-        grinchVault: accounts.grinchVault,
+        vault: accounts.vault,
         feesVault: accounts.feesVault,
       })
       .rpc();
@@ -101,12 +96,8 @@ describe("santa-vs-grinch", () => {
 
     assert.equal(config.admin.toBase58(), provider.publicKey.toBase58());
     assert.equal(
-      config.santaVault,
-      (accounts.santaVault as PublicKey).toBase58()
-    );
-    assert.equal(
-      config.grinchVault,
-      (accounts.grinchVault as PublicKey).toBase58()
+      config.vault.toBase58(),
+      (accounts.vault as PublicKey).toBase58()
     );
     assert.equal(
       config.feesVault,
@@ -118,11 +109,11 @@ describe("santa-vs-grinch", () => {
     assert.equal(config.grinchPot.toNumber(), 0);
     assert.equal(config.grinchBoxes.toNumber(), 0);
     assert.equal(config.bump, bumps.configStateBump);
-    assert.equal(config.santaVaultBump, bumps.santaVaultBump);
-    assert.equal(config.grinchVaultBump, bumps.grinchVaultBump);
+    assert.equal(config.vaultBump, bumps.vaultBump);
+    assert.equal(config.feesVaultBump, bumps.feesVaultBump);
   });
 
-  it("Deposit into Santa Vault", async () => {
+  it("Bet on Santa", async () => {
     const [user1UserStatePubkey, _bump] = web3.PublicKey.findProgramAddressSync(
       [Buffer.from("user"), (accounts.user1 as Keypair).publicKey.toBuffer()],
       program.programId
@@ -133,16 +124,17 @@ describe("santa-vs-grinch", () => {
     );
 
     const adminFeePercentageBp = config.adminFeePercentageBp;
+    const bet = { santa: {} };
     const amount = new anchor.BN(0.1 * LAMPORTS_PER_SOL);
     const fee = calculateFee(amount, adminFeePercentageBp);
     const depositAmount = amount.sub(fee);
 
     const tx = await program.methods
-      .deposit(amount)
+      .deposit(amount, bet)
       .accounts({
         user: (accounts.user1 as Keypair).publicKey,
         state: accounts.configState,
-        vault: accounts.santaVault,
+        vault: accounts.vault,
         feesVault: accounts.feesVault,
         userBet: user1UserStatePubkey,
       })
@@ -175,7 +167,7 @@ describe("santa-vs-grinch", () => {
     );
   });
 
-  it("Deposit into Grinch Vault", async () => {
+  it("Bet on Grinch", async () => {
     const [user2UserStatePubkey, _bump] = web3.PublicKey.findProgramAddressSync(
       [Buffer.from("user"), (accounts.user2 as Keypair).publicKey.toBuffer()],
       program.programId
@@ -190,16 +182,17 @@ describe("santa-vs-grinch", () => {
     );
 
     const adminFeePercentageBp = config.adminFeePercentageBp;
+    const bet = { grinch: {} };
     const amount = new anchor.BN(0.1 * LAMPORTS_PER_SOL);
     const fee = calculateFee(amount, adminFeePercentageBp);
     const depositAmount = amount.sub(fee);
 
     const tx = await program.methods
-      .deposit(amount)
+      .deposit(amount, bet)
       .accounts({
         user: (accounts.user2 as Keypair).publicKey,
         state: accounts.configState,
-        vault: accounts.grinchVault,
+        vault: accounts.vault,
         feesVault: accounts.feesVault,
         userBet: user2UserStatePubkey,
       })
@@ -231,16 +224,17 @@ describe("santa-vs-grinch", () => {
     );
   });
 
-  it("Deposit into Invalid Vault - Should Fail!", async () => {
+  it("Bet with an Invalid Vault - Should Fail!", async () => {
     const [user1UserStatePubkey, _bump] = web3.PublicKey.findProgramAddressSync(
       [Buffer.from("user"), (accounts.user1 as Keypair).publicKey.toBuffer()],
       program.programId
     );
 
     const amount = new anchor.BN(0.1 * LAMPORTS_PER_SOL);
+    const bet = { santa: {} };
     try {
       const tx = await program.methods
-        .deposit(amount)
+        .deposit(amount, bet)
         .accounts({
           user: (accounts.user1 as Keypair).publicKey,
           state: accounts.configState,
@@ -382,7 +376,7 @@ describe("santa-vs-grinch", () => {
     } catch (err) {
       if (err instanceof anchor.AnchorError) {
         expect(err.error.errorCode.code).to.equal("GameEnded");
-        expect(err.error.errorCode.number).to.equal(6005); // Your error number
+        expect(err.error.errorCode.number).to.equal(6006); // Your error number
         // Optionally check the error message
         expect(err.error.errorMessage).to.equal("Game has already ended");
       } else {
@@ -391,7 +385,7 @@ describe("santa-vs-grinch", () => {
     }
   });
 
-  it("Deposit into Grinch Vault After Game Ended - Should fail!", async () => {
+  it("Bet on Grinch after game has ended - Should fail!", async () => {
     const [user2UserStatePubkey, _bump] = web3.PublicKey.findProgramAddressSync(
       [Buffer.from("user"), (accounts.user2 as Keypair).publicKey.toBuffer()],
       program.programId
@@ -399,12 +393,13 @@ describe("santa-vs-grinch", () => {
 
     try {
       const amount = new anchor.BN(0.1 * LAMPORTS_PER_SOL);
+      const bet = { santa: {} };
       const tx = await program.methods
-        .deposit(amount)
+        .deposit(amount, bet)
         .accounts({
           user: (accounts.user2 as Keypair).publicKey,
           state: accounts.configState,
-          vault: accounts.grinchVault,
+          vault: accounts.vault,
           feesVault: accounts.feesVault,
           userBet: user2UserStatePubkey,
         })
@@ -413,7 +408,7 @@ describe("santa-vs-grinch", () => {
     } catch (err) {
       if (err instanceof anchor.AnchorError) {
         expect(err.error.errorCode.code).to.equal("GameEnded");
-        expect(err.error.errorCode.number).to.equal(6005); // Your error number
+        expect(err.error.errorCode.number).to.equal(6006); // Your error number
         // Optionally check the error message
         expect(err.error.errorMessage).to.equal("Game has already ended");
       } else {
@@ -422,38 +417,119 @@ describe("santa-vs-grinch", () => {
     }
   });
 
-  it("User1 Withdraw winnings - Santa Bet", async () => {
+  it("User claim winnings - Loosing Bet", async () => {
     const [user1UserStatePubkey, _bump] = web3.PublicKey.findProgramAddressSync(
       [Buffer.from("user"), (accounts.user1 as Keypair).publicKey.toBuffer()],
       program.programId
     );
 
-    // const configStateOld = await program.account.config.fetch(
-    //   accounts.configState
-    // );
-    // console.log("configStateOld:", configStateOld);
+    const vaultBalanceOld = await provider.connection.getBalance(
+      accounts.vault
+    );
 
     const tx = await program.methods
       .claimWinnings()
       .accounts({
         claimer: (accounts.user1 as Keypair).publicKey,
         state: accounts.configState,
-        vault: accounts.santaVault,
+        vault: accounts.vault,
         userBet: user1UserStatePubkey,
       })
       .signers(accounts.user1)
       .rpc();
 
-    // const configState = await program.account.config.fetch(
-    //   accounts.configState
-    // );
-    // console.log("configState:", configState);
-
     // Check user bet has been claimed
     const userBet = await program.account.userBet.fetch(user1UserStatePubkey);
     assert.equal(userBet.claimed, true);
 
-    // TODO: check oposing vault has been deducted the correct amount.
-    // TODO: check user has been credited the correct amount.
+    // Claiming a loosing bet will result in no credited funds
+    const vaultBalanceNew = await provider.connection.getBalance(
+      accounts.vault
+    );
+    assert.equal(vaultBalanceNew, vaultBalanceOld);
+  });
+
+  it("User claim winnings - Winning Bet", async () => {
+    const [user2UserStatePubkey, _bump] = web3.PublicKey.findProgramAddressSync(
+      [Buffer.from("user"), (accounts.user2 as Keypair).publicKey.toBuffer()],
+      program.programId
+    );
+
+    const userBalanceOld = await provider.connection.getBalance(
+      (accounts.user2 as Keypair).publicKey
+    );
+    const vaultBalanceOld = await provider.connection.getBalance(
+      accounts.vault
+    );
+
+    const tx = await program.methods
+      .claimWinnings()
+      .accounts({
+        claimer: (accounts.user2 as Keypair).publicKey,
+        state: accounts.configState,
+        vault: accounts.vault,
+        userBet: user2UserStatePubkey,
+      })
+      .signers(accounts.user2)
+      .rpc();
+
+    // check: user bet state is claimed.
+    const configState = await program.account.config.fetch(
+      accounts.configState
+    );
+    const userBet = await program.account.userBet.fetch(user2UserStatePubkey);
+    assert.equal(userBet.claimed, true);
+
+    const winnings = calculateWinnings(
+      userBet.amount.toNumber(),
+      userBet.side,
+      configState
+    );
+
+    // check: user has been credited the correct amount.
+    // TODO: Has to take into consideration transaction cost.
+    // Not in the mood for that now ...
+    //const userBalanceNew = await provider.connection.getBalance(
+    //  (accounts.user2 as Keypair).publicKey
+    //);
+    //assert.equal(userBalanceNew, userBalanceOld + winnings);
+
+    // check: vault has been deducted the correct amount.
+    const vaultBalanceNew = await provider.connection.getBalance(
+      accounts.vault as PublicKey
+    );
+    //console.log("Vault Balance New", vaultBalanceNew);
+    assert.equal(vaultBalanceNew, vaultBalanceOld - winnings);
+  });
+
+  it("User claim winnings again - Winning Bet, Should Fail", async () => {
+    const [user2UserStatePubkey, _bump] = web3.PublicKey.findProgramAddressSync(
+      [Buffer.from("user"), (accounts.user2 as Keypair).publicKey.toBuffer()],
+      program.programId
+    );
+
+    try {
+      const tx = await program.methods
+        .claimWinnings()
+        .accounts({
+          claimer: (accounts.user2 as Keypair).publicKey,
+          state: accounts.configState,
+          vault: accounts.vault,
+          userBet: user2UserStatePubkey,
+        })
+        .signers(accounts.user2)
+        .rpc();
+
+      expect.fail("Transaction should have failed");
+    } catch (err) {
+      if (err instanceof anchor.AnchorError) {
+        expect(err.error.errorCode.code).to.equal("AlreadyClaimed");
+        expect(err.error.errorCode.number).to.equal(6008); // Your error number
+        // Optionally check the error message
+        expect(err.error.errorMessage).to.equal("User has already claimed");
+      } else {
+        throw err;
+      }
+    }
   });
 });

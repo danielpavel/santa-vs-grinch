@@ -13,8 +13,7 @@ pub struct Config {
 
     pub admin_fee_percentage_bp: u16,
 
-    pub santa_vault: Pubkey,
-    pub grinch_vault: Pubkey,
+    pub vault: Pubkey,
     pub fees_vault: Pubkey,
 
     pub santa_pot: u64,
@@ -26,7 +25,7 @@ pub struct Config {
     pub initialized_at: i64,
     pub winning_side: Option<BettingSide>,
 
-    pub santa_vault_bump: u8,
-    pub grinch_vault_bump: u8,
+    pub vault_bump: u8,
+    pub fees_vault_bump: u8,
     pub bump: u8,
 }

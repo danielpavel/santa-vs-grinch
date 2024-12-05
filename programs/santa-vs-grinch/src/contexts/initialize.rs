@@ -18,16 +18,10 @@ pub struct Initialize<'info> {
     state: Account<'info, Config>,
 
     #[account(
-        seeds = [b"vault", state.key().as_ref(), b"santa"],
+        seeds = [b"vault", state.key().as_ref(), b"santa-vs-grinch"],
         bump,
     )]
-    pub santa_vault: SystemAccount<'info>,
-
-    #[account(
-        seeds = [b"vault", state.key().as_ref(), b"grinch"],
-        bump,
-    )]
-    pub grinch_vault: SystemAccount<'info>,
+    pub vault: SystemAccount<'info>,
 
     #[account(
         seeds = [b"vault", state.key().as_ref(), b"fees"],
@@ -56,8 +50,7 @@ impl<'info> Initialize<'info> {
             admin_fee_percentage_bp,
 
             fees_vault: self.fees_vault.key(),
-            santa_vault: self.santa_vault.key(),
-            grinch_vault: self.grinch_vault.key(),
+            vault: self.vault.key(),
 
             santa_pot: 0,
             grinch_pot: 0,
@@ -71,8 +64,8 @@ impl<'info> Initialize<'info> {
 
             winning_side: None,
 
-            santa_vault_bump: bumps.santa_vault,
-            grinch_vault_bump: bumps.grinch_vault,
+            vault_bump: bumps.vault,
+            fees_vault_bump: bumps.fees_vault,
             bump: bumps.state,
         });
 

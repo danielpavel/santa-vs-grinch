@@ -3,8 +3,11 @@ use anchor_lang::{
     system_program::{transfer, Transfer},
 };
 
-use crate::{state::{BettingSide, Config, UserBet}, utils::calculate_winnings};
 use crate::errors::SantaVsGrinchErrorCode;
+use crate::{
+    state::{Config, UserBet},
+    utils::calculate_winnings,
+};
 
 #[derive(Accounts)]
 pub struct ClaimWinnings<'info> {
@@ -13,6 +16,7 @@ pub struct ClaimWinnings<'info> {
 
     #[account(
         mut,
+        has_one = vault @ SantaVsGrinchErrorCode::InvalidVaultDepositAccount,
         seeds = [b"state", state.admin.key().as_ref()],
         bump = state.bump
      )]
@@ -20,10 +24,9 @@ pub struct ClaimWinnings<'info> {
 
     #[account(
         mut,
-        constraint = {
-            vault.key() == state.santa_vault.key() ||
-            vault.key() == state.grinch_vault.key() 
-        } @ SantaVsGrinchErrorCode::InvalidVaultDepositAccount
+        address = state.vault @ SantaVsGrinchErrorCode::InvalidVaultDepositAccount,
+        seeds = [b"vault", state.key().as_ref(), b"santa-vs-grinch"],
+        bump = state.vault_bump
     )]
     pub vault: SystemAccount<'info>,
 
@@ -40,45 +43,34 @@ pub struct ClaimWinnings<'info> {
 impl<'info> ClaimWinnings<'info> {
     pub fn claim_winnings(&mut self) -> Result<()> {
         require!(self.state.game_ended, SantaVsGrinchErrorCode::GameNotEnded);
-        require!(!self.user_bet.claimed, SantaVsGrinchErrorCode::AlreadyClaimed);
-
-        // TODO: I don't like this! I have to check for the losing output vault. Simplify to one vault!
-        match self.state.winning_side {
-            Some(winning_side) => {
-                if winning_side == BettingSide::Santa {
-                    require!(self.vault.key() == self.state.grinch_vault, SantaVsGrinchErrorCode::InvalidVaultWinningsAccount);
-                } else {
-                    require!(self.vault.key() == self.state.santa_vault, SantaVsGrinchErrorCode::InvalidVaultWinningsAccount);
-                }
-            },
-            None => {
-                //It's a tie - Withdraw from the vault you have deposited in.
-                if self.user_bet.side == BettingSide::Santa {
-                    require!(self.vault.key() == self.state.santa_vault, SantaVsGrinchErrorCode::InvalidVaultWinningsAccount);
-                } else {
-                    require!(self.vault.key() == self.state.grinch_vault, SantaVsGrinchErrorCode::InvalidVaultWinningsAccount);
-                }
-            }
-        }
+        require!(
+            !self.user_bet.claimed,
+            SantaVsGrinchErrorCode::AlreadyClaimed
+        );
 
         let user_bet = &mut self.user_bet;
         let config = &mut self.state;
 
         // Calculate winnings based on the game outcome
-        let winning_amount = calculate_winnings(
-            user_bet.amount,
-            user_bet.side,
-            config,
-        )?;
-
+        let winning_amount = calculate_winnings(user_bet.amount, user_bet.side, config)?;
 
         if winning_amount > 0 {
-            let cpi_context = CpiContext::new(
+            let bump = [self.state.vault_bump];
+            let state = self.state.clone();
+            let signer_seeds = [&[
+                b"vault",
+                state.to_account_info().key.as_ref(),
+                b"santa-vs-grinch",
+                &bump,
+            ][..]];
+
+            let cpi_context = CpiContext::new_with_signer(
                 self.system_program.to_account_info(),
                 Transfer {
                     from: self.vault.to_account_info(),
                     to: self.claimer.to_account_info(),
                 },
+                &signer_seeds,
             );
 
             transfer(cpi_context, winning_amount)?;
