@@ -1,9 +1,17 @@
 use anchor_lang::prelude::*;
 
+pub const MAX_CREATORS: usize = 3;
+
 #[derive(AnchorSerialize, AnchorDeserialize, Clone, Copy, PartialEq, Debug, InitSpace)]
 pub enum BettingSide {
     Santa,
     Grinch,
+}
+
+#[derive(AnchorSerialize, AnchorDeserialize, Clone, Copy, PartialEq, Debug, InitSpace)]
+pub struct Creator {
+    pub pubkey: Pubkey,
+    pub share_in_bp: u16,
 }
 
 #[account]
@@ -24,6 +32,9 @@ pub struct Config {
     pub game_ended: bool,
     pub initialized_at: i64,
     pub winning_side: Option<BettingSide>,
+
+    #[max_len(MAX_CREATORS * mem::size_of::<Creator>())]
+    pub creators: [Creator; MAX_CREATORS],
 
     pub vault_bump: u8,
     pub fees_vault_bump: u8,

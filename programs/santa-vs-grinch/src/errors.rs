@@ -28,4 +28,13 @@ pub enum SantaVsGrinchErrorCode {
 
     #[msg("User has already claimed")]
     AlreadyClaimed,
+
+    #[msg("Invalid total shares")]
+    InvalidTotalShares,
+
+    #[msg("Too Many Creators")]
+    TooManyCreators,
+
+    #[msg("InvalidCreatorAddress")]
+    InvalidCreatorAddress,
 }

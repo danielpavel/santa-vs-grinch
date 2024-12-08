@@ -4,3 +4,4 @@ import { IdlAccounts, IdlTypes } from "@coral-xyz/anchor";
 export type ConfigType = IdlAccounts<SantaVsGrinch>["config"];
 export type UserBetType = IdlTypes<SantaVsGrinch>["userBet"];
 export type UserBetEnumType = IdlTypes<SantaVsGrinch>["bettingSide"];
+export type CreatorType = IdlTypes<SantaVsGrinch>["creator"];

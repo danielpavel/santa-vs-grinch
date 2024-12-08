@@ -1,7 +1,7 @@
 use anchor_lang::prelude::*;
 
 use crate::errors::SantaVsGrinchErrorCode;
-use crate::state::Config;
+use crate::state::{Config, Creator};
 
 #[derive(Accounts)]
 pub struct Initialize<'info> {
@@ -35,14 +35,32 @@ pub struct Initialize<'info> {
 impl<'info> Initialize<'info> {
     pub fn initialize(
         &mut self,
-        bumps: &InitializeBumps,
+        creators: Vec<Creator>,
+        max_num_creators: u8,
         admin_fee_percentage_bp: u16,
+        bumps: &InitializeBumps,
     ) -> Result<()> {
         require!(
             admin_fee_percentage_bp <= 10_000,
             SantaVsGrinchErrorCode::InvalidPercentage
         );
         let timestamp = Clock::get()?.unix_timestamp;
+
+        // Validate creator shares total to 10000 basis points (100%)
+        let total_shares: u16 = creators.iter().map(|c| c.share_in_bp).sum();
+
+        require!(
+            total_shares == 10_000,
+            SantaVsGrinchErrorCode::InvalidTotalShares
+        );
+
+        // Validate number of creators doesn't exceed max
+        require!(
+            creators.len() <= max_num_creators as usize,
+            SantaVsGrinchErrorCode::TooManyCreators
+        );
+
+        let creators_arr = creators.try_into().expect("Invalid Creators Argument!");
 
         self.state.set_inner(Config {
             admin: self.admin.key(),
@@ -61,6 +79,8 @@ impl<'info> Initialize<'info> {
             game_ended: false,
 
             initialized_at: timestamp,
+
+            creators: creators_arr,
 
             winning_side: None,
 

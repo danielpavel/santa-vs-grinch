@@ -12,3 +12,6 @@ pub use end_game::*;
 
 pub mod claim_winnings;
 pub use claim_winnings::*;
+
+pub mod withdraw_fees;
+pub use withdraw_fees::*;

@@ -4,6 +4,8 @@ import { airdropIfRequired, makeKeypairs } from "@solana-developers/helpers";
 import { Keypair, LAMPORTS_PER_SOL, PublicKey } from "@solana/web3.js";
 import { assert, expect } from "chai";
 import { SantaVsGrinch } from "../target/types/santa_vs_grinch";
+import { CREATOR_1, CREATOR_2, CREATOR_3 } from "./constants";
+import { CreatorType } from "./onChain.types";
 import { calculateFee, calculateWinnings } from "./utils";
 
 describe("santa-vs-grinch", () => {
@@ -58,6 +60,10 @@ describe("santa-vs-grinch", () => {
     accounts.user1 = user1;
     accounts.user2 = user2;
 
+    accounts.creator1 = { pubkey: CREATOR_1, shareInBp: 3333 };
+    accounts.creator2 = { pubkey: CREATOR_2, shareInBp: 3333 };
+    accounts.creator3 = { pubkey: CREATOR_3, shareInBp: 3334 };
+
     // Save bumps
     bumps.configStateBump = configStateBump;
     bumps.vaultBump = vaultBump;
@@ -76,10 +82,16 @@ describe("santa-vs-grinch", () => {
 
   it("Is initialized!", async () => {
     // Add your test here.
+    //
+    const creators = [accounts.creator1, accounts.creator2, accounts.creator3];
 
     const fee_bp = 100;
     const tx = await program.methods
-      .initialize(fee_bp)
+      .initialize(
+        creators as Array<{ pubkey: PublicKey; shareInBp: number }>,
+        creators.length as number,
+        fee_bp as number
+      )
       .accounts({
         admin: provider.publicKey,
         state: accounts.configState,
@@ -87,8 +99,6 @@ describe("santa-vs-grinch", () => {
         feesVault: accounts.feesVault,
       })
       .rpc();
-
-    console.log("Tx sig:", tx);
 
     const config = await program.account.config.fetch(
       accounts.configState as PublicKey
@@ -111,6 +121,11 @@ describe("santa-vs-grinch", () => {
     assert.equal(config.bump, bumps.configStateBump);
     assert.equal(config.vaultBump, bumps.vaultBump);
     assert.equal(config.feesVaultBump, bumps.feesVaultBump);
+
+    // assert creators and correct share_in_bp
+    assert.deepEqual(config.creators[0], accounts.creator1);
+    assert.deepEqual(config.creators[1], accounts.creator2);
+    assert.deepEqual(config.creators[2], accounts.creator3);
   });
 
   it("Bet on Santa", async () => {
@@ -125,7 +140,7 @@ describe("santa-vs-grinch", () => {
 
     const adminFeePercentageBp = config.adminFeePercentageBp;
     const bet = { santa: {} };
-    const amount = new anchor.BN(0.1 * LAMPORTS_PER_SOL);
+    const amount = new anchor.BN(5 * LAMPORTS_PER_SOL);
     const fee = calculateFee(amount, adminFeePercentageBp);
     const depositAmount = amount.sub(fee);
 
@@ -183,7 +198,7 @@ describe("santa-vs-grinch", () => {
 
     const adminFeePercentageBp = config.adminFeePercentageBp;
     const bet = { grinch: {} };
-    const amount = new anchor.BN(0.1 * LAMPORTS_PER_SOL);
+    const amount = new anchor.BN(5 * LAMPORTS_PER_SOL);
     const fee = calculateFee(amount, adminFeePercentageBp);
     const depositAmount = amount.sub(fee);
 
@@ -230,7 +245,7 @@ describe("santa-vs-grinch", () => {
       program.programId
     );
 
-    const amount = new anchor.BN(0.1 * LAMPORTS_PER_SOL);
+    const amount = new anchor.BN(5 * LAMPORTS_PER_SOL);
     const bet = { santa: {} };
     try {
       const tx = await program.methods
@@ -392,7 +407,7 @@ describe("santa-vs-grinch", () => {
     );
 
     try {
-      const amount = new anchor.BN(0.1 * LAMPORTS_PER_SOL);
+      const amount = new anchor.BN(5 * LAMPORTS_PER_SOL);
       const bet = { santa: {} };
       const tx = await program.methods
         .deposit(amount, bet)
@@ -531,5 +546,57 @@ describe("santa-vs-grinch", () => {
         throw err;
       }
     }
+  });
+
+  it("Withdraw fees ", async () => {
+    // IMPORTANT: Keep in mind that order of the creator accounts matters. Keep it creator1, 2, 3.
+    const creators = [accounts.creator1, accounts.creator2, accounts.creator3];
+
+    let remainingAccounts = creators.map((c: CreatorType) => {
+      let accountInfo = {
+        pubkey: c.pubkey,
+        isWritable: true,
+        isSigner: false,
+      };
+
+      return accountInfo;
+    });
+
+    const oldCreatorsBalances = await Promise.all(
+      creators.map((c: CreatorType) => provider.connection.getBalance(c.pubkey))
+    );
+
+    const feeVaultBalance = await provider.connection.getBalance(
+      accounts.feesVault
+    );
+
+    const tx = await program.methods
+      .withdrawFees()
+      .accounts({
+        admin: provider.publicKey,
+        state: accounts.configState,
+        fees_vault: accounts.feesVault,
+      })
+      .remainingAccounts(remainingAccounts)
+      .rpc();
+
+    const newCreatorsBalances = await Promise.all(
+      creators.map((c: CreatorType) => provider.connection.getBalance(c.pubkey))
+    );
+
+    // Compare balances while maintaining order
+    creators.forEach((creator: CreatorType, index) => {
+      const share = (feeVaultBalance * creator.shareInBp) / 10_000;
+      const balanceChange =
+        newCreatorsBalances[index] - oldCreatorsBalances[index];
+
+      // console.log(`Account ${creator.pubkey.toBase58()}:`);
+      // console.log(`- Initial balance: ${oldCreatorsBalances[index]}`);
+      // console.log(`- Final balance: ${newCreatorsBalances[index]}`);
+      // console.log(`- Change: ${balanceChange}`);
+
+      // Add your assertions here
+      expect(share).to.equal(balanceChange);
+    });
   });
 });
