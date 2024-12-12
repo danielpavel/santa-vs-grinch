@@ -2,6 +2,7 @@ use anchor_lang::prelude::*;
 
 declare_id!("BZGCW6asmdxFTxo1xNpgBPnX9Seb5oLfPDEy3QqLpPPE");
 
+mod constants;
 mod contexts;
 mod errors;
 mod state;
@@ -29,8 +30,8 @@ pub mod santa_vs_grinch {
         )
     }
 
-    pub fn deposit(ctx: Context<Deposit>, amount: u64, bet_side: BettingSide) -> Result<()> {
-        ctx.accounts.deposit(amount, bet_side)
+    pub fn bet(ctx: Context<Bet>, amount: u64, bet_label: String) -> Result<()> {
+        ctx.accounts.bet(amount, bet_label)
     }
 
     pub fn buy_mystery_box(ctx: Context<MysteryBox>, side: BettingSide) -> Result<()> {
@@ -41,8 +42,8 @@ pub mod santa_vs_grinch {
         ctx.accounts.end_game()
     }
 
-    pub fn claim_winnings(ctx: Context<ClaimWinnings>) -> Result<()> {
-        ctx.accounts.claim_winnings()
+    pub fn claim_winnings(ctx: Context<ClaimWinnings>, bet_label: String) -> Result<()> {
+        ctx.accounts.claim_winnings(bet_label)
     }
 
     pub fn withdraw_fees<'info>(

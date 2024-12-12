@@ -130,7 +130,11 @@ describe("santa-vs-grinch", () => {
 
   it("Bet on Santa", async () => {
     const [user1UserStatePubkey, _bump] = web3.PublicKey.findProgramAddressSync(
-      [Buffer.from("user"), (accounts.user1 as Keypair).publicKey.toBuffer()],
+      [
+        Buffer.from("user"),
+        (accounts.user1 as Keypair).publicKey.toBuffer(),
+        Buffer.from("santa"),
+      ],
       program.programId
     );
 
@@ -139,13 +143,13 @@ describe("santa-vs-grinch", () => {
     );
 
     const adminFeePercentageBp = config.adminFeePercentageBp;
-    const bet = { santa: {} };
+    const betTag = "santa";
     const amount = new anchor.BN(5 * LAMPORTS_PER_SOL);
     const fee = calculateFee(amount, adminFeePercentageBp);
     const depositAmount = amount.sub(fee);
 
     const tx = await program.methods
-      .deposit(amount, bet)
+      .bet(amount, betTag)
       .accounts({
         user: (accounts.user1 as Keypair).publicKey,
         state: accounts.configState,
@@ -175,7 +179,6 @@ describe("santa-vs-grinch", () => {
       user1UserStateAccount.amount.toNumber(),
       depositAmount.toNumber()
     );
-    assert.deepEqual(user1UserStateAccount.side, { santa: {} });
     assert.deepEqual(
       user1UserStateAccount.owner,
       (accounts.user1 as Keypair).publicKey
@@ -184,7 +187,11 @@ describe("santa-vs-grinch", () => {
 
   it("Bet on Grinch", async () => {
     const [user2UserStatePubkey, _bump] = web3.PublicKey.findProgramAddressSync(
-      [Buffer.from("user"), (accounts.user2 as Keypair).publicKey.toBuffer()],
+      [
+        Buffer.from("user"),
+        (accounts.user2 as Keypair).publicKey.toBuffer(),
+        Buffer.from("grinch"),
+      ],
       program.programId
     );
 
@@ -197,13 +204,13 @@ describe("santa-vs-grinch", () => {
     );
 
     const adminFeePercentageBp = config.adminFeePercentageBp;
-    const bet = { grinch: {} };
+    const betTag = "grinch";
     const amount = new anchor.BN(5 * LAMPORTS_PER_SOL);
     const fee = calculateFee(amount, adminFeePercentageBp);
     const depositAmount = amount.sub(fee);
 
     const tx = await program.methods
-      .deposit(amount, bet)
+      .bet(amount, betTag)
       .accounts({
         user: (accounts.user2 as Keypair).publicKey,
         state: accounts.configState,
@@ -232,24 +239,68 @@ describe("santa-vs-grinch", () => {
       user2UserStateAccount.amount.toNumber(),
       depositAmount.toNumber()
     );
-    assert.deepEqual(user2UserStateAccount.side, { grinch: {} });
     assert.deepEqual(
       user2UserStateAccount.owner,
       (accounts.user2 as Keypair).publicKey
     );
   });
 
+  it("Bet on Invalid Side", async () => {
+    const [user2UserStatePubkey, _bump] = web3.PublicKey.findProgramAddressSync(
+      [
+        Buffer.from("user"),
+        (accounts.user2 as Keypair).publicKey.toBuffer(),
+        Buffer.from("helga"),
+      ],
+      program.programId
+    );
+
+    const betTag = "grinch";
+    const amount = new anchor.BN(5 * LAMPORTS_PER_SOL);
+
+    try {
+      const tx = await program.methods
+        .bet(amount, betTag)
+        .accounts({
+          user: (accounts.user2 as Keypair).publicKey,
+          state: accounts.configState,
+          vault: accounts.vault,
+          feesVault: accounts.feesVault,
+          userBet: user2UserStatePubkey,
+        })
+        .signers(accounts.user2)
+        .rpc();
+
+      expect.fail("Transaction should have failed");
+    } catch (err) {
+      if (err instanceof anchor.AnchorError) {
+        expect(err.error.errorCode.code).to.equal("ConstraintSeeds");
+        expect(err.error.errorCode.number).to.equal(2006); // Your error number
+        // Optionally check the error message
+        expect(err.error.errorMessage).to.equal(
+          "A seeds constraint was violated"
+        );
+      } else {
+        throw err;
+      }
+    }
+  });
+
   it("Bet with an Invalid Vault - Should Fail!", async () => {
     const [user1UserStatePubkey, _bump] = web3.PublicKey.findProgramAddressSync(
-      [Buffer.from("user"), (accounts.user1 as Keypair).publicKey.toBuffer()],
+      [
+        Buffer.from("user"),
+        (accounts.user1 as Keypair).publicKey.toBuffer(),
+        Buffer.from("santa"),
+      ],
       program.programId
     );
 
     const amount = new anchor.BN(5 * LAMPORTS_PER_SOL);
-    const bet = { santa: {} };
+    const betTag = "santa";
     try {
       const tx = await program.methods
-        .deposit(amount, bet)
+        .bet(amount, betTag)
         .accounts({
           user: (accounts.user1 as Keypair).publicKey,
           state: accounts.configState,
@@ -402,15 +453,19 @@ describe("santa-vs-grinch", () => {
 
   it("Bet on Grinch after game has ended - Should fail!", async () => {
     const [user2UserStatePubkey, _bump] = web3.PublicKey.findProgramAddressSync(
-      [Buffer.from("user"), (accounts.user2 as Keypair).publicKey.toBuffer()],
+      [
+        Buffer.from("user"),
+        (accounts.user2 as Keypair).publicKey.toBuffer(),
+        Buffer.from("santa"),
+      ],
       program.programId
     );
 
     try {
       const amount = new anchor.BN(5 * LAMPORTS_PER_SOL);
-      const bet = { santa: {} };
+      const betTag = "santa";
       const tx = await program.methods
-        .deposit(amount, bet)
+        .bet(amount, betTag)
         .accounts({
           user: (accounts.user2 as Keypair).publicKey,
           state: accounts.configState,
@@ -420,6 +475,8 @@ describe("santa-vs-grinch", () => {
         })
         .signers(accounts.user2)
         .rpc();
+
+      expect.fail("Transaction should have failed");
     } catch (err) {
       if (err instanceof anchor.AnchorError) {
         expect(err.error.errorCode.code).to.equal("GameEnded");
@@ -432,9 +489,95 @@ describe("santa-vs-grinch", () => {
     }
   });
 
+  it("User claim winnings - Invalid UserBet PDA - Should Fail!", async () => {
+    const [user1UserStatePubkey, _bump] = web3.PublicKey.findProgramAddressSync(
+      [
+        Buffer.from("user"),
+        (accounts.user1 as Keypair).publicKey.toBuffer(),
+        Buffer.from("klaus"),
+      ],
+      program.programId
+    );
+
+    const vaultBalanceOld = await provider.connection.getBalance(
+      accounts.vault
+    );
+
+    try {
+      const tx = await program.methods
+        .claimWinnings("santa")
+        .accounts({
+          claimer: (accounts.user1 as Keypair).publicKey,
+          state: accounts.configState,
+          vault: accounts.vault,
+          userBet: user1UserStatePubkey,
+        })
+        .signers(accounts.user1)
+        .rpc();
+
+      expect.fail("Transaction should have failed");
+    } catch (err) {
+      if (err instanceof anchor.AnchorError) {
+        expect(err.error.errorCode.code).to.equal("AccountNotInitialized");
+        expect(err.error.errorCode.number).to.equal(3012); // Your error number
+        // Optionally check the error message
+        expect(err.error.errorMessage).to.equal(
+          "The program expected this account to be already initialized"
+        );
+      } else {
+        throw err;
+      }
+    }
+  });
+
+  it("User claim winnings - Invalid Bet Tag - Should Fail!", async () => {
+    const [user1UserStatePubkey, _bump] = web3.PublicKey.findProgramAddressSync(
+      [
+        Buffer.from("user"),
+        (accounts.user1 as Keypair).publicKey.toBuffer(),
+        Buffer.from("santa"),
+      ],
+      program.programId
+    );
+
+    const vaultBalanceOld = await provider.connection.getBalance(
+      accounts.vault
+    );
+
+    try {
+      const tx = await program.methods
+        .claimWinnings("klaus")
+        .accounts({
+          claimer: (accounts.user1 as Keypair).publicKey,
+          state: accounts.configState,
+          vault: accounts.vault,
+          userBet: user1UserStatePubkey,
+        })
+        .signers(accounts.user1)
+        .rpc();
+
+      expect.fail("Transaction should have failed");
+    } catch (err) {
+      if (err instanceof anchor.AnchorError) {
+        expect(err.error.errorCode.code).to.equal("ConstraintSeeds");
+        expect(err.error.errorCode.number).to.equal(2006); // Your error number
+        // Optionally check the error message
+        expect(err.error.errorMessage).to.equal(
+          "A seeds constraint was violated"
+        );
+      } else {
+        throw err;
+      }
+    }
+  });
+
   it("User claim winnings - Loosing Bet", async () => {
     const [user1UserStatePubkey, _bump] = web3.PublicKey.findProgramAddressSync(
-      [Buffer.from("user"), (accounts.user1 as Keypair).publicKey.toBuffer()],
+      [
+        Buffer.from("user"),
+        (accounts.user1 as Keypair).publicKey.toBuffer(),
+        Buffer.from("santa"),
+      ],
       program.programId
     );
 
@@ -443,7 +586,7 @@ describe("santa-vs-grinch", () => {
     );
 
     const tx = await program.methods
-      .claimWinnings()
+      .claimWinnings("santa")
       .accounts({
         claimer: (accounts.user1 as Keypair).publicKey,
         state: accounts.configState,
@@ -464,9 +607,13 @@ describe("santa-vs-grinch", () => {
     assert.equal(vaultBalanceNew, vaultBalanceOld);
   });
 
-  it("User claim winnings - Winning Bet", async () => {
+  it("User claim winnings - Winning Bet - Grinch", async () => {
     const [user2UserStatePubkey, _bump] = web3.PublicKey.findProgramAddressSync(
-      [Buffer.from("user"), (accounts.user2 as Keypair).publicKey.toBuffer()],
+      [
+        Buffer.from("user"),
+        (accounts.user2 as Keypair).publicKey.toBuffer(),
+        Buffer.from("grinch"),
+      ],
       program.programId
     );
 
@@ -478,7 +625,7 @@ describe("santa-vs-grinch", () => {
     );
 
     const tx = await program.methods
-      .claimWinnings()
+      .claimWinnings("grinch")
       .accounts({
         claimer: (accounts.user2 as Keypair).publicKey,
         state: accounts.configState,
@@ -497,7 +644,7 @@ describe("santa-vs-grinch", () => {
 
     const winnings = calculateWinnings(
       userBet.amount.toNumber(),
-      userBet.side,
+      { grinch: {} },
       configState
     );
 
@@ -519,13 +666,17 @@ describe("santa-vs-grinch", () => {
 
   it("User claim winnings again - Winning Bet, Should Fail", async () => {
     const [user2UserStatePubkey, _bump] = web3.PublicKey.findProgramAddressSync(
-      [Buffer.from("user"), (accounts.user2 as Keypair).publicKey.toBuffer()],
+      [
+        Buffer.from("user"),
+        (accounts.user2 as Keypair).publicKey.toBuffer(),
+        Buffer.from("grinch"),
+      ],
       program.programId
     );
 
     try {
       const tx = await program.methods
-        .claimWinnings()
+        .claimWinnings("grinch")
         .accounts({
           claimer: (accounts.user2 as Keypair).publicKey,
           state: accounts.configState,

@@ -1,5 +1,6 @@
 use anchor_lang::prelude::*;
 
+use crate::constants::{GRINCH_BET_TAG, SANTA_BET_TAG};
 use crate::errors::SantaVsGrinchErrorCode;
 use crate::state::{BettingSide, Config};
 
@@ -9,6 +10,15 @@ pub fn assert_game_is_active(config: &Account<Config>) -> Result<()> {
         //TODO: hard code the 26th of December!
         Clock::get()?.unix_timestamp <= config.initialized_at + 86400 * 26, // December 26th
         SantaVsGrinchErrorCode::GameEnded
+    );
+
+    Ok(())
+}
+
+pub fn assert_bet_tag(bet_tag: &String) -> Result<()> {
+    require!(
+        bet_tag.eq(SANTA_BET_TAG) || bet_tag.eq(GRINCH_BET_TAG),
+        SantaVsGrinchErrorCode::InvalidBetTag
     );
 
     Ok(())

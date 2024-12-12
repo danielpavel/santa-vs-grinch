@@ -3,13 +3,17 @@ use anchor_lang::{
     system_program::{transfer, Transfer},
 };
 
-use crate::errors::SantaVsGrinchErrorCode;
+use crate::{
+    constants::SANTA_BET_TAG, errors::SantaVsGrinchErrorCode, state::BettingSide,
+    utils::assert_bet_tag,
+};
 use crate::{
     state::{Config, UserBet},
     utils::calculate_winnings,
 };
 
 #[derive(Accounts)]
+#[instruction(bet_tag: String)]
 pub struct ClaimWinnings<'info> {
     #[account(mut)]
     claimer: Signer<'info>,
@@ -32,7 +36,7 @@ pub struct ClaimWinnings<'info> {
 
     #[account(
         mut,
-        seeds = [b"user", claimer.key().as_ref()],
+        seeds = [b"user", claimer.key().as_ref(), bet_tag.as_bytes()],
         bump
     )]
     user_bet: Account<'info, UserBet>,
@@ -41,7 +45,9 @@ pub struct ClaimWinnings<'info> {
 }
 
 impl<'info> ClaimWinnings<'info> {
-    pub fn claim_winnings(&mut self) -> Result<()> {
+    pub fn claim_winnings(&mut self, bet_tag: String) -> Result<()> {
+        assert_bet_tag(&bet_tag)?;
+
         require!(self.state.game_ended, SantaVsGrinchErrorCode::GameNotEnded);
         require!(
             !self.user_bet.claimed,
@@ -51,8 +57,13 @@ impl<'info> ClaimWinnings<'info> {
         let user_bet = &mut self.user_bet;
         let config = &mut self.state;
 
+        let user_bet_side = if let SANTA_BET_TAG = bet_tag.as_str() {
+            BettingSide::Santa
+        } else {
+            BettingSide::Grinch
+        };
         // Calculate winnings based on the game outcome
-        let winning_amount = calculate_winnings(user_bet.amount, user_bet.side, config)?;
+        let winning_amount = calculate_winnings(user_bet.amount, user_bet_side, config)?;
 
         if winning_amount > 0 {
             let bump = [self.state.vault_bump];

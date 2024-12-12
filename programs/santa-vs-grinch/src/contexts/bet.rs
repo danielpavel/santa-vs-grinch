@@ -3,14 +3,19 @@ use anchor_lang::{
     system_program::{transfer, Transfer},
 };
 
-use crate::errors::SantaVsGrinchErrorCode;
 use crate::{
-    state::{BettingSide, Config, UserBet},
+    constants::{GRINCH_BET_TAG, SANTA_BET_TAG},
+    errors::SantaVsGrinchErrorCode,
+    utils::assert_bet_tag,
+};
+use crate::{
+    state::{Config, UserBet},
     utils::{assert_game_is_active, calculate_admin_fee},
 };
 
 #[derive(Accounts)]
-pub struct Deposit<'info> {
+#[instruction(_amount: u64, bet_tag: String)]
+pub struct Bet<'info> {
     #[account(mut)]
     user: Signer<'info>,
 
@@ -40,7 +45,7 @@ pub struct Deposit<'info> {
         init_if_needed,
         payer = user,
         space = 8 + UserBet::INIT_SPACE,
-        seeds = [b"user", user.key().as_ref()],
+        seeds = [b"user", user.key().as_ref(), bet_tag.as_bytes()],
         bump
     )]
     user_bet: Account<'info, UserBet>,
@@ -48,16 +53,17 @@ pub struct Deposit<'info> {
     system_program: Program<'info, System>,
 }
 
-impl<'info> Deposit<'info> {
-    pub fn deposit(&mut self, amount: u64, bet_side: BettingSide) -> Result<()> {
+impl<'info> Bet<'info> {
+    pub fn bet(&mut self, amount: u64, bet_tag: String) -> Result<()> {
         assert_game_is_active(&self.state)?;
+        assert_bet_tag(&bet_tag)?;
 
         let fee = calculate_admin_fee(amount, self.state.admin_fee_percentage_bp);
         let amount_to_deposit = amount
             .checked_sub(fee)
             .ok_or(ProgramError::ArithmeticOverflow)?;
 
-        // deposit to santa / grinch vault
+        // deposit to vault
         let accounts = Transfer {
             from: self.user.to_account_info(),
             to: self.vault.to_account_info(),
@@ -84,26 +90,23 @@ impl<'info> Deposit<'info> {
             .checked_add(amount_to_deposit)
             .ok_or(ProgramError::ArithmeticOverflow)?;
         user_bet.claimed = false;
-        user_bet.side = bet_side;
 
-        match bet_side {
-            BettingSide::Santa => {
+        match bet_tag.as_str() {
+            SANTA_BET_TAG => {
                 self.state.santa_pot = self
                     .state
                     .santa_pot
                     .checked_add(amount_to_deposit)
                     .ok_or(ProgramError::ArithmeticOverflow)?;
             }
-            BettingSide::Grinch => {
-                user_bet.side = BettingSide::Grinch;
+            GRINCH_BET_TAG => {
                 self.state.grinch_pot = self
                     .state
                     .grinch_pot
                     .checked_add(amount_to_deposit)
                     .ok_or(ProgramError::ArithmeticOverflow)?;
             }
-            // TODO: Not sure if user can sent an invalid `bet_side`
-            _ => return Err(anchor_lang::error!(SantaVsGrinchErrorCode::InvalidBetSide)),
+            _ => {}
         }
 
         Ok(())

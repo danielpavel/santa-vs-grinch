@@ -37,4 +37,7 @@ pub enum SantaVsGrinchErrorCode {
 
     #[msg("InvalidCreatorAddress")]
     InvalidCreatorAddress,
+
+    #[msg("InvalidBetTag")]
+    InvalidBetTag,
 }

@@ -1,9 +1,6 @@
 pub mod initialize;
 pub use initialize::*;
 
-pub mod deposit;
-pub use deposit::*;
-
 pub mod mystery_box;
 pub use mystery_box::*;
 
@@ -15,3 +12,6 @@ pub use claim_winnings::*;
 
 pub mod withdraw_fees;
 pub use withdraw_fees::*;
+
+pub mod bet;
+pub use bet::*;
