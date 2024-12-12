@@ -23,8 +23,12 @@ import {
   getBytesEncoder,
   getStructDecoder,
   getStructEncoder,
+  getU32Decoder,
+  getU32Encoder,
   getU64Decoder,
   getU64Encoder,
+  getU8Decoder,
+  getU8Encoder,
   transformEncoder,
   type Account,
   type Address,
@@ -38,12 +42,6 @@ import {
   type MaybeEncodedAccount,
   type ReadonlyUint8Array,
 } from '@solana/web3.js';
-import {
-  getBettingSideDecoder,
-  getBettingSideEncoder,
-  type BettingSide,
-  type BettingSideArgs,
-} from '../types';
 
 export const USER_BET_DISCRIMINATOR = new Uint8Array([
   180, 131, 8, 241, 60, 243, 46, 63,
@@ -57,15 +55,17 @@ export type UserBet = {
   discriminator: ReadonlyUint8Array;
   owner: Address;
   amount: bigint;
-  side: BettingSide;
   claimed: boolean;
+  mysterBoxCount: number;
+  bump: number;
 };
 
 export type UserBetArgs = {
   owner: Address;
   amount: number | bigint;
-  side: BettingSideArgs;
   claimed: boolean;
+  mysterBoxCount: number;
+  bump: number;
 };
 
 export function getUserBetEncoder(): Encoder<UserBetArgs> {
@@ -74,8 +74,9 @@ export function getUserBetEncoder(): Encoder<UserBetArgs> {
       ['discriminator', fixEncoderSize(getBytesEncoder(), 8)],
       ['owner', getAddressEncoder()],
       ['amount', getU64Encoder()],
-      ['side', getBettingSideEncoder()],
       ['claimed', getBooleanEncoder()],
+      ['mysterBoxCount', getU32Encoder()],
+      ['bump', getU8Encoder()],
     ]),
     (value) => ({ ...value, discriminator: USER_BET_DISCRIMINATOR })
   );
@@ -86,8 +87,9 @@ export function getUserBetDecoder(): Decoder<UserBet> {
     ['discriminator', fixDecoderSize(getBytesDecoder(), 8)],
     ['owner', getAddressDecoder()],
     ['amount', getU64Decoder()],
-    ['side', getBettingSideDecoder()],
     ['claimed', getBooleanDecoder()],
+    ['mysterBoxCount', getU32Decoder()],
+    ['bump', getU8Decoder()],
   ]);
 }
 

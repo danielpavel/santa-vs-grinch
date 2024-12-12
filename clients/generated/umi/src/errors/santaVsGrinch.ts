@@ -180,6 +180,19 @@ export class InvalidCreatorAddressError extends ProgramError {
 codeToErrorMap.set(0x177b, InvalidCreatorAddressError);
 nameToErrorMap.set('InvalidCreatorAddress', InvalidCreatorAddressError);
 
+/** InvalidBetTag: InvalidBetTag */
+export class InvalidBetTagError extends ProgramError {
+  override readonly name: string = 'InvalidBetTag';
+
+  readonly code: number = 0x177c; // 6012
+
+  constructor(program: Program, cause?: Error) {
+    super('InvalidBetTag', program, cause);
+  }
+}
+codeToErrorMap.set(0x177c, InvalidBetTagError);
+nameToErrorMap.set('InvalidBetTag', InvalidBetTagError);
+
 /**
  * Attempts to resolve a custom program error from the provided error code.
  * @category Errors

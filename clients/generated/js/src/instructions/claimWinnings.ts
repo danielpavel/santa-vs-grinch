@@ -7,6 +7,8 @@
  */
 
 import {
+  addDecoderSizePrefix,
+  addEncoderSizePrefix,
   combineCodec,
   fixDecoderSize,
   fixEncoderSize,
@@ -16,6 +18,10 @@ import {
   getProgramDerivedAddress,
   getStructDecoder,
   getStructEncoder,
+  getU32Decoder,
+  getU32Encoder,
+  getUtf8Decoder,
+  getUtf8Encoder,
   transformEncoder,
   type Address,
   type Codec,
@@ -35,6 +41,7 @@ import {
 import { SANTA_VS_GRINCH_PROGRAM_ADDRESS } from '../programs';
 import {
   expectAddress,
+  expectSome,
   getAccountMetaFactory,
   type ResolvedAccount,
 } from '../shared';
@@ -85,13 +92,17 @@ export type ClaimWinningsInstruction<
 
 export type ClaimWinningsInstructionData = {
   discriminator: ReadonlyUint8Array;
+  betTag: string;
 };
 
-export type ClaimWinningsInstructionDataArgs = {};
+export type ClaimWinningsInstructionDataArgs = { betTag: string };
 
 export function getClaimWinningsInstructionDataEncoder(): Encoder<ClaimWinningsInstructionDataArgs> {
   return transformEncoder(
-    getStructEncoder([['discriminator', fixEncoderSize(getBytesEncoder(), 8)]]),
+    getStructEncoder([
+      ['discriminator', fixEncoderSize(getBytesEncoder(), 8)],
+      ['betTag', addEncoderSizePrefix(getUtf8Encoder(), getU32Encoder())],
+    ]),
     (value) => ({ ...value, discriminator: CLAIM_WINNINGS_DISCRIMINATOR })
   );
 }
@@ -99,6 +110,7 @@ export function getClaimWinningsInstructionDataEncoder(): Encoder<ClaimWinningsI
 export function getClaimWinningsInstructionDataDecoder(): Decoder<ClaimWinningsInstructionData> {
   return getStructDecoder([
     ['discriminator', fixDecoderSize(getBytesDecoder(), 8)],
+    ['betTag', addDecoderSizePrefix(getUtf8Decoder(), getU32Decoder())],
   ]);
 }
 
@@ -124,6 +136,7 @@ export type ClaimWinningsAsyncInput<
   vault?: Address<TAccountVault>;
   userBet?: Address<TAccountUserBet>;
   systemProgram?: Address<TAccountSystemProgram>;
+  betTag: ClaimWinningsInstructionDataArgs['betTag'];
 };
 
 export async function getClaimWinningsInstructionAsync<
@@ -169,6 +182,9 @@ export async function getClaimWinningsInstructionAsync<
     ResolvedAccount
   >;
 
+  // Original args.
+  const args = { ...input };
+
   // Resolve default values.
   if (!accounts.vault.value) {
     accounts.vault.value = await getProgramDerivedAddress({
@@ -191,6 +207,9 @@ export async function getClaimWinningsInstructionAsync<
       seeds: [
         getBytesEncoder().encode(new Uint8Array([117, 115, 101, 114])),
         getAddressEncoder().encode(expectAddress(accounts.claimer.value)),
+        addEncoderSizePrefix(getUtf8Encoder(), getU32Encoder()).encode(
+          expectSome(args.betTag)
+        ),
       ],
     });
   }
@@ -209,7 +228,9 @@ export async function getClaimWinningsInstructionAsync<
       getAccountMeta(accounts.systemProgram),
     ],
     programAddress,
-    data: getClaimWinningsInstructionDataEncoder().encode({}),
+    data: getClaimWinningsInstructionDataEncoder().encode(
+      args as ClaimWinningsInstructionDataArgs
+    ),
   } as ClaimWinningsInstruction<
     TProgramAddress,
     TAccountClaimer,
@@ -234,6 +255,7 @@ export type ClaimWinningsInput<
   vault: Address<TAccountVault>;
   userBet: Address<TAccountUserBet>;
   systemProgram?: Address<TAccountSystemProgram>;
+  betTag: ClaimWinningsInstructionDataArgs['betTag'];
 };
 
 export function getClaimWinningsInstruction<
@@ -277,6 +299,9 @@ export function getClaimWinningsInstruction<
     ResolvedAccount
   >;
 
+  // Original args.
+  const args = { ...input };
+
   // Resolve default values.
   if (!accounts.systemProgram.value) {
     accounts.systemProgram.value =
@@ -293,7 +318,9 @@ export function getClaimWinningsInstruction<
       getAccountMeta(accounts.systemProgram),
     ],
     programAddress,
-    data: getClaimWinningsInstructionDataEncoder().encode({}),
+    data: getClaimWinningsInstructionDataEncoder().encode(
+      args as ClaimWinningsInstructionDataArgs
+    ),
   } as ClaimWinningsInstruction<
     TProgramAddress,
     TAccountClaimer,

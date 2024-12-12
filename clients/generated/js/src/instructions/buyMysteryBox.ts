@@ -7,6 +7,8 @@
  */
 
 import {
+  addDecoderSizePrefix,
+  addEncoderSizePrefix,
   combineCodec,
   fixDecoderSize,
   fixEncoderSize,
@@ -16,6 +18,10 @@ import {
   getProgramDerivedAddress,
   getStructDecoder,
   getStructEncoder,
+  getU32Decoder,
+  getU32Encoder,
+  getUtf8Decoder,
+  getUtf8Encoder,
   transformEncoder,
   type Address,
   type Codec,
@@ -35,15 +41,10 @@ import {
 import { SANTA_VS_GRINCH_PROGRAM_ADDRESS } from '../programs';
 import {
   expectAddress,
+  expectSome,
   getAccountMetaFactory,
   type ResolvedAccount,
 } from '../shared';
-import {
-  getBettingSideDecoder,
-  getBettingSideEncoder,
-  type BettingSide,
-  type BettingSideArgs,
-} from '../types';
 
 export const BUY_MYSTERY_BOX_DISCRIMINATOR = new Uint8Array([
   150, 161, 180, 220, 54, 128, 128, 242,
@@ -60,6 +61,7 @@ export type BuyMysteryBoxInstruction<
   TAccountUser extends string | IAccountMeta<string> = string,
   TAccountState extends string | IAccountMeta<string> = string,
   TAccountFeesVault extends string | IAccountMeta<string> = string,
+  TAccountUserBet extends string | IAccountMeta<string> = string,
   TAccountSystemProgram extends
     | string
     | IAccountMeta<string> = '11111111111111111111111111111111',
@@ -77,6 +79,9 @@ export type BuyMysteryBoxInstruction<
       TAccountFeesVault extends string
         ? WritableAccount<TAccountFeesVault>
         : TAccountFeesVault,
+      TAccountUserBet extends string
+        ? WritableAccount<TAccountUserBet>
+        : TAccountUserBet,
       TAccountSystemProgram extends string
         ? ReadonlyAccount<TAccountSystemProgram>
         : TAccountSystemProgram,
@@ -86,16 +91,16 @@ export type BuyMysteryBoxInstruction<
 
 export type BuyMysteryBoxInstructionData = {
   discriminator: ReadonlyUint8Array;
-  side: BettingSide;
+  betTag: string;
 };
 
-export type BuyMysteryBoxInstructionDataArgs = { side: BettingSideArgs };
+export type BuyMysteryBoxInstructionDataArgs = { betTag: string };
 
 export function getBuyMysteryBoxInstructionDataEncoder(): Encoder<BuyMysteryBoxInstructionDataArgs> {
   return transformEncoder(
     getStructEncoder([
       ['discriminator', fixEncoderSize(getBytesEncoder(), 8)],
-      ['side', getBettingSideEncoder()],
+      ['betTag', addEncoderSizePrefix(getUtf8Encoder(), getU32Encoder())],
     ]),
     (value) => ({ ...value, discriminator: BUY_MYSTERY_BOX_DISCRIMINATOR })
   );
@@ -104,7 +109,7 @@ export function getBuyMysteryBoxInstructionDataEncoder(): Encoder<BuyMysteryBoxI
 export function getBuyMysteryBoxInstructionDataDecoder(): Decoder<BuyMysteryBoxInstructionData> {
   return getStructDecoder([
     ['discriminator', fixDecoderSize(getBytesDecoder(), 8)],
-    ['side', getBettingSideDecoder()],
+    ['betTag', addDecoderSizePrefix(getUtf8Decoder(), getU32Decoder())],
   ]);
 }
 
@@ -122,19 +127,22 @@ export type BuyMysteryBoxAsyncInput<
   TAccountUser extends string = string,
   TAccountState extends string = string,
   TAccountFeesVault extends string = string,
+  TAccountUserBet extends string = string,
   TAccountSystemProgram extends string = string,
 > = {
   user: TransactionSigner<TAccountUser>;
   state: Address<TAccountState>;
   feesVault?: Address<TAccountFeesVault>;
+  userBet?: Address<TAccountUserBet>;
   systemProgram?: Address<TAccountSystemProgram>;
-  side: BuyMysteryBoxInstructionDataArgs['side'];
+  betTag: BuyMysteryBoxInstructionDataArgs['betTag'];
 };
 
 export async function getBuyMysteryBoxInstructionAsync<
   TAccountUser extends string,
   TAccountState extends string,
   TAccountFeesVault extends string,
+  TAccountUserBet extends string,
   TAccountSystemProgram extends string,
   TProgramAddress extends Address = typeof SANTA_VS_GRINCH_PROGRAM_ADDRESS,
 >(
@@ -142,6 +150,7 @@ export async function getBuyMysteryBoxInstructionAsync<
     TAccountUser,
     TAccountState,
     TAccountFeesVault,
+    TAccountUserBet,
     TAccountSystemProgram
   >,
   config?: { programAddress?: TProgramAddress }
@@ -151,6 +160,7 @@ export async function getBuyMysteryBoxInstructionAsync<
     TAccountUser,
     TAccountState,
     TAccountFeesVault,
+    TAccountUserBet,
     TAccountSystemProgram
   >
 > {
@@ -163,6 +173,7 @@ export async function getBuyMysteryBoxInstructionAsync<
     user: { value: input.user ?? null, isWritable: true },
     state: { value: input.state ?? null, isWritable: true },
     feesVault: { value: input.feesVault ?? null, isWritable: true },
+    userBet: { value: input.userBet ?? null, isWritable: true },
     systemProgram: { value: input.systemProgram ?? null, isWritable: false },
   };
   const accounts = originalAccounts as Record<
@@ -184,6 +195,18 @@ export async function getBuyMysteryBoxInstructionAsync<
       ],
     });
   }
+  if (!accounts.userBet.value) {
+    accounts.userBet.value = await getProgramDerivedAddress({
+      programAddress,
+      seeds: [
+        getBytesEncoder().encode(new Uint8Array([117, 115, 101, 114])),
+        getAddressEncoder().encode(expectAddress(accounts.user.value)),
+        addEncoderSizePrefix(getUtf8Encoder(), getU32Encoder()).encode(
+          expectSome(args.betTag)
+        ),
+      ],
+    });
+  }
   if (!accounts.systemProgram.value) {
     accounts.systemProgram.value =
       '11111111111111111111111111111111' as Address<'11111111111111111111111111111111'>;
@@ -195,6 +218,7 @@ export async function getBuyMysteryBoxInstructionAsync<
       getAccountMeta(accounts.user),
       getAccountMeta(accounts.state),
       getAccountMeta(accounts.feesVault),
+      getAccountMeta(accounts.userBet),
       getAccountMeta(accounts.systemProgram),
     ],
     programAddress,
@@ -206,6 +230,7 @@ export async function getBuyMysteryBoxInstructionAsync<
     TAccountUser,
     TAccountState,
     TAccountFeesVault,
+    TAccountUserBet,
     TAccountSystemProgram
   >;
 
@@ -216,19 +241,22 @@ export type BuyMysteryBoxInput<
   TAccountUser extends string = string,
   TAccountState extends string = string,
   TAccountFeesVault extends string = string,
+  TAccountUserBet extends string = string,
   TAccountSystemProgram extends string = string,
 > = {
   user: TransactionSigner<TAccountUser>;
   state: Address<TAccountState>;
   feesVault: Address<TAccountFeesVault>;
+  userBet: Address<TAccountUserBet>;
   systemProgram?: Address<TAccountSystemProgram>;
-  side: BuyMysteryBoxInstructionDataArgs['side'];
+  betTag: BuyMysteryBoxInstructionDataArgs['betTag'];
 };
 
 export function getBuyMysteryBoxInstruction<
   TAccountUser extends string,
   TAccountState extends string,
   TAccountFeesVault extends string,
+  TAccountUserBet extends string,
   TAccountSystemProgram extends string,
   TProgramAddress extends Address = typeof SANTA_VS_GRINCH_PROGRAM_ADDRESS,
 >(
@@ -236,6 +264,7 @@ export function getBuyMysteryBoxInstruction<
     TAccountUser,
     TAccountState,
     TAccountFeesVault,
+    TAccountUserBet,
     TAccountSystemProgram
   >,
   config?: { programAddress?: TProgramAddress }
@@ -244,6 +273,7 @@ export function getBuyMysteryBoxInstruction<
   TAccountUser,
   TAccountState,
   TAccountFeesVault,
+  TAccountUserBet,
   TAccountSystemProgram
 > {
   // Program address.
@@ -255,6 +285,7 @@ export function getBuyMysteryBoxInstruction<
     user: { value: input.user ?? null, isWritable: true },
     state: { value: input.state ?? null, isWritable: true },
     feesVault: { value: input.feesVault ?? null, isWritable: true },
+    userBet: { value: input.userBet ?? null, isWritable: true },
     systemProgram: { value: input.systemProgram ?? null, isWritable: false },
   };
   const accounts = originalAccounts as Record<
@@ -277,6 +308,7 @@ export function getBuyMysteryBoxInstruction<
       getAccountMeta(accounts.user),
       getAccountMeta(accounts.state),
       getAccountMeta(accounts.feesVault),
+      getAccountMeta(accounts.userBet),
       getAccountMeta(accounts.systemProgram),
     ],
     programAddress,
@@ -288,6 +320,7 @@ export function getBuyMysteryBoxInstruction<
     TAccountUser,
     TAccountState,
     TAccountFeesVault,
+    TAccountUserBet,
     TAccountSystemProgram
   >;
 
@@ -303,7 +336,8 @@ export type ParsedBuyMysteryBoxInstruction<
     user: TAccountMetas[0];
     state: TAccountMetas[1];
     feesVault: TAccountMetas[2];
-    systemProgram: TAccountMetas[3];
+    userBet: TAccountMetas[3];
+    systemProgram: TAccountMetas[4];
   };
   data: BuyMysteryBoxInstructionData;
 };
@@ -316,7 +350,7 @@ export function parseBuyMysteryBoxInstruction<
     IInstructionWithAccounts<TAccountMetas> &
     IInstructionWithData<Uint8Array>
 ): ParsedBuyMysteryBoxInstruction<TProgram, TAccountMetas> {
-  if (instruction.accounts.length < 4) {
+  if (instruction.accounts.length < 5) {
     // TODO: Coded error.
     throw new Error('Not enough accounts');
   }
@@ -332,6 +366,7 @@ export function parseBuyMysteryBoxInstruction<
       user: getNextAccount(),
       state: getNextAccount(),
       feesVault: getNextAccount(),
+      userBet: getNextAccount(),
       systemProgram: getNextAccount(),
     },
     data: getBuyMysteryBoxInstructionDataDecoder().decode(instruction.data),

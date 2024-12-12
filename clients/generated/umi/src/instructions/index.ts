@@ -6,9 +6,9 @@
  * @see https://github.com/kinobi-so/kinobi
  */
 
+export * from './bet';
 export * from './buyMysteryBox';
 export * from './claimWinnings';
-export * from './deposit';
 export * from './endGame';
 export * from './initialize';
 export * from './withdrawFees';

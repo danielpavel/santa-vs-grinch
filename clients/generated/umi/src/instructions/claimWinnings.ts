@@ -19,12 +19,14 @@ import {
   bytes,
   mapSerializer,
   publicKey as publicKeySerializer,
+  string,
   struct,
 } from '@metaplex-foundation/umi/serializers';
 import {
   ResolvedAccount,
   ResolvedAccountsWithIndices,
   expectPublicKey,
+  expectSome,
   getAccountMetasAndSigners,
 } from '../shared';
 
@@ -38,9 +40,12 @@ export type ClaimWinningsInstructionAccounts = {
 };
 
 // Data.
-export type ClaimWinningsInstructionData = { discriminator: Uint8Array };
+export type ClaimWinningsInstructionData = {
+  discriminator: Uint8Array;
+  betTag: string;
+};
 
-export type ClaimWinningsInstructionDataArgs = {};
+export type ClaimWinningsInstructionDataArgs = { betTag: string };
 
 export function getClaimWinningsInstructionDataSerializer(): Serializer<
   ClaimWinningsInstructionDataArgs,
@@ -52,7 +57,10 @@ export function getClaimWinningsInstructionDataSerializer(): Serializer<
     ClaimWinningsInstructionData
   >(
     struct<ClaimWinningsInstructionData>(
-      [['discriminator', bytes({ size: 8 })]],
+      [
+        ['discriminator', bytes({ size: 8 })],
+        ['betTag', string()],
+      ],
       { description: 'ClaimWinningsInstructionData' }
     ),
     (value) => ({
@@ -65,10 +73,13 @@ export function getClaimWinningsInstructionDataSerializer(): Serializer<
   >;
 }
 
+// Args.
+export type ClaimWinningsInstructionArgs = ClaimWinningsInstructionDataArgs;
+
 // Instruction.
 export function claimWinnings(
   context: Pick<Context, 'eddsa' | 'programs'>,
-  input: ClaimWinningsInstructionAccounts
+  input: ClaimWinningsInstructionAccounts & ClaimWinningsInstructionArgs
 ): TransactionBuilder {
   // Program ID.
   const programId = context.programs.getPublicKey(
@@ -105,6 +116,9 @@ export function claimWinnings(
     },
   } satisfies ResolvedAccountsWithIndices;
 
+  // Arguments.
+  const resolvedArgs: ClaimWinningsInstructionArgs = { ...input };
+
   // Default values.
   if (!resolvedAccounts.vault.value) {
     resolvedAccounts.vault.value = context.eddsa.findPda(programId, [
@@ -125,6 +139,7 @@ export function claimWinnings(
       publicKeySerializer().serialize(
         expectPublicKey(resolvedAccounts.claimer.value)
       ),
+      string().serialize(expectSome(resolvedArgs.betTag)),
     ]);
   }
   if (!resolvedAccounts.systemProgram.value) {
@@ -148,7 +163,9 @@ export function claimWinnings(
   );
 
   // Data.
-  const data = getClaimWinningsInstructionDataSerializer().serialize({});
+  const data = getClaimWinningsInstructionDataSerializer().serialize(
+    resolvedArgs as ClaimWinningsInstructionDataArgs
+  );
 
   // Bytes Created On Chain.
   const bytesCreatedOnChain = 0;

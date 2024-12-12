@@ -46,6 +46,9 @@ pub enum SantaVsGrinchError {
     /// 6011 - InvalidCreatorAddress
     #[error("InvalidCreatorAddress")]
     InvalidCreatorAddress = 0x177B,
+    /// 6012 - InvalidBetTag
+    #[error("InvalidBetTag")]
+    InvalidBetTag = 0x177C,
 }
 
 impl solana_program::program_error::PrintProgramError for SantaVsGrinchError {

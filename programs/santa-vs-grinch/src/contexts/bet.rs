@@ -54,7 +54,7 @@ pub struct Bet<'info> {
 }
 
 impl<'info> Bet<'info> {
-    pub fn bet(&mut self, amount: u64, bet_tag: String) -> Result<()> {
+    pub fn bet(&mut self, amount: u64, bet_tag: String, user_bet_bump: u8) -> Result<()> {
         assert_game_is_active(&self.state)?;
         assert_bet_tag(&bet_tag)?;
 
@@ -85,6 +85,7 @@ impl<'info> Bet<'info> {
 
         let user_bet = &mut self.user_bet;
         user_bet.owner = self.user.key();
+        user_bet.bump = user_bet_bump;
         user_bet.amount = user_bet
             .amount
             .checked_add(amount_to_deposit)

@@ -14,9 +14,9 @@ import {
   type ReadonlyUint8Array,
 } from '@solana/web3.js';
 import {
+  type ParsedBetInstruction,
   type ParsedBuyMysteryBoxInstruction,
   type ParsedClaimWinningsInstruction,
-  type ParsedDepositInstruction,
   type ParsedEndGameInstruction,
   type ParsedInitializeInstruction,
   type ParsedWithdrawFeesInstruction,
@@ -62,9 +62,9 @@ export function identifySantaVsGrinchAccount(
 }
 
 export enum SantaVsGrinchInstruction {
+  Bet,
   BuyMysteryBox,
   ClaimWinnings,
-  Deposit,
   EndGame,
   Initialize,
   WithdrawFees,
@@ -74,6 +74,17 @@ export function identifySantaVsGrinchInstruction(
   instruction: { data: ReadonlyUint8Array } | ReadonlyUint8Array
 ): SantaVsGrinchInstruction {
   const data = 'data' in instruction ? instruction.data : instruction;
+  if (
+    containsBytes(
+      data,
+      fixEncoderSize(getBytesEncoder(), 8).encode(
+        new Uint8Array([94, 203, 166, 126, 20, 243, 169, 82])
+      ),
+      0
+    )
+  ) {
+    return SantaVsGrinchInstruction.Bet;
+  }
   if (
     containsBytes(
       data,
@@ -95,17 +106,6 @@ export function identifySantaVsGrinchInstruction(
     )
   ) {
     return SantaVsGrinchInstruction.ClaimWinnings;
-  }
-  if (
-    containsBytes(
-      data,
-      fixEncoderSize(getBytesEncoder(), 8).encode(
-        new Uint8Array([242, 35, 198, 137, 82, 225, 242, 182])
-      ),
-      0
-    )
-  ) {
-    return SantaVsGrinchInstruction.Deposit;
   }
   if (
     containsBytes(
@@ -149,14 +149,14 @@ export type ParsedSantaVsGrinchInstruction<
   TProgram extends string = 'BZGCW6asmdxFTxo1xNpgBPnX9Seb5oLfPDEy3QqLpPPE',
 > =
   | ({
+      instructionType: SantaVsGrinchInstruction.Bet;
+    } & ParsedBetInstruction<TProgram>)
+  | ({
       instructionType: SantaVsGrinchInstruction.BuyMysteryBox;
     } & ParsedBuyMysteryBoxInstruction<TProgram>)
   | ({
       instructionType: SantaVsGrinchInstruction.ClaimWinnings;
     } & ParsedClaimWinningsInstruction<TProgram>)
-  | ({
-      instructionType: SantaVsGrinchInstruction.Deposit;
-    } & ParsedDepositInstruction<TProgram>)
   | ({
       instructionType: SantaVsGrinchInstruction.EndGame;
     } & ParsedEndGameInstruction<TProgram>)

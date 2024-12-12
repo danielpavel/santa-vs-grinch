@@ -7,10 +7,9 @@
 
 use borsh::BorshDeserialize;
 use borsh::BorshSerialize;
-use crate::generated::types::BettingSide;
 
 /// Accounts.
-pub struct Deposit {
+pub struct Bet {
       
               
           pub user: solana_program::pubkey::Pubkey,
@@ -31,12 +30,12 @@ pub struct Deposit {
           pub system_program: solana_program::pubkey::Pubkey,
       }
 
-impl Deposit {
-  pub fn instruction(&self, args: DepositInstructionArgs) -> solana_program::instruction::Instruction {
+impl Bet {
+  pub fn instruction(&self, args: BetInstructionArgs) -> solana_program::instruction::Instruction {
     self.instruction_with_remaining_accounts(args, &[])
   }
   #[allow(clippy::vec_init_then_push)]
-  pub fn instruction_with_remaining_accounts(&self, args: DepositInstructionArgs, remaining_accounts: &[solana_program::instruction::AccountMeta]) -> solana_program::instruction::Instruction {
+  pub fn instruction_with_remaining_accounts(&self, args: BetInstructionArgs, remaining_accounts: &[solana_program::instruction::AccountMeta]) -> solana_program::instruction::Instruction {
     let mut accounts = Vec::with_capacity(6 + remaining_accounts.len());
                             accounts.push(solana_program::instruction::AccountMeta::new(
             self.user,
@@ -63,7 +62,7 @@ impl Deposit {
             false
           ));
                       accounts.extend_from_slice(remaining_accounts);
-    let mut data = DepositInstructionData::new().try_to_vec().unwrap();
+    let mut data = BetInstructionData::new().try_to_vec().unwrap();
           let mut args = args.try_to_vec().unwrap();
       data.append(&mut args);
     
@@ -76,19 +75,19 @@ impl Deposit {
 }
 
 #[derive(BorshDeserialize, BorshSerialize)]
-pub struct DepositInstructionData {
+pub struct BetInstructionData {
             discriminator: [u8; 8],
                   }
 
-impl DepositInstructionData {
+impl BetInstructionData {
   pub fn new() -> Self {
     Self {
-                        discriminator: [242, 35, 198, 137, 82, 225, 242, 182],
+                        discriminator: [94, 203, 166, 126, 20, 243, 169, 82],
                                               }
   }
 }
 
-impl Default for DepositInstructionData {
+impl Default for BetInstructionData {
   fn default() -> Self {
     Self::new()
   }
@@ -96,13 +95,13 @@ impl Default for DepositInstructionData {
 
 #[derive(BorshSerialize, BorshDeserialize, Clone, Debug, Eq, PartialEq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
-pub struct DepositInstructionArgs {
+pub struct BetInstructionArgs {
                   pub amount: u64,
-                pub bet_side: BettingSide,
+                pub bet_tag: String,
       }
 
 
-/// Instruction builder for `Deposit`.
+/// Instruction builder for `Bet`.
 ///
 /// ### Accounts:
 ///
@@ -113,7 +112,7 @@ pub struct DepositInstructionArgs {
                 ///   4. `[writable]` user_bet
                 ///   5. `[optional]` system_program (default to `11111111111111111111111111111111`)
 #[derive(Clone, Debug, Default)]
-pub struct DepositBuilder {
+pub struct BetBuilder {
             user: Option<solana_program::pubkey::Pubkey>,
                 state: Option<solana_program::pubkey::Pubkey>,
                 vault: Option<solana_program::pubkey::Pubkey>,
@@ -121,11 +120,11 @@ pub struct DepositBuilder {
                 user_bet: Option<solana_program::pubkey::Pubkey>,
                 system_program: Option<solana_program::pubkey::Pubkey>,
                         amount: Option<u64>,
-                bet_side: Option<BettingSide>,
+                bet_tag: Option<String>,
         __remaining_accounts: Vec<solana_program::instruction::AccountMeta>,
 }
 
-impl DepositBuilder {
+impl BetBuilder {
   pub fn new() -> Self {
     Self::default()
   }
@@ -166,8 +165,8 @@ impl DepositBuilder {
         self
       }
                 #[inline(always)]
-      pub fn bet_side(&mut self, bet_side: BettingSide) -> &mut Self {
-        self.bet_side = Some(bet_side);
+      pub fn bet_tag(&mut self, bet_tag: String) -> &mut Self {
+        self.bet_tag = Some(bet_tag);
         self
       }
         /// Add an additional account to the instruction.
@@ -184,7 +183,7 @@ impl DepositBuilder {
   }
   #[allow(clippy::clone_on_copy)]
   pub fn instruction(&self) -> solana_program::instruction::Instruction {
-    let accounts = Deposit {
+    let accounts = Bet {
                               user: self.user.expect("user is not set"),
                                         state: self.state.expect("state is not set"),
                                         vault: self.vault.expect("vault is not set"),
@@ -192,17 +191,17 @@ impl DepositBuilder {
                                         user_bet: self.user_bet.expect("user_bet is not set"),
                                         system_program: self.system_program.unwrap_or(solana_program::pubkey!("11111111111111111111111111111111")),
                       };
-          let args = DepositInstructionArgs {
+          let args = BetInstructionArgs {
                                                               amount: self.amount.clone().expect("amount is not set"),
-                                                                  bet_side: self.bet_side.clone().expect("bet_side is not set"),
+                                                                  bet_tag: self.bet_tag.clone().expect("bet_tag is not set"),
                                     };
     
     accounts.instruction_with_remaining_accounts(args, &self.__remaining_accounts)
   }
 }
 
-  /// `deposit` CPI accounts.
-  pub struct DepositCpiAccounts<'a, 'b> {
+  /// `bet` CPI accounts.
+  pub struct BetCpiAccounts<'a, 'b> {
           
                     
               pub user: &'b solana_program::account_info::AccountInfo<'a>,
@@ -223,8 +222,8 @@ impl DepositBuilder {
               pub system_program: &'b solana_program::account_info::AccountInfo<'a>,
             }
 
-/// `deposit` CPI instruction.
-pub struct DepositCpi<'a, 'b> {
+/// `bet` CPI instruction.
+pub struct BetCpi<'a, 'b> {
   /// The program to invoke.
   pub __program: &'b solana_program::account_info::AccountInfo<'a>,
       
@@ -246,14 +245,14 @@ pub struct DepositCpi<'a, 'b> {
               
           pub system_program: &'b solana_program::account_info::AccountInfo<'a>,
             /// The arguments for the instruction.
-    pub __args: DepositInstructionArgs,
+    pub __args: BetInstructionArgs,
   }
 
-impl<'a, 'b> DepositCpi<'a, 'b> {
+impl<'a, 'b> BetCpi<'a, 'b> {
   pub fn new(
     program: &'b solana_program::account_info::AccountInfo<'a>,
-          accounts: DepositCpiAccounts<'a, 'b>,
-              args: DepositInstructionArgs,
+          accounts: BetCpiAccounts<'a, 'b>,
+              args: BetInstructionArgs,
       ) -> Self {
     Self {
       __program: program,
@@ -317,7 +316,7 @@ impl<'a, 'b> DepositCpi<'a, 'b> {
           is_writable: remaining_account.2,
       })
     });
-    let mut data = DepositInstructionData::new().try_to_vec().unwrap();
+    let mut data = BetInstructionData::new().try_to_vec().unwrap();
           let mut args = self.__args.try_to_vec().unwrap();
       data.append(&mut args);
     
@@ -344,7 +343,7 @@ impl<'a, 'b> DepositCpi<'a, 'b> {
   }
 }
 
-/// Instruction builder for `Deposit` via CPI.
+/// Instruction builder for `Bet` via CPI.
 ///
 /// ### Accounts:
 ///
@@ -355,13 +354,13 @@ impl<'a, 'b> DepositCpi<'a, 'b> {
                 ///   4. `[writable]` user_bet
           ///   5. `[]` system_program
 #[derive(Clone, Debug)]
-pub struct DepositCpiBuilder<'a, 'b> {
-  instruction: Box<DepositCpiBuilderInstruction<'a, 'b>>,
+pub struct BetCpiBuilder<'a, 'b> {
+  instruction: Box<BetCpiBuilderInstruction<'a, 'b>>,
 }
 
-impl<'a, 'b> DepositCpiBuilder<'a, 'b> {
+impl<'a, 'b> BetCpiBuilder<'a, 'b> {
   pub fn new(program: &'b solana_program::account_info::AccountInfo<'a>) -> Self {
-    let instruction = Box::new(DepositCpiBuilderInstruction {
+    let instruction = Box::new(BetCpiBuilderInstruction {
       __program: program,
               user: None,
               state: None,
@@ -370,7 +369,7 @@ impl<'a, 'b> DepositCpiBuilder<'a, 'b> {
               user_bet: None,
               system_program: None,
                                             amount: None,
-                                bet_side: None,
+                                bet_tag: None,
                     __remaining_accounts: Vec::new(),
     });
     Self { instruction }
@@ -411,8 +410,8 @@ impl<'a, 'b> DepositCpiBuilder<'a, 'b> {
         self
       }
                 #[inline(always)]
-      pub fn bet_side(&mut self, bet_side: BettingSide) -> &mut Self {
-        self.instruction.bet_side = Some(bet_side);
+      pub fn bet_tag(&mut self, bet_tag: String) -> &mut Self {
+        self.instruction.bet_tag = Some(bet_tag);
         self
       }
         /// Add an additional account to the instruction.
@@ -437,11 +436,11 @@ impl<'a, 'b> DepositCpiBuilder<'a, 'b> {
   #[allow(clippy::clone_on_copy)]
   #[allow(clippy::vec_init_then_push)]
   pub fn invoke_signed(&self, signers_seeds: &[&[&[u8]]]) -> solana_program::entrypoint::ProgramResult {
-          let args = DepositInstructionArgs {
+          let args = BetInstructionArgs {
                                                               amount: self.instruction.amount.clone().expect("amount is not set"),
-                                                                  bet_side: self.instruction.bet_side.clone().expect("bet_side is not set"),
+                                                                  bet_tag: self.instruction.bet_tag.clone().expect("bet_tag is not set"),
                                     };
-        let instruction = DepositCpi {
+        let instruction = BetCpi {
         __program: self.instruction.__program,
                   
           user: self.instruction.user.expect("user is not set"),
@@ -462,7 +461,7 @@ impl<'a, 'b> DepositCpiBuilder<'a, 'b> {
 }
 
 #[derive(Clone, Debug)]
-struct DepositCpiBuilderInstruction<'a, 'b> {
+struct BetCpiBuilderInstruction<'a, 'b> {
   __program: &'b solana_program::account_info::AccountInfo<'a>,
             user: Option<&'b solana_program::account_info::AccountInfo<'a>>,
                 state: Option<&'b solana_program::account_info::AccountInfo<'a>>,
@@ -471,7 +470,7 @@ struct DepositCpiBuilderInstruction<'a, 'b> {
                 user_bet: Option<&'b solana_program::account_info::AccountInfo<'a>>,
                 system_program: Option<&'b solana_program::account_info::AccountInfo<'a>>,
                         amount: Option<u64>,
-                bet_side: Option<BettingSide>,
+                bet_tag: Option<String>,
         /// Additional instruction accounts `(AccountInfo, is_writable, is_signer)`.
   __remaining_accounts: Vec<(&'b solana_program::account_info::AccountInfo<'a>, bool, bool)>,
 }

@@ -8,7 +8,7 @@ import {
   renderRustVisitor,
 } from "@kinobi-so/renderers";
 import { visit } from "@kinobi-so/visitors-core";
-import santaVsGrincIdl from "../target/idl/santa_vs_grinch.json"; // Note: if you initiated your project with a different name, you may need to change this path
+import santaVsGrincIdl from "../target/idl/santa_vs_grinch.json";
 
 async function generateClients() {
   const node = rootNodeFromAnchorWithoutDefaultVisitor(

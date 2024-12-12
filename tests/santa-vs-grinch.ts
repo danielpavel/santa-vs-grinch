@@ -327,7 +327,16 @@ describe("santa-vs-grinch", () => {
   });
 
   it("Buy a Mystery Box for Santa", async () => {
-    const side = { santa: {} }; // On-chain BettingSide Enum Representation
+    const [user1UserStatePubkey, _bump] = web3.PublicKey.findProgramAddressSync(
+      [
+        Buffer.from("user"),
+        (accounts.user1 as Keypair).publicKey.toBuffer(),
+        Buffer.from("santa"),
+      ],
+      program.programId
+    );
+
+    const side = "santa"; // On-chain BettingSide Enum Representation
     const BOX_PRICE = 500_000_000;
 
     let feeVaultBalanceOld = await provider.connection.getBalance(
@@ -340,6 +349,7 @@ describe("santa-vs-grinch", () => {
         user: (accounts.user1 as Keypair).publicKey,
         state: accounts.configState,
         feesVault: accounts.feesVault,
+        userBet: user1UserStatePubkey,
       })
       .signers([accounts.user1])
       .rpc();
@@ -354,22 +364,38 @@ describe("santa-vs-grinch", () => {
       accounts.feesVault
     );
     assert.equal(feeVaultBalance, feeVaultBalanceOld + BOX_PRICE);
+
+    const user1UserStateAccount = await program.account.userBet.fetch(
+      user1UserStatePubkey
+    );
+
+    assert.equal(user1UserStateAccount.mysterBoxCount, 1);
   });
 
   it("Buy 2 Mystery Boxes for Grinch", async () => {
-    const side = { grinch: {} }; // On-chain BettingSide Enum Representation
+    const [user2UserStatePubkey, _bump] = web3.PublicKey.findProgramAddressSync(
+      [
+        Buffer.from("user"),
+        (accounts.user2 as Keypair).publicKey.toBuffer(),
+        Buffer.from("grinch"),
+      ],
+      program.programId
+    );
+
+    const side = "grinch"; // On-chain BettingSide Enum Representation
     const BOX_PRICE = 500_000_000;
 
     let feeVaultBalanceOld = await provider.connection.getBalance(
       accounts.feesVault
     );
 
-    const tx = await program.methods
+    await program.methods
       .buyMysteryBox(side)
       .accounts({
         user: (accounts.user2 as Keypair).publicKey,
         state: accounts.configState,
         feesVault: accounts.feesVault,
+        userBet: user2UserStatePubkey,
       })
       .signers([accounts.user2])
       .rpc();
@@ -385,7 +411,13 @@ describe("santa-vs-grinch", () => {
     );
     assert.equal(feeVaultBalance, feeVaultBalanceOld + BOX_PRICE);
 
-    const tx2 = await program.methods
+    let user2UserStateAccount = await program.account.userBet.fetch(
+      user2UserStatePubkey
+    );
+
+    assert.equal(user2UserStateAccount.mysterBoxCount, 1);
+
+    await program.methods
       .buyMysteryBox(side)
       .accounts({
         user: (accounts.user2 as Keypair).publicKey,
@@ -405,6 +437,12 @@ describe("santa-vs-grinch", () => {
       accounts.feesVault as PublicKey
     );
     assert.equal(feeVaultBalanceNew, feeVaultBalance + BOX_PRICE);
+
+    user2UserStateAccount = await program.account.userBet.fetch(
+      user2UserStatePubkey
+    );
+
+    assert.equal(user2UserStateAccount.mysterBoxCount, 2);
   });
 
   it("End Game", async () => {
@@ -425,7 +463,16 @@ describe("santa-vs-grinch", () => {
   });
 
   it("Buy Mystery Box after game ended - should fail!", async () => {
-    const side = { santa: {} }; // On-chain BettingSide Enum Representation
+    const [user2UserStatePubkey, _bump] = web3.PublicKey.findProgramAddressSync(
+      [
+        Buffer.from("user"),
+        (accounts.user1 as Keypair).publicKey.toBuffer(),
+        Buffer.from("grinch"),
+      ],
+      program.programId
+    );
+
+    const side = "grinch";
 
     try {
       const tx = await program.methods

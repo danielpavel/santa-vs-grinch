@@ -38,6 +38,8 @@ export const SANTA_VS_GRINCH_ERROR__INVALID_TOTAL_SHARES = 0x1779; // 6009
 export const SANTA_VS_GRINCH_ERROR__TOO_MANY_CREATORS = 0x177a; // 6010
 /** InvalidCreatorAddress: InvalidCreatorAddress */
 export const SANTA_VS_GRINCH_ERROR__INVALID_CREATOR_ADDRESS = 0x177b; // 6011
+/** InvalidBetTag: InvalidBetTag */
+export const SANTA_VS_GRINCH_ERROR__INVALID_BET_TAG = 0x177c; // 6012
 
 export type SantaVsGrinchError =
   | typeof SANTA_VS_GRINCH_ERROR__ALREADY_CLAIMED
@@ -45,6 +47,7 @@ export type SantaVsGrinchError =
   | typeof SANTA_VS_GRINCH_ERROR__GAME_NOT_ENDED
   | typeof SANTA_VS_GRINCH_ERROR__INVALID_ADMIN
   | typeof SANTA_VS_GRINCH_ERROR__INVALID_BET_SIDE
+  | typeof SANTA_VS_GRINCH_ERROR__INVALID_BET_TAG
   | typeof SANTA_VS_GRINCH_ERROR__INVALID_CREATOR_ADDRESS
   | typeof SANTA_VS_GRINCH_ERROR__INVALID_FEES_VAULT_DEPOSIT_ACCOUNT
   | typeof SANTA_VS_GRINCH_ERROR__INVALID_PERCENTAGE
@@ -61,6 +64,7 @@ if (process.env.NODE_ENV !== 'production') {
     [SANTA_VS_GRINCH_ERROR__GAME_NOT_ENDED]: `Game has not ended yet`,
     [SANTA_VS_GRINCH_ERROR__INVALID_ADMIN]: `Invalid admin`,
     [SANTA_VS_GRINCH_ERROR__INVALID_BET_SIDE]: `Invalid bet side`,
+    [SANTA_VS_GRINCH_ERROR__INVALID_BET_TAG]: `InvalidBetTag`,
     [SANTA_VS_GRINCH_ERROR__INVALID_CREATOR_ADDRESS]: `InvalidCreatorAddress`,
     [SANTA_VS_GRINCH_ERROR__INVALID_FEES_VAULT_DEPOSIT_ACCOUNT]: `Invalid fees vault account`,
     [SANTA_VS_GRINCH_ERROR__INVALID_PERCENTAGE]: `Invalid Percentage`,

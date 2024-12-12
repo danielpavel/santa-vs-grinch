@@ -28,11 +28,11 @@ pub struct ClaimWinnings {
       }
 
 impl ClaimWinnings {
-  pub fn instruction(&self) -> solana_program::instruction::Instruction {
-    self.instruction_with_remaining_accounts(&[])
+  pub fn instruction(&self, args: ClaimWinningsInstructionArgs) -> solana_program::instruction::Instruction {
+    self.instruction_with_remaining_accounts(args, &[])
   }
   #[allow(clippy::vec_init_then_push)]
-  pub fn instruction_with_remaining_accounts(&self, remaining_accounts: &[solana_program::instruction::AccountMeta]) -> solana_program::instruction::Instruction {
+  pub fn instruction_with_remaining_accounts(&self, args: ClaimWinningsInstructionArgs, remaining_accounts: &[solana_program::instruction::AccountMeta]) -> solana_program::instruction::Instruction {
     let mut accounts = Vec::with_capacity(5 + remaining_accounts.len());
                             accounts.push(solana_program::instruction::AccountMeta::new(
             self.claimer,
@@ -55,7 +55,9 @@ impl ClaimWinnings {
             false
           ));
                       accounts.extend_from_slice(remaining_accounts);
-    let data = ClaimWinningsInstructionData::new().try_to_vec().unwrap();
+    let mut data = ClaimWinningsInstructionData::new().try_to_vec().unwrap();
+          let mut args = args.try_to_vec().unwrap();
+      data.append(&mut args);
     
     solana_program::instruction::Instruction {
       program_id: crate::SANTA_VS_GRINCH_ID,
@@ -68,13 +70,13 @@ impl ClaimWinnings {
 #[derive(BorshDeserialize, BorshSerialize)]
 pub struct ClaimWinningsInstructionData {
             discriminator: [u8; 8],
-      }
+            }
 
 impl ClaimWinningsInstructionData {
   pub fn new() -> Self {
     Self {
                         discriminator: [161, 215, 24, 59, 14, 236, 242, 221],
-                  }
+                                }
   }
 }
 
@@ -84,6 +86,11 @@ impl Default for ClaimWinningsInstructionData {
   }
 }
 
+#[derive(BorshSerialize, BorshDeserialize, Clone, Debug, Eq, PartialEq)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+pub struct ClaimWinningsInstructionArgs {
+                  pub bet_tag: String,
+      }
 
 
 /// Instruction builder for `ClaimWinnings`.
@@ -102,7 +109,8 @@ pub struct ClaimWinningsBuilder {
                 vault: Option<solana_program::pubkey::Pubkey>,
                 user_bet: Option<solana_program::pubkey::Pubkey>,
                 system_program: Option<solana_program::pubkey::Pubkey>,
-                __remaining_accounts: Vec<solana_program::instruction::AccountMeta>,
+                        bet_tag: Option<String>,
+        __remaining_accounts: Vec<solana_program::instruction::AccountMeta>,
 }
 
 impl ClaimWinningsBuilder {
@@ -135,7 +143,12 @@ impl ClaimWinningsBuilder {
                         self.system_program = Some(system_program);
                     self
     }
-            /// Add an additional account to the instruction.
+                    #[inline(always)]
+      pub fn bet_tag(&mut self, bet_tag: String) -> &mut Self {
+        self.bet_tag = Some(bet_tag);
+        self
+      }
+        /// Add an additional account to the instruction.
   #[inline(always)]
   pub fn add_remaining_account(&mut self, account: solana_program::instruction::AccountMeta) -> &mut Self {
     self.__remaining_accounts.push(account);
@@ -156,8 +169,11 @@ impl ClaimWinningsBuilder {
                                         user_bet: self.user_bet.expect("user_bet is not set"),
                                         system_program: self.system_program.unwrap_or(solana_program::pubkey!("11111111111111111111111111111111")),
                       };
+          let args = ClaimWinningsInstructionArgs {
+                                                              bet_tag: self.bet_tag.clone().expect("bet_tag is not set"),
+                                    };
     
-    accounts.instruction_with_remaining_accounts(&self.__remaining_accounts)
+    accounts.instruction_with_remaining_accounts(args, &self.__remaining_accounts)
   }
 }
 
@@ -199,13 +215,16 @@ pub struct ClaimWinningsCpi<'a, 'b> {
           
               
           pub system_program: &'b solana_program::account_info::AccountInfo<'a>,
-        }
+            /// The arguments for the instruction.
+    pub __args: ClaimWinningsInstructionArgs,
+  }
 
 impl<'a, 'b> ClaimWinningsCpi<'a, 'b> {
   pub fn new(
     program: &'b solana_program::account_info::AccountInfo<'a>,
           accounts: ClaimWinningsCpiAccounts<'a, 'b>,
-          ) -> Self {
+              args: ClaimWinningsInstructionArgs,
+      ) -> Self {
     Self {
       __program: program,
               claimer: accounts.claimer,
@@ -213,7 +232,8 @@ impl<'a, 'b> ClaimWinningsCpi<'a, 'b> {
               vault: accounts.vault,
               user_bet: accounts.user_bet,
               system_program: accounts.system_program,
-                }
+                    __args: args,
+          }
   }
   #[inline(always)]
   pub fn invoke(&self) -> solana_program::entrypoint::ProgramResult {
@@ -262,7 +282,9 @@ impl<'a, 'b> ClaimWinningsCpi<'a, 'b> {
           is_writable: remaining_account.2,
       })
     });
-    let data = ClaimWinningsInstructionData::new().try_to_vec().unwrap();
+    let mut data = ClaimWinningsInstructionData::new().try_to_vec().unwrap();
+          let mut args = self.__args.try_to_vec().unwrap();
+      data.append(&mut args);
     
     let instruction = solana_program::instruction::Instruction {
       program_id: crate::SANTA_VS_GRINCH_ID,
@@ -309,7 +331,8 @@ impl<'a, 'b> ClaimWinningsCpiBuilder<'a, 'b> {
               vault: None,
               user_bet: None,
               system_program: None,
-                                __remaining_accounts: Vec::new(),
+                                            bet_tag: None,
+                    __remaining_accounts: Vec::new(),
     });
     Self { instruction }
   }
@@ -338,7 +361,12 @@ impl<'a, 'b> ClaimWinningsCpiBuilder<'a, 'b> {
                         self.instruction.system_program = Some(system_program);
                     self
     }
-            /// Add an additional account to the instruction.
+                    #[inline(always)]
+      pub fn bet_tag(&mut self, bet_tag: String) -> &mut Self {
+        self.instruction.bet_tag = Some(bet_tag);
+        self
+      }
+        /// Add an additional account to the instruction.
   #[inline(always)]
   pub fn add_remaining_account(&mut self, account: &'b solana_program::account_info::AccountInfo<'a>, is_writable: bool, is_signer: bool) -> &mut Self {
     self.instruction.__remaining_accounts.push((account, is_writable, is_signer));
@@ -360,6 +388,9 @@ impl<'a, 'b> ClaimWinningsCpiBuilder<'a, 'b> {
   #[allow(clippy::clone_on_copy)]
   #[allow(clippy::vec_init_then_push)]
   pub fn invoke_signed(&self, signers_seeds: &[&[&[u8]]]) -> solana_program::entrypoint::ProgramResult {
+          let args = ClaimWinningsInstructionArgs {
+                                                              bet_tag: self.instruction.bet_tag.clone().expect("bet_tag is not set"),
+                                    };
         let instruction = ClaimWinningsCpi {
         __program: self.instruction.__program,
                   
@@ -372,7 +403,8 @@ impl<'a, 'b> ClaimWinningsCpiBuilder<'a, 'b> {
           user_bet: self.instruction.user_bet.expect("user_bet is not set"),
                   
           system_program: self.instruction.system_program.expect("system_program is not set"),
-                    };
+                          __args: args,
+            };
     instruction.invoke_signed_with_remaining_accounts(signers_seeds, &self.instruction.__remaining_accounts)
   }
 }
@@ -385,7 +417,8 @@ struct ClaimWinningsCpiBuilderInstruction<'a, 'b> {
                 vault: Option<&'b solana_program::account_info::AccountInfo<'a>>,
                 user_bet: Option<&'b solana_program::account_info::AccountInfo<'a>>,
                 system_program: Option<&'b solana_program::account_info::AccountInfo<'a>>,
-                /// Additional instruction accounts `(AccountInfo, is_writable, is_signer)`.
+                        bet_tag: Option<String>,
+        /// Additional instruction accounts `(AccountInfo, is_writable, is_signer)`.
   __remaining_accounts: Vec<(&'b solana_program::account_info::AccountInfo<'a>, bool, bool)>,
 }
 

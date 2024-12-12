@@ -7,7 +7,6 @@
 
 use borsh::BorshDeserialize;
 use borsh::BorshSerialize;
-use crate::generated::types::BettingSide;
 
 /// Accounts.
 pub struct BuyMysteryBox {
@@ -22,6 +21,9 @@ pub struct BuyMysteryBox {
           pub fees_vault: solana_program::pubkey::Pubkey,
           
               
+          pub user_bet: solana_program::pubkey::Pubkey,
+          
+              
           pub system_program: solana_program::pubkey::Pubkey,
       }
 
@@ -31,7 +33,7 @@ impl BuyMysteryBox {
   }
   #[allow(clippy::vec_init_then_push)]
   pub fn instruction_with_remaining_accounts(&self, args: BuyMysteryBoxInstructionArgs, remaining_accounts: &[solana_program::instruction::AccountMeta]) -> solana_program::instruction::Instruction {
-    let mut accounts = Vec::with_capacity(4 + remaining_accounts.len());
+    let mut accounts = Vec::with_capacity(5 + remaining_accounts.len());
                             accounts.push(solana_program::instruction::AccountMeta::new(
             self.user,
             true
@@ -42,6 +44,10 @@ impl BuyMysteryBox {
           ));
                                           accounts.push(solana_program::instruction::AccountMeta::new(
             self.fees_vault,
+            false
+          ));
+                                          accounts.push(solana_program::instruction::AccountMeta::new(
+            self.user_bet,
             false
           ));
                                           accounts.push(solana_program::instruction::AccountMeta::new_readonly(
@@ -83,7 +89,7 @@ impl Default for BuyMysteryBoxInstructionData {
 #[derive(BorshSerialize, BorshDeserialize, Clone, Debug, Eq, PartialEq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct BuyMysteryBoxInstructionArgs {
-                  pub side: BettingSide,
+                  pub bet_tag: String,
       }
 
 
@@ -94,14 +100,16 @@ pub struct BuyMysteryBoxInstructionArgs {
                       ///   0. `[writable, signer]` user
                 ///   1. `[writable]` state
                 ///   2. `[writable]` fees_vault
-                ///   3. `[optional]` system_program (default to `11111111111111111111111111111111`)
+                ///   3. `[writable]` user_bet
+                ///   4. `[optional]` system_program (default to `11111111111111111111111111111111`)
 #[derive(Clone, Debug, Default)]
 pub struct BuyMysteryBoxBuilder {
             user: Option<solana_program::pubkey::Pubkey>,
                 state: Option<solana_program::pubkey::Pubkey>,
                 fees_vault: Option<solana_program::pubkey::Pubkey>,
+                user_bet: Option<solana_program::pubkey::Pubkey>,
                 system_program: Option<solana_program::pubkey::Pubkey>,
-                        side: Option<BettingSide>,
+                        bet_tag: Option<String>,
         __remaining_accounts: Vec<solana_program::instruction::AccountMeta>,
 }
 
@@ -124,6 +132,11 @@ impl BuyMysteryBoxBuilder {
                         self.fees_vault = Some(fees_vault);
                     self
     }
+            #[inline(always)]
+    pub fn user_bet(&mut self, user_bet: solana_program::pubkey::Pubkey) -> &mut Self {
+                        self.user_bet = Some(user_bet);
+                    self
+    }
             /// `[optional account, default to '11111111111111111111111111111111']`
 #[inline(always)]
     pub fn system_program(&mut self, system_program: solana_program::pubkey::Pubkey) -> &mut Self {
@@ -131,8 +144,8 @@ impl BuyMysteryBoxBuilder {
                     self
     }
                     #[inline(always)]
-      pub fn side(&mut self, side: BettingSide) -> &mut Self {
-        self.side = Some(side);
+      pub fn bet_tag(&mut self, bet_tag: String) -> &mut Self {
+        self.bet_tag = Some(bet_tag);
         self
       }
         /// Add an additional account to the instruction.
@@ -153,10 +166,11 @@ impl BuyMysteryBoxBuilder {
                               user: self.user.expect("user is not set"),
                                         state: self.state.expect("state is not set"),
                                         fees_vault: self.fees_vault.expect("fees_vault is not set"),
+                                        user_bet: self.user_bet.expect("user_bet is not set"),
                                         system_program: self.system_program.unwrap_or(solana_program::pubkey!("11111111111111111111111111111111")),
                       };
           let args = BuyMysteryBoxInstructionArgs {
-                                                              side: self.side.clone().expect("side is not set"),
+                                                              bet_tag: self.bet_tag.clone().expect("bet_tag is not set"),
                                     };
     
     accounts.instruction_with_remaining_accounts(args, &self.__remaining_accounts)
@@ -174,6 +188,9 @@ impl BuyMysteryBoxBuilder {
                 
                     
               pub fees_vault: &'b solana_program::account_info::AccountInfo<'a>,
+                
+                    
+              pub user_bet: &'b solana_program::account_info::AccountInfo<'a>,
                 
                     
               pub system_program: &'b solana_program::account_info::AccountInfo<'a>,
@@ -194,6 +211,9 @@ pub struct BuyMysteryBoxCpi<'a, 'b> {
           pub fees_vault: &'b solana_program::account_info::AccountInfo<'a>,
           
               
+          pub user_bet: &'b solana_program::account_info::AccountInfo<'a>,
+          
+              
           pub system_program: &'b solana_program::account_info::AccountInfo<'a>,
             /// The arguments for the instruction.
     pub __args: BuyMysteryBoxInstructionArgs,
@@ -210,6 +230,7 @@ impl<'a, 'b> BuyMysteryBoxCpi<'a, 'b> {
               user: accounts.user,
               state: accounts.state,
               fees_vault: accounts.fees_vault,
+              user_bet: accounts.user_bet,
               system_program: accounts.system_program,
                     __args: args,
           }
@@ -233,7 +254,7 @@ impl<'a, 'b> BuyMysteryBoxCpi<'a, 'b> {
     signers_seeds: &[&[&[u8]]],
     remaining_accounts: &[(&'b solana_program::account_info::AccountInfo<'a>, bool, bool)]
   ) -> solana_program::entrypoint::ProgramResult {
-    let mut accounts = Vec::with_capacity(4 + remaining_accounts.len());
+    let mut accounts = Vec::with_capacity(5 + remaining_accounts.len());
                             accounts.push(solana_program::instruction::AccountMeta::new(
             *self.user.key,
             true
@@ -244,6 +265,10 @@ impl<'a, 'b> BuyMysteryBoxCpi<'a, 'b> {
           ));
                                           accounts.push(solana_program::instruction::AccountMeta::new(
             *self.fees_vault.key,
+            false
+          ));
+                                          accounts.push(solana_program::instruction::AccountMeta::new(
+            *self.user_bet.key,
             false
           ));
                                           accounts.push(solana_program::instruction::AccountMeta::new_readonly(
@@ -266,11 +291,12 @@ impl<'a, 'b> BuyMysteryBoxCpi<'a, 'b> {
       accounts,
       data,
     };
-    let mut account_infos = Vec::with_capacity(4 + 1 + remaining_accounts.len());
+    let mut account_infos = Vec::with_capacity(5 + 1 + remaining_accounts.len());
     account_infos.push(self.__program.clone());
                   account_infos.push(self.user.clone());
                         account_infos.push(self.state.clone());
                         account_infos.push(self.fees_vault.clone());
+                        account_infos.push(self.user_bet.clone());
                         account_infos.push(self.system_program.clone());
               remaining_accounts.iter().for_each(|remaining_account| account_infos.push(remaining_account.0.clone()));
 
@@ -289,7 +315,8 @@ impl<'a, 'b> BuyMysteryBoxCpi<'a, 'b> {
                       ///   0. `[writable, signer]` user
                 ///   1. `[writable]` state
                 ///   2. `[writable]` fees_vault
-          ///   3. `[]` system_program
+                ///   3. `[writable]` user_bet
+          ///   4. `[]` system_program
 #[derive(Clone, Debug)]
 pub struct BuyMysteryBoxCpiBuilder<'a, 'b> {
   instruction: Box<BuyMysteryBoxCpiBuilderInstruction<'a, 'b>>,
@@ -302,8 +329,9 @@ impl<'a, 'b> BuyMysteryBoxCpiBuilder<'a, 'b> {
               user: None,
               state: None,
               fees_vault: None,
+              user_bet: None,
               system_program: None,
-                                            side: None,
+                                            bet_tag: None,
                     __remaining_accounts: Vec::new(),
     });
     Self { instruction }
@@ -324,13 +352,18 @@ impl<'a, 'b> BuyMysteryBoxCpiBuilder<'a, 'b> {
                     self
     }
       #[inline(always)]
+    pub fn user_bet(&mut self, user_bet: &'b solana_program::account_info::AccountInfo<'a>) -> &mut Self {
+                        self.instruction.user_bet = Some(user_bet);
+                    self
+    }
+      #[inline(always)]
     pub fn system_program(&mut self, system_program: &'b solana_program::account_info::AccountInfo<'a>) -> &mut Self {
                         self.instruction.system_program = Some(system_program);
                     self
     }
                     #[inline(always)]
-      pub fn side(&mut self, side: BettingSide) -> &mut Self {
-        self.instruction.side = Some(side);
+      pub fn bet_tag(&mut self, bet_tag: String) -> &mut Self {
+        self.instruction.bet_tag = Some(bet_tag);
         self
       }
         /// Add an additional account to the instruction.
@@ -356,7 +389,7 @@ impl<'a, 'b> BuyMysteryBoxCpiBuilder<'a, 'b> {
   #[allow(clippy::vec_init_then_push)]
   pub fn invoke_signed(&self, signers_seeds: &[&[&[u8]]]) -> solana_program::entrypoint::ProgramResult {
           let args = BuyMysteryBoxInstructionArgs {
-                                                              side: self.instruction.side.clone().expect("side is not set"),
+                                                              bet_tag: self.instruction.bet_tag.clone().expect("bet_tag is not set"),
                                     };
         let instruction = BuyMysteryBoxCpi {
         __program: self.instruction.__program,
@@ -366,6 +399,8 @@ impl<'a, 'b> BuyMysteryBoxCpiBuilder<'a, 'b> {
           state: self.instruction.state.expect("state is not set"),
                   
           fees_vault: self.instruction.fees_vault.expect("fees_vault is not set"),
+                  
+          user_bet: self.instruction.user_bet.expect("user_bet is not set"),
                   
           system_program: self.instruction.system_program.expect("system_program is not set"),
                           __args: args,
@@ -380,8 +415,9 @@ struct BuyMysteryBoxCpiBuilderInstruction<'a, 'b> {
             user: Option<&'b solana_program::account_info::AccountInfo<'a>>,
                 state: Option<&'b solana_program::account_info::AccountInfo<'a>>,
                 fees_vault: Option<&'b solana_program::account_info::AccountInfo<'a>>,
+                user_bet: Option<&'b solana_program::account_info::AccountInfo<'a>>,
                 system_program: Option<&'b solana_program::account_info::AccountInfo<'a>>,
-                        side: Option<BettingSide>,
+                        bet_tag: Option<String>,
         /// Additional instruction accounts `(AccountInfo, is_writable, is_signer)`.
   __remaining_accounts: Vec<(&'b solana_program::account_info::AccountInfo<'a>, bool, bool)>,
 }

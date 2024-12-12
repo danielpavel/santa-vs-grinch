@@ -6,7 +6,6 @@
 //!
 
 use solana_program::pubkey::Pubkey;
-use crate::generated::types::BettingSide;
 use borsh::BorshSerialize;
 use borsh::BorshDeserialize;
 
@@ -18,8 +17,9 @@ pub discriminator: [u8; 8],
 #[cfg_attr(feature = "serde", serde(with = "serde_with::As::<serde_with::DisplayFromStr>"))]
 pub owner: Pubkey,
 pub amount: u64,
-pub side: BettingSide,
 pub claimed: bool,
+pub myster_box_count: u32,
+pub bump: u8,
 }
 
 

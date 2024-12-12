@@ -7,6 +7,8 @@
  */
 
 import {
+  addDecoderSizePrefix,
+  addEncoderSizePrefix,
   combineCodec,
   fixDecoderSize,
   fixEncoderSize,
@@ -16,8 +18,12 @@ import {
   getProgramDerivedAddress,
   getStructDecoder,
   getStructEncoder,
+  getU32Decoder,
+  getU32Encoder,
   getU64Decoder,
   getU64Encoder,
+  getUtf8Decoder,
+  getUtf8Encoder,
   transformEncoder,
   type Address,
   type Codec,
@@ -37,25 +43,20 @@ import {
 import { SANTA_VS_GRINCH_PROGRAM_ADDRESS } from '../programs';
 import {
   expectAddress,
+  expectSome,
   getAccountMetaFactory,
   type ResolvedAccount,
 } from '../shared';
-import {
-  getBettingSideDecoder,
-  getBettingSideEncoder,
-  type BettingSide,
-  type BettingSideArgs,
-} from '../types';
 
-export const DEPOSIT_DISCRIMINATOR = new Uint8Array([
-  242, 35, 198, 137, 82, 225, 242, 182,
+export const BET_DISCRIMINATOR = new Uint8Array([
+  94, 203, 166, 126, 20, 243, 169, 82,
 ]);
 
-export function getDepositDiscriminatorBytes() {
-  return fixEncoderSize(getBytesEncoder(), 8).encode(DEPOSIT_DISCRIMINATOR);
+export function getBetDiscriminatorBytes() {
+  return fixEncoderSize(getBytesEncoder(), 8).encode(BET_DISCRIMINATOR);
 }
 
-export type DepositInstruction<
+export type BetInstruction<
   TProgram extends string = typeof SANTA_VS_GRINCH_PROGRAM_ADDRESS,
   TAccountUser extends string | IAccountMeta<string> = string,
   TAccountState extends string | IAccountMeta<string> = string,
@@ -92,47 +93,47 @@ export type DepositInstruction<
     ]
   >;
 
-export type DepositInstructionData = {
+export type BetInstructionData = {
   discriminator: ReadonlyUint8Array;
   amount: bigint;
-  betSide: BettingSide;
+  betTag: string;
 };
 
-export type DepositInstructionDataArgs = {
+export type BetInstructionDataArgs = {
   amount: number | bigint;
-  betSide: BettingSideArgs;
+  betTag: string;
 };
 
-export function getDepositInstructionDataEncoder(): Encoder<DepositInstructionDataArgs> {
+export function getBetInstructionDataEncoder(): Encoder<BetInstructionDataArgs> {
   return transformEncoder(
     getStructEncoder([
       ['discriminator', fixEncoderSize(getBytesEncoder(), 8)],
       ['amount', getU64Encoder()],
-      ['betSide', getBettingSideEncoder()],
+      ['betTag', addEncoderSizePrefix(getUtf8Encoder(), getU32Encoder())],
     ]),
-    (value) => ({ ...value, discriminator: DEPOSIT_DISCRIMINATOR })
+    (value) => ({ ...value, discriminator: BET_DISCRIMINATOR })
   );
 }
 
-export function getDepositInstructionDataDecoder(): Decoder<DepositInstructionData> {
+export function getBetInstructionDataDecoder(): Decoder<BetInstructionData> {
   return getStructDecoder([
     ['discriminator', fixDecoderSize(getBytesDecoder(), 8)],
     ['amount', getU64Decoder()],
-    ['betSide', getBettingSideDecoder()],
+    ['betTag', addDecoderSizePrefix(getUtf8Decoder(), getU32Decoder())],
   ]);
 }
 
-export function getDepositInstructionDataCodec(): Codec<
-  DepositInstructionDataArgs,
-  DepositInstructionData
+export function getBetInstructionDataCodec(): Codec<
+  BetInstructionDataArgs,
+  BetInstructionData
 > {
   return combineCodec(
-    getDepositInstructionDataEncoder(),
-    getDepositInstructionDataDecoder()
+    getBetInstructionDataEncoder(),
+    getBetInstructionDataDecoder()
   );
 }
 
-export type DepositAsyncInput<
+export type BetAsyncInput<
   TAccountUser extends string = string,
   TAccountState extends string = string,
   TAccountVault extends string = string,
@@ -146,11 +147,11 @@ export type DepositAsyncInput<
   feesVault: Address<TAccountFeesVault>;
   userBet?: Address<TAccountUserBet>;
   systemProgram?: Address<TAccountSystemProgram>;
-  amount: DepositInstructionDataArgs['amount'];
-  betSide: DepositInstructionDataArgs['betSide'];
+  amount: BetInstructionDataArgs['amount'];
+  betTag: BetInstructionDataArgs['betTag'];
 };
 
-export async function getDepositInstructionAsync<
+export async function getBetInstructionAsync<
   TAccountUser extends string,
   TAccountState extends string,
   TAccountVault extends string,
@@ -159,7 +160,7 @@ export async function getDepositInstructionAsync<
   TAccountSystemProgram extends string,
   TProgramAddress extends Address = typeof SANTA_VS_GRINCH_PROGRAM_ADDRESS,
 >(
-  input: DepositAsyncInput<
+  input: BetAsyncInput<
     TAccountUser,
     TAccountState,
     TAccountVault,
@@ -169,7 +170,7 @@ export async function getDepositInstructionAsync<
   >,
   config?: { programAddress?: TProgramAddress }
 ): Promise<
-  DepositInstruction<
+  BetInstruction<
     TProgramAddress,
     TAccountUser,
     TAccountState,
@@ -222,6 +223,9 @@ export async function getDepositInstructionAsync<
       seeds: [
         getBytesEncoder().encode(new Uint8Array([117, 115, 101, 114])),
         getAddressEncoder().encode(expectAddress(accounts.user.value)),
+        addEncoderSizePrefix(getUtf8Encoder(), getU32Encoder()).encode(
+          expectSome(args.betTag)
+        ),
       ],
     });
   }
@@ -241,10 +245,8 @@ export async function getDepositInstructionAsync<
       getAccountMeta(accounts.systemProgram),
     ],
     programAddress,
-    data: getDepositInstructionDataEncoder().encode(
-      args as DepositInstructionDataArgs
-    ),
-  } as DepositInstruction<
+    data: getBetInstructionDataEncoder().encode(args as BetInstructionDataArgs),
+  } as BetInstruction<
     TProgramAddress,
     TAccountUser,
     TAccountState,
@@ -257,7 +259,7 @@ export async function getDepositInstructionAsync<
   return instruction;
 }
 
-export type DepositInput<
+export type BetInput<
   TAccountUser extends string = string,
   TAccountState extends string = string,
   TAccountVault extends string = string,
@@ -271,11 +273,11 @@ export type DepositInput<
   feesVault: Address<TAccountFeesVault>;
   userBet: Address<TAccountUserBet>;
   systemProgram?: Address<TAccountSystemProgram>;
-  amount: DepositInstructionDataArgs['amount'];
-  betSide: DepositInstructionDataArgs['betSide'];
+  amount: BetInstructionDataArgs['amount'];
+  betTag: BetInstructionDataArgs['betTag'];
 };
 
-export function getDepositInstruction<
+export function getBetInstruction<
   TAccountUser extends string,
   TAccountState extends string,
   TAccountVault extends string,
@@ -284,7 +286,7 @@ export function getDepositInstruction<
   TAccountSystemProgram extends string,
   TProgramAddress extends Address = typeof SANTA_VS_GRINCH_PROGRAM_ADDRESS,
 >(
-  input: DepositInput<
+  input: BetInput<
     TAccountUser,
     TAccountState,
     TAccountVault,
@@ -293,7 +295,7 @@ export function getDepositInstruction<
     TAccountSystemProgram
   >,
   config?: { programAddress?: TProgramAddress }
-): DepositInstruction<
+): BetInstruction<
   TProgramAddress,
   TAccountUser,
   TAccountState,
@@ -340,10 +342,8 @@ export function getDepositInstruction<
       getAccountMeta(accounts.systemProgram),
     ],
     programAddress,
-    data: getDepositInstructionDataEncoder().encode(
-      args as DepositInstructionDataArgs
-    ),
-  } as DepositInstruction<
+    data: getBetInstructionDataEncoder().encode(args as BetInstructionDataArgs),
+  } as BetInstruction<
     TProgramAddress,
     TAccountUser,
     TAccountState,
@@ -356,7 +356,7 @@ export function getDepositInstruction<
   return instruction;
 }
 
-export type ParsedDepositInstruction<
+export type ParsedBetInstruction<
   TProgram extends string = typeof SANTA_VS_GRINCH_PROGRAM_ADDRESS,
   TAccountMetas extends readonly IAccountMeta[] = readonly IAccountMeta[],
 > = {
@@ -369,17 +369,17 @@ export type ParsedDepositInstruction<
     userBet: TAccountMetas[4];
     systemProgram: TAccountMetas[5];
   };
-  data: DepositInstructionData;
+  data: BetInstructionData;
 };
 
-export function parseDepositInstruction<
+export function parseBetInstruction<
   TProgram extends string,
   TAccountMetas extends readonly IAccountMeta[],
 >(
   instruction: IInstruction<TProgram> &
     IInstructionWithAccounts<TAccountMetas> &
     IInstructionWithData<Uint8Array>
-): ParsedDepositInstruction<TProgram, TAccountMetas> {
+): ParsedBetInstruction<TProgram, TAccountMetas> {
   if (instruction.accounts.length < 6) {
     // TODO: Coded error.
     throw new Error('Not enough accounts');
@@ -400,6 +400,6 @@ export function parseDepositInstruction<
       userBet: getNextAccount(),
       systemProgram: getNextAccount(),
     },
-    data: getDepositInstructionDataDecoder().decode(instruction.data),
+    data: getBetInstructionDataDecoder().decode(instruction.data),
   };
 }

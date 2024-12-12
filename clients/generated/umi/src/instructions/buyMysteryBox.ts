@@ -19,35 +19,33 @@ import {
   bytes,
   mapSerializer,
   publicKey as publicKeySerializer,
+  string,
   struct,
 } from '@metaplex-foundation/umi/serializers';
 import {
   ResolvedAccount,
   ResolvedAccountsWithIndices,
   expectPublicKey,
+  expectSome,
   getAccountMetasAndSigners,
 } from '../shared';
-import {
-  BettingSide,
-  BettingSideArgs,
-  getBettingSideSerializer,
-} from '../types';
 
 // Accounts.
 export type BuyMysteryBoxInstructionAccounts = {
   user: Signer;
   state: PublicKey | Pda;
   feesVault?: PublicKey | Pda;
+  userBet?: PublicKey | Pda;
   systemProgram?: PublicKey | Pda;
 };
 
 // Data.
 export type BuyMysteryBoxInstructionData = {
   discriminator: Uint8Array;
-  side: BettingSide;
+  betTag: string;
 };
 
-export type BuyMysteryBoxInstructionDataArgs = { side: BettingSideArgs };
+export type BuyMysteryBoxInstructionDataArgs = { betTag: string };
 
 export function getBuyMysteryBoxInstructionDataSerializer(): Serializer<
   BuyMysteryBoxInstructionDataArgs,
@@ -61,7 +59,7 @@ export function getBuyMysteryBoxInstructionDataSerializer(): Serializer<
     struct<BuyMysteryBoxInstructionData>(
       [
         ['discriminator', bytes({ size: 8 })],
-        ['side', getBettingSideSerializer()],
+        ['betTag', string()],
       ],
       { description: 'BuyMysteryBoxInstructionData' }
     ),
@@ -102,8 +100,13 @@ export function buyMysteryBox(
       isWritable: true as boolean,
       value: input.feesVault ?? null,
     },
-    systemProgram: {
+    userBet: {
       index: 3,
+      isWritable: true as boolean,
+      value: input.userBet ?? null,
+    },
+    systemProgram: {
+      index: 4,
       isWritable: false as boolean,
       value: input.systemProgram ?? null,
     },
@@ -120,6 +123,15 @@ export function buyMysteryBox(
         expectPublicKey(resolvedAccounts.state.value)
       ),
       bytes().serialize(new Uint8Array([102, 101, 101, 115])),
+    ]);
+  }
+  if (!resolvedAccounts.userBet.value) {
+    resolvedAccounts.userBet.value = context.eddsa.findPda(programId, [
+      bytes().serialize(new Uint8Array([117, 115, 101, 114])),
+      publicKeySerializer().serialize(
+        expectPublicKey(resolvedAccounts.user.value)
+      ),
+      string().serialize(expectSome(resolvedArgs.betTag)),
     ]);
   }
   if (!resolvedAccounts.systemProgram.value) {

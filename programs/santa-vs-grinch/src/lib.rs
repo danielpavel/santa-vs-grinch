@@ -9,7 +9,7 @@ mod state;
 mod utils;
 
 use contexts::*;
-use state::{BettingSide, Creator};
+use state::Creator;
 
 #[program]
 pub mod santa_vs_grinch {
@@ -30,20 +30,20 @@ pub mod santa_vs_grinch {
         )
     }
 
-    pub fn bet(ctx: Context<Bet>, amount: u64, bet_label: String) -> Result<()> {
-        ctx.accounts.bet(amount, bet_label)
+    pub fn bet(ctx: Context<Bet>, amount: u64, bet_tag: String) -> Result<()> {
+        ctx.accounts.bet(amount, bet_tag, ctx.bumps.user_bet)
     }
 
-    pub fn buy_mystery_box(ctx: Context<MysteryBox>, side: BettingSide) -> Result<()> {
-        ctx.accounts.buy_mystery_box(side)
+    pub fn buy_mystery_box(ctx: Context<MysteryBox>, bet_tag: String) -> Result<()> {
+        ctx.accounts.buy_mystery_box(bet_tag, ctx.bumps.user_bet)
     }
 
     pub fn end_game(ctx: Context<EndGame>) -> Result<()> {
         ctx.accounts.end_game()
     }
 
-    pub fn claim_winnings(ctx: Context<ClaimWinnings>, bet_label: String) -> Result<()> {
-        ctx.accounts.claim_winnings(bet_label)
+    pub fn claim_winnings(ctx: Context<ClaimWinnings>, bet_tag: String) -> Result<()> {
+        ctx.accounts.claim_winnings(bet_tag)
     }
 
     pub fn withdraw_fees<'info>(

@@ -19,6 +19,7 @@ import {
   bytes,
   mapSerializer,
   publicKey as publicKeySerializer,
+  string,
   struct,
   u64,
 } from '@metaplex-foundation/umi/serializers';
@@ -26,16 +27,12 @@ import {
   ResolvedAccount,
   ResolvedAccountsWithIndices,
   expectPublicKey,
+  expectSome,
   getAccountMetasAndSigners,
 } from '../shared';
-import {
-  BettingSide,
-  BettingSideArgs,
-  getBettingSideSerializer,
-} from '../types';
 
 // Accounts.
-export type DepositInstructionAccounts = {
+export type BetInstructionAccounts = {
   user: Signer;
   state: PublicKey | Pda;
   vault?: PublicKey | Pda;
@@ -45,44 +42,44 @@ export type DepositInstructionAccounts = {
 };
 
 // Data.
-export type DepositInstructionData = {
+export type BetInstructionData = {
   discriminator: Uint8Array;
   amount: bigint;
-  betSide: BettingSide;
+  betTag: string;
 };
 
-export type DepositInstructionDataArgs = {
+export type BetInstructionDataArgs = {
   amount: number | bigint;
-  betSide: BettingSideArgs;
+  betTag: string;
 };
 
-export function getDepositInstructionDataSerializer(): Serializer<
-  DepositInstructionDataArgs,
-  DepositInstructionData
+export function getBetInstructionDataSerializer(): Serializer<
+  BetInstructionDataArgs,
+  BetInstructionData
 > {
-  return mapSerializer<DepositInstructionDataArgs, any, DepositInstructionData>(
-    struct<DepositInstructionData>(
+  return mapSerializer<BetInstructionDataArgs, any, BetInstructionData>(
+    struct<BetInstructionData>(
       [
         ['discriminator', bytes({ size: 8 })],
         ['amount', u64()],
-        ['betSide', getBettingSideSerializer()],
+        ['betTag', string()],
       ],
-      { description: 'DepositInstructionData' }
+      { description: 'BetInstructionData' }
     ),
     (value) => ({
       ...value,
-      discriminator: new Uint8Array([242, 35, 198, 137, 82, 225, 242, 182]),
+      discriminator: new Uint8Array([94, 203, 166, 126, 20, 243, 169, 82]),
     })
-  ) as Serializer<DepositInstructionDataArgs, DepositInstructionData>;
+  ) as Serializer<BetInstructionDataArgs, BetInstructionData>;
 }
 
 // Args.
-export type DepositInstructionArgs = DepositInstructionDataArgs;
+export type BetInstructionArgs = BetInstructionDataArgs;
 
 // Instruction.
-export function deposit(
+export function bet(
   context: Pick<Context, 'eddsa' | 'programs'>,
-  input: DepositInstructionAccounts & DepositInstructionArgs
+  input: BetInstructionAccounts & BetInstructionArgs
 ): TransactionBuilder {
   // Program ID.
   const programId = context.programs.getPublicKey(
@@ -121,7 +118,7 @@ export function deposit(
   } satisfies ResolvedAccountsWithIndices;
 
   // Arguments.
-  const resolvedArgs: DepositInstructionArgs = { ...input };
+  const resolvedArgs: BetInstructionArgs = { ...input };
 
   // Default values.
   if (!resolvedAccounts.vault.value) {
@@ -143,6 +140,7 @@ export function deposit(
       publicKeySerializer().serialize(
         expectPublicKey(resolvedAccounts.user.value)
       ),
+      string().serialize(expectSome(resolvedArgs.betTag)),
     ]);
   }
   if (!resolvedAccounts.systemProgram.value) {
@@ -166,8 +164,8 @@ export function deposit(
   );
 
   // Data.
-  const data = getDepositInstructionDataSerializer().serialize(
-    resolvedArgs as DepositInstructionDataArgs
+  const data = getBetInstructionDataSerializer().serialize(
+    resolvedArgs as BetInstructionDataArgs
   );
 
   // Bytes Created On Chain.
