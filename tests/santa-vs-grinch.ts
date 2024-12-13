@@ -797,4 +797,58 @@ describe("santa-vs-grinch", () => {
       expect(share).to.equal(balanceChange);
     });
   });
+
+  it("Withdraw Creators Winnings", async () => {
+    // IMPORTANT: Keep in mind that order of the creator accounts matters. Keep it creator1, 2, 3.
+    const creators = [accounts.creator1, accounts.creator2, accounts.creator3];
+
+    let remainingAccounts = creators.map((c: CreatorType) => {
+      let accountInfo = {
+        pubkey: c.pubkey,
+        isWritable: true,
+        isSigner: false,
+      };
+
+      return accountInfo;
+    });
+
+    const oldCreatorsBalances = await Promise.all(
+      creators.map((c: CreatorType) => provider.connection.getBalance(c.pubkey))
+    );
+
+    // At this point there should only be 25% left in the vault so it's safe to asume
+    // it's the leftover pot for creators to withdraw from.
+    let vaultBalance = await provider.connection.getBalance(accounts.vault);
+
+    const tx = await program.methods
+      .withdrawCreatorsWinnings()
+      .accounts({
+        admin: provider.publicKey,
+        state: accounts.configState,
+        vault: accounts.vault,
+      })
+      .remainingAccounts(remainingAccounts)
+      .rpc();
+
+    const newCreatorsBalances = await Promise.all(
+      creators.map((c: CreatorType) => provider.connection.getBalance(c.pubkey))
+    );
+
+    creators.forEach((creator: CreatorType, index) => {
+      const share = (vaultBalance * creator.shareInBp) / 10_000;
+      const balanceChange =
+        newCreatorsBalances[index] - oldCreatorsBalances[index];
+
+      // console.log(`Account ${creator.pubkey.toBase58()}:`);
+      // console.log(`- Initial balance: ${oldCreatorsBalances[index]}`);
+      // console.log(`- Final balance: ${newCreatorsBalances[index]}`);
+      // console.log(`- Change: ${balanceChange}`);
+
+      expect(share).to.equal(balanceChange);
+    });
+
+    // Vault should be empty!
+    vaultBalance = await provider.connection.getBalance(accounts.vault);
+    expect(vaultBalance).to.equal(0);
+  });
 });

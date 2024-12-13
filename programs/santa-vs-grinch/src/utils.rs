@@ -91,3 +91,20 @@ pub fn calculate_winnings(bet_amount: u64, bet_side: BettingSide, config: &Confi
         }
     }
 }
+
+pub fn calculate_creators_winnings(vault_amount: u64, config: &Config) -> Result<u64> {
+    match config.winning_side {
+        Some(winning_side) => {
+            let losing_pot = match winning_side {
+                BettingSide::Santa => config.grinch_pot,
+                BettingSide::Grinch => config.santa_pot,
+            };
+
+            Ok(((losing_pot as u128 * 25) / 100) as u64)
+        }
+        None => {
+            // In case of a true tie, return 12.5% of vault amount
+            Ok((vault_amount as u128 * 125 / 1000) as u64)
+        }
+    }
+}

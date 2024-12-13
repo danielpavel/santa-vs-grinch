@@ -13,5 +13,8 @@ pub use claim_winnings::*;
 pub mod withdraw_fees;
 pub use withdraw_fees::*;
 
+pub mod withdraw_creators_winnings;
+pub use withdraw_creators_winnings::*;
+
 pub mod bet;
 pub use bet::*;
