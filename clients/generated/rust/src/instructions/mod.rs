@@ -10,6 +10,7 @@
   pub(crate) mod r#claim_winnings;
   pub(crate) mod r#end_game;
   pub(crate) mod r#initialize;
+  pub(crate) mod r#withdraw_creators_winnings;
   pub(crate) mod r#withdraw_fees;
 
   pub use self::r#bet::*;
@@ -17,5 +18,6 @@
   pub use self::r#claim_winnings::*;
   pub use self::r#end_game::*;
   pub use self::r#initialize::*;
+  pub use self::r#withdraw_creators_winnings::*;
   pub use self::r#withdraw_fees::*;
 

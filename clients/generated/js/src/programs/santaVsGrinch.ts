@@ -19,6 +19,7 @@ import {
   type ParsedClaimWinningsInstruction,
   type ParsedEndGameInstruction,
   type ParsedInitializeInstruction,
+  type ParsedWithdrawCreatorsWinningsInstruction,
   type ParsedWithdrawFeesInstruction,
 } from '../instructions';
 
@@ -67,6 +68,7 @@ export enum SantaVsGrinchInstruction {
   ClaimWinnings,
   EndGame,
   Initialize,
+  WithdrawCreatorsWinnings,
   WithdrawFees,
 }
 
@@ -133,6 +135,17 @@ export function identifySantaVsGrinchInstruction(
     containsBytes(
       data,
       fixEncoderSize(getBytesEncoder(), 8).encode(
+        new Uint8Array([210, 104, 160, 53, 155, 35, 222, 249])
+      ),
+      0
+    )
+  ) {
+    return SantaVsGrinchInstruction.WithdrawCreatorsWinnings;
+  }
+  if (
+    containsBytes(
+      data,
+      fixEncoderSize(getBytesEncoder(), 8).encode(
         new Uint8Array([198, 212, 171, 109, 144, 215, 174, 89])
       ),
       0
@@ -163,6 +176,9 @@ export type ParsedSantaVsGrinchInstruction<
   | ({
       instructionType: SantaVsGrinchInstruction.Initialize;
     } & ParsedInitializeInstruction<TProgram>)
+  | ({
+      instructionType: SantaVsGrinchInstruction.WithdrawCreatorsWinnings;
+    } & ParsedWithdrawCreatorsWinningsInstruction<TProgram>)
   | ({
       instructionType: SantaVsGrinchInstruction.WithdrawFees;
     } & ParsedWithdrawFeesInstruction<TProgram>);
