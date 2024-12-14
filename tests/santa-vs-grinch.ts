@@ -451,6 +451,9 @@ describe("santa-vs-grinch", () => {
       .accounts({
         admin: provider.publicKey,
         state: accounts.configState as PublicKey,
+        recentSlothashes: new PublicKey(
+          "SysvarS1otHashes111111111111111111111111111"
+        ),
       })
       .rpc();
 
@@ -459,7 +462,6 @@ describe("santa-vs-grinch", () => {
     );
 
     assert.equal(configStateAccount.gameEnded, true);
-    assert.deepEqual(configStateAccount.winningSide, { grinch: {} });
   });
 
   it("Buy Mystery Box after game ended - should fail!", async () => {

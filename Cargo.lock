@@ -1355,6 +1355,7 @@ name = "santa-vs-grinch"
 version = "0.1.0"
 dependencies = [
  "anchor-lang",
+ "arrayref",
 ]
 
 [[package]]
