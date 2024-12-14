@@ -53,7 +53,65 @@ impl<'info> WithdrawCreatorsWinnings<'info> {
         ][..]];
 
         let remaining_accounts_iter = &mut remaining_accounts.iter();
-        for creator in self.state.creators.iter() {
+        for creator in self.state.creators.iter_mut() {
+            let current_creator_info = next_account_info(remaining_accounts_iter)?;
+            require!(
+                creator.pubkey == current_creator_info.key(),
+                SantaVsGrinchErrorCode::InvalidCreatorAddress
+            );
+            require!(
+                !creator.claimed,
+                SantaVsGrinchErrorCode::CreatorWithdrawalAlreadyClaimed
+            );
+
+            let amount = (creator.share_in_bp as u64)
+                .checked_mul(pot)
+                .ok_or(ProgramError::ArithmeticOverflow)?
+                .checked_div(10_000)
+                .ok_or(ProgramError::ArithmeticOverflow)?;
+
+            let cpi_context = CpiContext::new_with_signer(
+                self.system_program.to_account_info(),
+                Transfer {
+                    from: self.vault.to_account_info(),
+                    to: current_creator_info.to_account_info(),
+                },
+                &signer_seeds,
+            );
+
+            transfer(cpi_context, amount)?;
+
+            creator.claimed = true;
+        }
+
+        Ok(())
+    }
+
+    pub fn withdraw_unclaimed_fees<'a>(
+        &mut self,
+        remaining_accounts: &'a [AccountInfo<'info>],
+    ) -> Result<()> {
+        let current_time = Clock::get()?.unix_timestamp;
+        require!(
+            current_time > self.state.withdraw_unclaimed_at,
+            SantaVsGrinchErrorCode::WitdrawalUnclaimedPeriodNotEnded
+        );
+
+        require!(self.state.game_ended, SantaVsGrinchErrorCode::GameNotEnded);
+
+        let state = self.state.clone();
+        let total = self.vault.lamports();
+
+        let bump = [self.state.vault_bump];
+        let signer_seeds = [&[
+            b"vault",
+            state.to_account_info().key.as_ref(),
+            b"santa-vs-grinch",
+            &bump,
+        ][..]];
+
+        let remaining_accounts_iter = &mut remaining_accounts.iter();
+        for creator in self.state.creators.iter_mut() {
             let current_creator_info = next_account_info(remaining_accounts_iter)?;
             require!(
                 creator.pubkey == current_creator_info.key(),
@@ -61,7 +119,7 @@ impl<'info> WithdrawCreatorsWinnings<'info> {
             );
 
             let amount = (creator.share_in_bp as u64)
-                .checked_mul(pot)
+                .checked_mul(total)
                 .ok_or(ProgramError::ArithmeticOverflow)?
                 .checked_div(10_000)
                 .ok_or(ProgramError::ArithmeticOverflow)?;

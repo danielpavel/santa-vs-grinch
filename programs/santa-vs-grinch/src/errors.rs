@@ -40,4 +40,13 @@ pub enum SantaVsGrinchErrorCode {
 
     #[msg("InvalidBetTag")]
     InvalidBetTag,
+
+    #[msg("InvalidCreatorConfig")]
+    InvalidCreatorConfig,
+
+    #[msg("Creators withdrawal already claimed")]
+    CreatorWithdrawalAlreadyClaimed,
+
+    #[msg("Witdrawal unclaimed period not ended")]
+    WitdrawalUnclaimedPeriodNotEnded,
 }

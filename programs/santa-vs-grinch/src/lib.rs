@@ -57,4 +57,10 @@ pub mod santa_vs_grinch {
     ) -> Result<()> {
         ctx.accounts.withdraw_fees(ctx.remaining_accounts)
     }
+
+    pub fn withdraw_unclaimed_creators_winnings<'info>(
+        ctx: Context<'_, '_, '_, 'info, WithdrawCreatorsWinnings<'info>>,
+    ) -> Result<()> {
+        ctx.accounts.withdraw_unclaimed_fees(ctx.remaining_accounts)
+    }
 }

@@ -1,5 +1,6 @@
 use anchor_lang::prelude::*;
 
+use crate::constants::CREATOR_WITHDRAWAL_PERIOD;
 use crate::errors::SantaVsGrinchErrorCode;
 use crate::state::{Config, Creator};
 
@@ -46,13 +47,17 @@ impl<'info> Initialize<'info> {
         );
         let timestamp = Clock::get()?.unix_timestamp;
 
-        // Validate creator shares total to 10000 basis points (100%)
+        // Validate creator shares total to 10_000 basis points (100%)
         let total_shares: u16 = creators.iter().map(|c| c.share_in_bp).sum();
 
         require!(
             total_shares == 10_000,
             SantaVsGrinchErrorCode::InvalidTotalShares
         );
+
+        for c in creators.iter() {
+            require!(!c.claimed, SantaVsGrinchErrorCode::InvalidCreatorConfig)
+        }
 
         // Validate number of creators doesn't exceed max
         require!(
@@ -82,6 +87,7 @@ impl<'info> Initialize<'info> {
             game_ended: false,
 
             initialized_at: timestamp,
+            withdraw_unclaimed_at: timestamp + CREATOR_WITHDRAWAL_PERIOD,
 
             creators: creators_arr,
 

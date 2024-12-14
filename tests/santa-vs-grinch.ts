@@ -60,9 +60,9 @@ describe("santa-vs-grinch", () => {
     accounts.user1 = user1;
     accounts.user2 = user2;
 
-    accounts.creator1 = { pubkey: CREATOR_1, shareInBp: 3333 };
-    accounts.creator2 = { pubkey: CREATOR_2, shareInBp: 3333 };
-    accounts.creator3 = { pubkey: CREATOR_3, shareInBp: 3334 };
+    accounts.creator1 = { pubkey: CREATOR_1, shareInBp: 3333, claimed: false };
+    accounts.creator2 = { pubkey: CREATOR_2, shareInBp: 3333, claimed: false };
+    accounts.creator3 = { pubkey: CREATOR_3, shareInBp: 3334, claimed: false };
 
     // Save bumps
     bumps.configStateBump = configStateBump;
@@ -463,6 +463,8 @@ describe("santa-vs-grinch", () => {
       accounts.configState as PublicKey
     );
 
+    console.log("... winning_side", configStateAccount.winningSide);
+
     assert.equal(configStateAccount.gameEnded, true);
   });
 
@@ -485,6 +487,7 @@ describe("santa-vs-grinch", () => {
           user: (accounts.user1 as Keypair).publicKey,
           state: accounts.configState,
           feesVault: accounts.feesVault,
+          userBet: user2UserStatePubkey,
         })
         .signers([accounts.user1])
         .rpc();
@@ -623,35 +626,39 @@ describe("santa-vs-grinch", () => {
   });
 
   it("User claim winnings - Loosing Bet", async () => {
-    const [user1UserStatePubkey, _bump] = web3.PublicKey.findProgramAddressSync(
-      [
-        Buffer.from("user"),
-        (accounts.user1 as Keypair).publicKey.toBuffer(),
-        Buffer.from("santa"),
-      ],
-      program.programId
-    );
-
     const vaultBalanceOld = await provider.connection.getBalance(
       accounts.vault
     );
 
+    const configStateAccount = await program.account.config.fetch(
+      accounts.configState
+    );
+
+    const loosingTag = !!configStateAccount.winningSide.santa
+      ? "grinch"
+      : "santa";
+
+    const [userStatePubkey, _bump] = web3.PublicKey.findProgramAddressSync(
+      [
+        Buffer.from("user"),
+        (accounts.user1 as Keypair).publicKey.toBuffer(),
+        Buffer.from(loosingTag),
+      ],
+      program.programId
+    );
+
     const tx = await program.methods
-      .claimWinnings("santa")
+      .claimWinnings(loosingTag)
       .accounts({
         claimer: (accounts.user1 as Keypair).publicKey,
         state: accounts.configState,
         vault: accounts.vault,
-        userBet: user1UserStatePubkey,
+        userBet: userStatePubkey,
       })
       .signers(accounts.user1)
       .rpc();
 
-    // Check user bet has been claimed
-    const userBet = await program.account.userBet.fetch(user1UserStatePubkey);
-    assert.equal(userBet.claimed, true);
-
-    // Claiming a loosing bet will result in no credited funds
+    // Claiming a loosing bet will result in no debited funds
     const vaultBalanceNew = await provider.connection.getBalance(
       accounts.vault
     );
@@ -854,5 +861,87 @@ describe("santa-vs-grinch", () => {
     // Vault should be empty!
     vaultBalance = await provider.connection.getBalance(accounts.vault);
     expect(vaultBalance).to.equal(0);
+  });
+
+  it("Withdraw Creators Winnings 2nd time - should fail", async () => {
+    // IMPORTANT: Keep in mind that order of the creator accounts matters. Keep it creator1, 2, 3.
+    const creators = [accounts.creator1, accounts.creator2, accounts.creator3];
+
+    let remainingAccounts = creators.map((c: CreatorType) => {
+      let accountInfo = {
+        pubkey: c.pubkey,
+        isWritable: true,
+        isSigner: false,
+      };
+
+      return accountInfo;
+    });
+
+    try {
+      await program.methods
+        .withdrawCreatorsWinnings()
+        .accounts({
+          admin: provider.publicKey,
+          state: accounts.configState,
+          vault: accounts.vault,
+        })
+        .remainingAccounts(remainingAccounts)
+        .rpc();
+
+      expect.fail("Transaction should have failed.");
+    } catch (err) {
+      if (err instanceof anchor.AnchorError) {
+        expect(err.error.errorCode.code).to.equal(
+          "CreatorWithdrawalAlreadyClaimed"
+        );
+        expect(err.error.errorCode.number).to.equal(6014);
+        expect(err.error.errorMessage).to.equal(
+          "Creators withdrawal already claimed"
+        );
+      } else {
+        throw err;
+      }
+    }
+  });
+
+  it("Withdraw Unclaimed Winnings Early - Should Fail", async () => {
+    // IMPORTANT: Keep in mind that order of the creator accounts matters. Keep it creator1, 2, 3.
+    const creators = [accounts.creator1, accounts.creator2, accounts.creator3];
+
+    let remainingAccounts = creators.map((c: CreatorType) => {
+      let accountInfo = {
+        pubkey: c.pubkey,
+        isWritable: true,
+        isSigner: false,
+      };
+
+      return accountInfo;
+    });
+
+    try {
+      await program.methods
+        .withdrawUnclaimedCreatorsWinnings()
+        .accounts({
+          admin: provider.publicKey,
+          state: accounts.configState,
+          vault: accounts.vault,
+        })
+        .remainingAccounts(remainingAccounts)
+        .rpc();
+
+      expect.fail("Transaction should have failed.");
+    } catch (err) {
+      if (err instanceof anchor.AnchorError) {
+        expect(err.error.errorCode.code).to.equal(
+          "WitdrawalUnclaimedPeriodNotEnded"
+        );
+        expect(err.error.errorCode.number).to.equal(6015);
+        expect(err.error.errorMessage).to.equal(
+          "Witdrawal unclaimed period not ended"
+        );
+      } else {
+        throw err;
+      }
+    }
   });
 });

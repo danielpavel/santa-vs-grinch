@@ -12,6 +12,7 @@ pub enum BettingSide {
 pub struct Creator {
     pub pubkey: Pubkey,
     pub share_in_bp: u16,
+    pub claimed: bool,
 }
 
 #[account]
@@ -33,6 +34,7 @@ pub struct Config {
 
     pub game_ended: bool,
     pub initialized_at: i64,
+    pub withdraw_unclaimed_at: i64,
     pub winning_side: Option<BettingSide>,
 
     #[max_len(MAX_CREATORS * mem::size_of::<Creator>())]
