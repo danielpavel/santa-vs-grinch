@@ -118,6 +118,8 @@ describe("santa-vs-grinch", () => {
     assert.equal(config.santaBoxes.toNumber(), 0);
     assert.equal(config.grinchPot.toNumber(), 0);
     assert.equal(config.grinchBoxes.toNumber(), 0);
+    assert.equal(config.santaMultiplier, 100);
+    assert.equal(config.grinchMultiplier, 100);
     assert.equal(config.bump, bumps.configStateBump);
     assert.equal(config.vaultBump, bumps.vaultBump);
     assert.equal(config.feesVaultBump, bumps.feesVaultBump);

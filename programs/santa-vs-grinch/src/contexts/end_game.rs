@@ -38,14 +38,8 @@ impl<'info> EndGame<'info> {
         let santa_seed = generate_random_seed(&self.recent_slothashes, true)?;
         let grinch_seed = generate_random_seed(&self.recent_slothashes, false)?;
 
-        let (santa_adjusted, grinch_adjusted) = calculate_final_pots(
-            self.state.santa_pot,
-            self.state.grinch_pot,
-            self.state.santa_boxes,
-            self.state.grinch_boxes,
-            santa_seed,
-            grinch_seed,
-        )?;
+        let (santa_adjusted, grinch_adjusted) =
+            calculate_final_pots(config, santa_seed, grinch_seed)?;
 
         self.state.winning_side = if santa_adjusted > grinch_adjusted {
             Some(BettingSide::Santa)

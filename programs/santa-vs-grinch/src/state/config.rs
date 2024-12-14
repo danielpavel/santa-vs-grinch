@@ -28,6 +28,8 @@ pub struct Config {
     pub grinch_pot: u64,
     pub santa_boxes: u64,
     pub grinch_boxes: u64,
+    pub santa_multiplier: u32,
+    pub grinch_multiplier: u32,
 
     pub game_ended: bool,
     pub initialized_at: i64,

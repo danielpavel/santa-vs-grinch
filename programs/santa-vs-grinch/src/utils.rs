@@ -43,22 +43,25 @@ fn map_to_range(seed: u64) -> u32 {
 }
 
 pub fn calculate_final_pots(
-    santa_pot: u64,
-    grinch_pot: u64,
-    santa_boxes: u64,
-    grinch_boxes: u64,
+    config_state: &mut Config,
     santa_seed: u64,
     grinch_seed: u64,
 ) -> Result<(u64, u64)> {
     let santa_multiplier = map_to_range(santa_seed);
     let grinch_multiplier = map_to_range(grinch_seed);
 
+    // Update config state
+    config_state.santa_multiplier = santa_multiplier;
+    config_state.grinch_multiplier = grinch_multiplier;
+
     msg!("sm: {} | gm: {}", santa_multiplier, grinch_multiplier);
 
-    let santa_pot_multiplier = santa_boxes
+    let santa_pot_multiplier = config_state
+        .santa_boxes
         .checked_mul(santa_multiplier as u64)
         .ok_or(ProgramError::ArithmeticOverflow)?;
-    let grinch_pot_multiplier = grinch_boxes
+    let grinch_pot_multiplier = config_state
+        .grinch_boxes
         .checked_mul(grinch_multiplier as u64)
         .ok_or(ProgramError::ArithmeticOverflow)?;
 
@@ -68,12 +71,14 @@ pub fn calculate_final_pots(
         grinch_pot_multiplier
     );
 
-    let santa_adjusted_pot = santa_pot
+    let santa_adjusted_pot = config_state
+        .santa_pot
         .checked_mul(santa_pot_multiplier)
         .ok_or(ProgramError::ArithmeticOverflow)?
         .checked_div(100)
         .ok_or(ProgramError::ArithmeticOverflow)?;
-    let grinch_adjusted_pot = grinch_pot
+    let grinch_adjusted_pot = config_state
+        .grinch_pot
         .checked_mul(grinch_pot_multiplier)
         .ok_or(ProgramError::ArithmeticOverflow)?
         .checked_div(100)

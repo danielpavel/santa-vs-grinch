@@ -76,6 +76,9 @@ impl<'info> Initialize<'info> {
             santa_boxes: 0,
             grinch_boxes: 0,
 
+            santa_multiplier: 100,
+            grinch_multiplier: 100,
+
             game_ended: false,
 
             initialized_at: timestamp,
