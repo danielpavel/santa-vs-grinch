@@ -193,6 +193,51 @@ export class InvalidBetTagError extends ProgramError {
 codeToErrorMap.set(0x177c, InvalidBetTagError);
 nameToErrorMap.set('InvalidBetTag', InvalidBetTagError);
 
+/** InvalidCreatorConfig: InvalidCreatorConfig */
+export class InvalidCreatorConfigError extends ProgramError {
+  override readonly name: string = 'InvalidCreatorConfig';
+
+  readonly code: number = 0x177d; // 6013
+
+  constructor(program: Program, cause?: Error) {
+    super('InvalidCreatorConfig', program, cause);
+  }
+}
+codeToErrorMap.set(0x177d, InvalidCreatorConfigError);
+nameToErrorMap.set('InvalidCreatorConfig', InvalidCreatorConfigError);
+
+/** CreatorWithdrawalAlreadyClaimed: Creators withdrawal already claimed */
+export class CreatorWithdrawalAlreadyClaimedError extends ProgramError {
+  override readonly name: string = 'CreatorWithdrawalAlreadyClaimed';
+
+  readonly code: number = 0x177e; // 6014
+
+  constructor(program: Program, cause?: Error) {
+    super('Creators withdrawal already claimed', program, cause);
+  }
+}
+codeToErrorMap.set(0x177e, CreatorWithdrawalAlreadyClaimedError);
+nameToErrorMap.set(
+  'CreatorWithdrawalAlreadyClaimed',
+  CreatorWithdrawalAlreadyClaimedError
+);
+
+/** WitdrawalUnclaimedPeriodNotEnded: Witdrawal unclaimed period not ended */
+export class WitdrawalUnclaimedPeriodNotEndedError extends ProgramError {
+  override readonly name: string = 'WitdrawalUnclaimedPeriodNotEnded';
+
+  readonly code: number = 0x177f; // 6015
+
+  constructor(program: Program, cause?: Error) {
+    super('Witdrawal unclaimed period not ended', program, cause);
+  }
+}
+codeToErrorMap.set(0x177f, WitdrawalUnclaimedPeriodNotEndedError);
+nameToErrorMap.set(
+  'WitdrawalUnclaimedPeriodNotEnded',
+  WitdrawalUnclaimedPeriodNotEndedError
+);
+
 /**
  * Attempts to resolve a custom program error from the provided error code.
  * @category Errors

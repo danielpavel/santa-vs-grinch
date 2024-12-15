@@ -31,6 +31,8 @@ import {
   getStructEncoder,
   getU16Decoder,
   getU16Encoder,
+  getU32Decoder,
+  getU32Encoder,
   getU64Decoder,
   getU64Encoder,
   getU8Decoder,
@@ -79,8 +81,11 @@ export type Config = {
   grinchPot: bigint;
   santaBoxes: bigint;
   grinchBoxes: bigint;
+  santaMultiplier: number;
+  grinchMultiplier: number;
   gameEnded: boolean;
   initializedAt: bigint;
+  withdrawUnclaimedAt: bigint;
   winningSide: Option<BettingSide>;
   creators: Array<Creator>;
   vaultBump: number;
@@ -97,8 +102,11 @@ export type ConfigArgs = {
   grinchPot: number | bigint;
   santaBoxes: number | bigint;
   grinchBoxes: number | bigint;
+  santaMultiplier: number;
+  grinchMultiplier: number;
   gameEnded: boolean;
   initializedAt: number | bigint;
+  withdrawUnclaimedAt: number | bigint;
   winningSide: OptionOrNullable<BettingSideArgs>;
   creators: Array<CreatorArgs>;
   vaultBump: number;
@@ -118,8 +126,11 @@ export function getConfigEncoder(): Encoder<ConfigArgs> {
       ['grinchPot', getU64Encoder()],
       ['santaBoxes', getU64Encoder()],
       ['grinchBoxes', getU64Encoder()],
+      ['santaMultiplier', getU32Encoder()],
+      ['grinchMultiplier', getU32Encoder()],
       ['gameEnded', getBooleanEncoder()],
       ['initializedAt', getI64Encoder()],
+      ['withdrawUnclaimedAt', getI64Encoder()],
       ['winningSide', getOptionEncoder(getBettingSideEncoder())],
       ['creators', getArrayEncoder(getCreatorEncoder(), { size: 3 })],
       ['vaultBump', getU8Encoder()],
@@ -141,8 +152,11 @@ export function getConfigDecoder(): Decoder<Config> {
     ['grinchPot', getU64Decoder()],
     ['santaBoxes', getU64Decoder()],
     ['grinchBoxes', getU64Decoder()],
+    ['santaMultiplier', getU32Decoder()],
+    ['grinchMultiplier', getU32Decoder()],
     ['gameEnded', getBooleanDecoder()],
     ['initializedAt', getI64Decoder()],
+    ['withdrawUnclaimedAt', getI64Decoder()],
     ['winningSide', getOptionDecoder(getBettingSideDecoder())],
     ['creators', getArrayDecoder(getCreatorDecoder(), { size: 3 })],
     ['vaultBump', getU8Decoder()],

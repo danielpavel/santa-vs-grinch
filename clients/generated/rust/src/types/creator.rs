@@ -15,6 +15,7 @@ pub struct Creator {
 #[cfg_attr(feature = "serde", serde(with = "serde_with::As::<serde_with::DisplayFromStr>"))]
 pub pubkey: Pubkey,
 pub share_in_bp: u16,
+pub claimed: bool,
 }
 
 

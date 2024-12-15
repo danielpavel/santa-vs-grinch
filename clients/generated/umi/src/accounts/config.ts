@@ -32,6 +32,7 @@ import {
   publicKey as publicKeySerializer,
   struct,
   u16,
+  u32,
   u64,
   u8,
 } from '@metaplex-foundation/umi/serializers';
@@ -56,8 +57,11 @@ export type ConfigAccountData = {
   grinchPot: bigint;
   santaBoxes: bigint;
   grinchBoxes: bigint;
+  santaMultiplier: number;
+  grinchMultiplier: number;
   gameEnded: boolean;
   initializedAt: bigint;
+  withdrawUnclaimedAt: bigint;
   winningSide: Option<BettingSide>;
   creators: Array<Creator>;
   vaultBump: number;
@@ -74,8 +78,11 @@ export type ConfigAccountDataArgs = {
   grinchPot: number | bigint;
   santaBoxes: number | bigint;
   grinchBoxes: number | bigint;
+  santaMultiplier: number;
+  grinchMultiplier: number;
   gameEnded: boolean;
   initializedAt: number | bigint;
+  withdrawUnclaimedAt: number | bigint;
   winningSide: OptionOrNullable<BettingSideArgs>;
   creators: Array<CreatorArgs>;
   vaultBump: number;
@@ -99,8 +106,11 @@ export function getConfigAccountDataSerializer(): Serializer<
         ['grinchPot', u64()],
         ['santaBoxes', u64()],
         ['grinchBoxes', u64()],
+        ['santaMultiplier', u32()],
+        ['grinchMultiplier', u32()],
         ['gameEnded', bool()],
         ['initializedAt', i64()],
+        ['withdrawUnclaimedAt', i64()],
         ['winningSide', option(getBettingSideSerializer())],
         ['creators', array(getCreatorSerializer(), { size: 3 })],
         ['vaultBump', u8()],
@@ -179,7 +189,7 @@ export function getConfigGpaBuilder(
 ) {
   const programId = context.programs.getPublicKey(
     'santaVsGrinch',
-    'BZGCW6asmdxFTxo1xNpgBPnX9Seb5oLfPDEy3QqLpPPE'
+    '5Kox1zWxgz9oGXCYw65iGKAHYmiFov6FpPCib71NZ75x'
   );
   return gpaBuilder(context, programId)
     .registerFields<{
@@ -192,8 +202,11 @@ export function getConfigGpaBuilder(
       grinchPot: number | bigint;
       santaBoxes: number | bigint;
       grinchBoxes: number | bigint;
+      santaMultiplier: number;
+      grinchMultiplier: number;
       gameEnded: boolean;
       initializedAt: number | bigint;
+      withdrawUnclaimedAt: number | bigint;
       winningSide: OptionOrNullable<BettingSideArgs>;
       creators: Array<CreatorArgs>;
       vaultBump: number;
@@ -209,9 +222,12 @@ export function getConfigGpaBuilder(
       grinchPot: [114, u64()],
       santaBoxes: [122, u64()],
       grinchBoxes: [130, u64()],
-      gameEnded: [138, bool()],
-      initializedAt: [139, i64()],
-      winningSide: [147, option(getBettingSideSerializer())],
+      santaMultiplier: [138, u32()],
+      grinchMultiplier: [142, u32()],
+      gameEnded: [146, bool()],
+      initializedAt: [147, i64()],
+      withdrawUnclaimedAt: [155, i64()],
+      winningSide: [163, option(getBettingSideSerializer())],
       creators: [null, array(getCreatorSerializer(), { size: 3 })],
       vaultBump: [null, u8()],
       feesVaultBump: [null, u8()],

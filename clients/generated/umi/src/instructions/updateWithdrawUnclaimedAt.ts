@@ -17,6 +17,7 @@ import {
 import {
   Serializer,
   bytes,
+  i64,
   mapSerializer,
   struct,
 } from '@metaplex-foundation/umi/serializers';
@@ -27,37 +28,57 @@ import {
 } from '../shared';
 
 // Accounts.
-export type EndGameInstructionAccounts = {
+export type UpdateWithdrawUnclaimedAtInstructionAccounts = {
   admin: Signer;
   state: PublicKey | Pda;
-  recentSlothashes?: PublicKey | Pda;
   systemProgram?: PublicKey | Pda;
 };
 
 // Data.
-export type EndGameInstructionData = { discriminator: Uint8Array };
+export type UpdateWithdrawUnclaimedAtInstructionData = {
+  discriminator: Uint8Array;
+  ts: bigint;
+};
 
-export type EndGameInstructionDataArgs = {};
+export type UpdateWithdrawUnclaimedAtInstructionDataArgs = {
+  ts: number | bigint;
+};
 
-export function getEndGameInstructionDataSerializer(): Serializer<
-  EndGameInstructionDataArgs,
-  EndGameInstructionData
+export function getUpdateWithdrawUnclaimedAtInstructionDataSerializer(): Serializer<
+  UpdateWithdrawUnclaimedAtInstructionDataArgs,
+  UpdateWithdrawUnclaimedAtInstructionData
 > {
-  return mapSerializer<EndGameInstructionDataArgs, any, EndGameInstructionData>(
-    struct<EndGameInstructionData>([['discriminator', bytes({ size: 8 })]], {
-      description: 'EndGameInstructionData',
-    }),
+  return mapSerializer<
+    UpdateWithdrawUnclaimedAtInstructionDataArgs,
+    any,
+    UpdateWithdrawUnclaimedAtInstructionData
+  >(
+    struct<UpdateWithdrawUnclaimedAtInstructionData>(
+      [
+        ['discriminator', bytes({ size: 8 })],
+        ['ts', i64()],
+      ],
+      { description: 'UpdateWithdrawUnclaimedAtInstructionData' }
+    ),
     (value) => ({
       ...value,
-      discriminator: new Uint8Array([224, 135, 245, 99, 67, 175, 121, 252]),
+      discriminator: new Uint8Array([201, 9, 21, 79, 188, 80, 2, 89]),
     })
-  ) as Serializer<EndGameInstructionDataArgs, EndGameInstructionData>;
+  ) as Serializer<
+    UpdateWithdrawUnclaimedAtInstructionDataArgs,
+    UpdateWithdrawUnclaimedAtInstructionData
+  >;
 }
 
+// Args.
+export type UpdateWithdrawUnclaimedAtInstructionArgs =
+  UpdateWithdrawUnclaimedAtInstructionDataArgs;
+
 // Instruction.
-export function endGame(
+export function updateWithdrawUnclaimedAt(
   context: Pick<Context, 'programs'>,
-  input: EndGameInstructionAccounts
+  input: UpdateWithdrawUnclaimedAtInstructionAccounts &
+    UpdateWithdrawUnclaimedAtInstructionArgs
 ): TransactionBuilder {
   // Program ID.
   const programId = context.programs.getPublicKey(
@@ -77,26 +98,17 @@ export function endGame(
       isWritable: true as boolean,
       value: input.state ?? null,
     },
-    recentSlothashes: {
-      index: 2,
-      isWritable: false as boolean,
-      value: input.recentSlothashes ?? null,
-    },
     systemProgram: {
-      index: 3,
+      index: 2,
       isWritable: false as boolean,
       value: input.systemProgram ?? null,
     },
   } satisfies ResolvedAccountsWithIndices;
 
+  // Arguments.
+  const resolvedArgs: UpdateWithdrawUnclaimedAtInstructionArgs = { ...input };
+
   // Default values.
-  if (!resolvedAccounts.recentSlothashes.value) {
-    resolvedAccounts.recentSlothashes.value = context.programs.getPublicKey(
-      'recentSlothashes',
-      'SysvarS1otHashes111111111111111111111111111'
-    );
-    resolvedAccounts.recentSlothashes.isWritable = false;
-  }
   if (!resolvedAccounts.systemProgram.value) {
     resolvedAccounts.systemProgram.value = context.programs.getPublicKey(
       'systemProgram',
@@ -118,7 +130,10 @@ export function endGame(
   );
 
   // Data.
-  const data = getEndGameInstructionDataSerializer().serialize({});
+  const data =
+    getUpdateWithdrawUnclaimedAtInstructionDataSerializer().serialize(
+      resolvedArgs as UpdateWithdrawUnclaimedAtInstructionDataArgs
+    );
 
   // Bytes Created On Chain.
   const bytesCreatedOnChain = 0;

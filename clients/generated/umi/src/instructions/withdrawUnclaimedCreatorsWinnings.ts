@@ -19,67 +19,57 @@ import {
   bytes,
   mapSerializer,
   publicKey as publicKeySerializer,
-  string,
   struct,
-  u64,
 } from '@metaplex-foundation/umi/serializers';
 import {
   ResolvedAccount,
   ResolvedAccountsWithIndices,
   expectPublicKey,
-  expectSome,
   getAccountMetasAndSigners,
 } from '../shared';
 
 // Accounts.
-export type BetInstructionAccounts = {
-  user: Signer;
+export type WithdrawUnclaimedCreatorsWinningsInstructionAccounts = {
+  admin: Signer;
   state: PublicKey | Pda;
   vault?: PublicKey | Pda;
-  feesVault: PublicKey | Pda;
-  userBet?: PublicKey | Pda;
   systemProgram?: PublicKey | Pda;
 };
 
 // Data.
-export type BetInstructionData = {
+export type WithdrawUnclaimedCreatorsWinningsInstructionData = {
   discriminator: Uint8Array;
-  amount: bigint;
-  betTag: string;
 };
 
-export type BetInstructionDataArgs = {
-  amount: number | bigint;
-  betTag: string;
-};
+export type WithdrawUnclaimedCreatorsWinningsInstructionDataArgs = {};
 
-export function getBetInstructionDataSerializer(): Serializer<
-  BetInstructionDataArgs,
-  BetInstructionData
+export function getWithdrawUnclaimedCreatorsWinningsInstructionDataSerializer(): Serializer<
+  WithdrawUnclaimedCreatorsWinningsInstructionDataArgs,
+  WithdrawUnclaimedCreatorsWinningsInstructionData
 > {
-  return mapSerializer<BetInstructionDataArgs, any, BetInstructionData>(
-    struct<BetInstructionData>(
-      [
-        ['discriminator', bytes({ size: 8 })],
-        ['amount', u64()],
-        ['betTag', string()],
-      ],
-      { description: 'BetInstructionData' }
+  return mapSerializer<
+    WithdrawUnclaimedCreatorsWinningsInstructionDataArgs,
+    any,
+    WithdrawUnclaimedCreatorsWinningsInstructionData
+  >(
+    struct<WithdrawUnclaimedCreatorsWinningsInstructionData>(
+      [['discriminator', bytes({ size: 8 })]],
+      { description: 'WithdrawUnclaimedCreatorsWinningsInstructionData' }
     ),
     (value) => ({
       ...value,
-      discriminator: new Uint8Array([94, 203, 166, 126, 20, 243, 169, 82]),
+      discriminator: new Uint8Array([223, 124, 225, 226, 237, 254, 93, 105]),
     })
-  ) as Serializer<BetInstructionDataArgs, BetInstructionData>;
+  ) as Serializer<
+    WithdrawUnclaimedCreatorsWinningsInstructionDataArgs,
+    WithdrawUnclaimedCreatorsWinningsInstructionData
+  >;
 }
 
-// Args.
-export type BetInstructionArgs = BetInstructionDataArgs;
-
 // Instruction.
-export function bet(
+export function withdrawUnclaimedCreatorsWinnings(
   context: Pick<Context, 'eddsa' | 'programs'>,
-  input: BetInstructionAccounts & BetInstructionArgs
+  input: WithdrawUnclaimedCreatorsWinningsInstructionAccounts
 ): TransactionBuilder {
   // Program ID.
   const programId = context.programs.getPublicKey(
@@ -89,7 +79,11 @@ export function bet(
 
   // Accounts.
   const resolvedAccounts = {
-    user: { index: 0, isWritable: true as boolean, value: input.user ?? null },
+    admin: {
+      index: 0,
+      isWritable: true as boolean,
+      value: input.admin ?? null,
+    },
     state: {
       index: 1,
       isWritable: true as boolean,
@@ -100,25 +94,12 @@ export function bet(
       isWritable: true as boolean,
       value: input.vault ?? null,
     },
-    feesVault: {
-      index: 3,
-      isWritable: true as boolean,
-      value: input.feesVault ?? null,
-    },
-    userBet: {
-      index: 4,
-      isWritable: true as boolean,
-      value: input.userBet ?? null,
-    },
     systemProgram: {
-      index: 5,
+      index: 3,
       isWritable: false as boolean,
       value: input.systemProgram ?? null,
     },
   } satisfies ResolvedAccountsWithIndices;
-
-  // Arguments.
-  const resolvedArgs: BetInstructionArgs = { ...input };
 
   // Default values.
   if (!resolvedAccounts.vault.value) {
@@ -132,15 +113,6 @@ export function bet(
           115, 97, 110, 116, 97, 45, 118, 115, 45, 103, 114, 105, 110, 99, 104,
         ])
       ),
-    ]);
-  }
-  if (!resolvedAccounts.userBet.value) {
-    resolvedAccounts.userBet.value = context.eddsa.findPda(programId, [
-      bytes().serialize(new Uint8Array([117, 115, 101, 114])),
-      publicKeySerializer().serialize(
-        expectPublicKey(resolvedAccounts.user.value)
-      ),
-      string().serialize(expectSome(resolvedArgs.betTag)),
     ]);
   }
   if (!resolvedAccounts.systemProgram.value) {
@@ -164,9 +136,10 @@ export function bet(
   );
 
   // Data.
-  const data = getBetInstructionDataSerializer().serialize(
-    resolvedArgs as BetInstructionDataArgs
-  );
+  const data =
+    getWithdrawUnclaimedCreatorsWinningsInstructionDataSerializer().serialize(
+      {}
+    );
 
   // Bytes Created On Chain.
   const bytesCreatedOnChain = 0;

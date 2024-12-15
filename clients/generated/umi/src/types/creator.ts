@@ -9,12 +9,17 @@
 import { PublicKey } from '@metaplex-foundation/umi';
 import {
   Serializer,
+  bool,
   publicKey as publicKeySerializer,
   struct,
   u16,
 } from '@metaplex-foundation/umi/serializers';
 
-export type Creator = { pubkey: PublicKey; shareInBp: number };
+export type Creator = {
+  pubkey: PublicKey;
+  shareInBp: number;
+  claimed: boolean;
+};
 
 export type CreatorArgs = Creator;
 
@@ -23,6 +28,7 @@ export function getCreatorSerializer(): Serializer<CreatorArgs, Creator> {
     [
       ['pubkey', publicKeySerializer()],
       ['shareInBp', u16()],
+      ['claimed', bool()],
     ],
     { description: 'Creator' }
   ) as Serializer<CreatorArgs, Creator>;

@@ -12,6 +12,8 @@ import {
   fixEncoderSize,
   getBytesDecoder,
   getBytesEncoder,
+  getI64Decoder,
+  getI64Encoder,
   getStructDecoder,
   getStructEncoder,
   transformEncoder,
@@ -33,21 +35,20 @@ import {
 import { SANTA_VS_GRINCH_PROGRAM_ADDRESS } from '../programs';
 import { getAccountMetaFactory, type ResolvedAccount } from '../shared';
 
-export const END_GAME_DISCRIMINATOR = new Uint8Array([
-  224, 135, 245, 99, 67, 175, 121, 252,
+export const UPDATE_WITHDRAW_UNCLAIMED_AT_DISCRIMINATOR = new Uint8Array([
+  201, 9, 21, 79, 188, 80, 2, 89,
 ]);
 
-export function getEndGameDiscriminatorBytes() {
-  return fixEncoderSize(getBytesEncoder(), 8).encode(END_GAME_DISCRIMINATOR);
+export function getUpdateWithdrawUnclaimedAtDiscriminatorBytes() {
+  return fixEncoderSize(getBytesEncoder(), 8).encode(
+    UPDATE_WITHDRAW_UNCLAIMED_AT_DISCRIMINATOR
+  );
 }
 
-export type EndGameInstruction<
+export type UpdateWithdrawUnclaimedAtInstruction<
   TProgram extends string = typeof SANTA_VS_GRINCH_PROGRAM_ADDRESS,
   TAccountAdmin extends string | IAccountMeta<string> = string,
   TAccountState extends string | IAccountMeta<string> = string,
-  TAccountRecentSlothashes extends
-    | string
-    | IAccountMeta<string> = 'SysvarS1otHashes111111111111111111111111111',
   TAccountSystemProgram extends
     | string
     | IAccountMeta<string> = '11111111111111111111111111111111',
@@ -63,9 +64,6 @@ export type EndGameInstruction<
       TAccountState extends string
         ? WritableAccount<TAccountState>
         : TAccountState,
-      TAccountRecentSlothashes extends string
-        ? ReadonlyAccount<TAccountRecentSlothashes>
-        : TAccountRecentSlothashes,
       TAccountSystemProgram extends string
         ? ReadonlyAccount<TAccountSystemProgram>
         : TAccountSystemProgram,
@@ -73,64 +71,72 @@ export type EndGameInstruction<
     ]
   >;
 
-export type EndGameInstructionData = { discriminator: ReadonlyUint8Array };
+export type UpdateWithdrawUnclaimedAtInstructionData = {
+  discriminator: ReadonlyUint8Array;
+  ts: bigint;
+};
 
-export type EndGameInstructionDataArgs = {};
+export type UpdateWithdrawUnclaimedAtInstructionDataArgs = {
+  ts: number | bigint;
+};
 
-export function getEndGameInstructionDataEncoder(): Encoder<EndGameInstructionDataArgs> {
+export function getUpdateWithdrawUnclaimedAtInstructionDataEncoder(): Encoder<UpdateWithdrawUnclaimedAtInstructionDataArgs> {
   return transformEncoder(
-    getStructEncoder([['discriminator', fixEncoderSize(getBytesEncoder(), 8)]]),
-    (value) => ({ ...value, discriminator: END_GAME_DISCRIMINATOR })
+    getStructEncoder([
+      ['discriminator', fixEncoderSize(getBytesEncoder(), 8)],
+      ['ts', getI64Encoder()],
+    ]),
+    (value) => ({
+      ...value,
+      discriminator: UPDATE_WITHDRAW_UNCLAIMED_AT_DISCRIMINATOR,
+    })
   );
 }
 
-export function getEndGameInstructionDataDecoder(): Decoder<EndGameInstructionData> {
+export function getUpdateWithdrawUnclaimedAtInstructionDataDecoder(): Decoder<UpdateWithdrawUnclaimedAtInstructionData> {
   return getStructDecoder([
     ['discriminator', fixDecoderSize(getBytesDecoder(), 8)],
+    ['ts', getI64Decoder()],
   ]);
 }
 
-export function getEndGameInstructionDataCodec(): Codec<
-  EndGameInstructionDataArgs,
-  EndGameInstructionData
+export function getUpdateWithdrawUnclaimedAtInstructionDataCodec(): Codec<
+  UpdateWithdrawUnclaimedAtInstructionDataArgs,
+  UpdateWithdrawUnclaimedAtInstructionData
 > {
   return combineCodec(
-    getEndGameInstructionDataEncoder(),
-    getEndGameInstructionDataDecoder()
+    getUpdateWithdrawUnclaimedAtInstructionDataEncoder(),
+    getUpdateWithdrawUnclaimedAtInstructionDataDecoder()
   );
 }
 
-export type EndGameInput<
+export type UpdateWithdrawUnclaimedAtInput<
   TAccountAdmin extends string = string,
   TAccountState extends string = string,
-  TAccountRecentSlothashes extends string = string,
   TAccountSystemProgram extends string = string,
 > = {
   admin: TransactionSigner<TAccountAdmin>;
   state: Address<TAccountState>;
-  recentSlothashes?: Address<TAccountRecentSlothashes>;
   systemProgram?: Address<TAccountSystemProgram>;
+  ts: UpdateWithdrawUnclaimedAtInstructionDataArgs['ts'];
 };
 
-export function getEndGameInstruction<
+export function getUpdateWithdrawUnclaimedAtInstruction<
   TAccountAdmin extends string,
   TAccountState extends string,
-  TAccountRecentSlothashes extends string,
   TAccountSystemProgram extends string,
   TProgramAddress extends Address = typeof SANTA_VS_GRINCH_PROGRAM_ADDRESS,
 >(
-  input: EndGameInput<
+  input: UpdateWithdrawUnclaimedAtInput<
     TAccountAdmin,
     TAccountState,
-    TAccountRecentSlothashes,
     TAccountSystemProgram
   >,
   config?: { programAddress?: TProgramAddress }
-): EndGameInstruction<
+): UpdateWithdrawUnclaimedAtInstruction<
   TProgramAddress,
   TAccountAdmin,
   TAccountState,
-  TAccountRecentSlothashes,
   TAccountSystemProgram
 > {
   // Program address.
@@ -141,10 +147,6 @@ export function getEndGameInstruction<
   const originalAccounts = {
     admin: { value: input.admin ?? null, isWritable: true },
     state: { value: input.state ?? null, isWritable: true },
-    recentSlothashes: {
-      value: input.recentSlothashes ?? null,
-      isWritable: false,
-    },
     systemProgram: { value: input.systemProgram ?? null, isWritable: false },
   };
   const accounts = originalAccounts as Record<
@@ -152,11 +154,10 @@ export function getEndGameInstruction<
     ResolvedAccount
   >;
 
+  // Original args.
+  const args = { ...input };
+
   // Resolve default values.
-  if (!accounts.recentSlothashes.value) {
-    accounts.recentSlothashes.value =
-      'SysvarS1otHashes111111111111111111111111111' as Address<'SysvarS1otHashes111111111111111111111111111'>;
-  }
   if (!accounts.systemProgram.value) {
     accounts.systemProgram.value =
       '11111111111111111111111111111111' as Address<'11111111111111111111111111111111'>;
@@ -167,23 +168,23 @@ export function getEndGameInstruction<
     accounts: [
       getAccountMeta(accounts.admin),
       getAccountMeta(accounts.state),
-      getAccountMeta(accounts.recentSlothashes),
       getAccountMeta(accounts.systemProgram),
     ],
     programAddress,
-    data: getEndGameInstructionDataEncoder().encode({}),
-  } as EndGameInstruction<
+    data: getUpdateWithdrawUnclaimedAtInstructionDataEncoder().encode(
+      args as UpdateWithdrawUnclaimedAtInstructionDataArgs
+    ),
+  } as UpdateWithdrawUnclaimedAtInstruction<
     TProgramAddress,
     TAccountAdmin,
     TAccountState,
-    TAccountRecentSlothashes,
     TAccountSystemProgram
   >;
 
   return instruction;
 }
 
-export type ParsedEndGameInstruction<
+export type ParsedUpdateWithdrawUnclaimedAtInstruction<
   TProgram extends string = typeof SANTA_VS_GRINCH_PROGRAM_ADDRESS,
   TAccountMetas extends readonly IAccountMeta[] = readonly IAccountMeta[],
 > = {
@@ -191,21 +192,20 @@ export type ParsedEndGameInstruction<
   accounts: {
     admin: TAccountMetas[0];
     state: TAccountMetas[1];
-    recentSlothashes: TAccountMetas[2];
-    systemProgram: TAccountMetas[3];
+    systemProgram: TAccountMetas[2];
   };
-  data: EndGameInstructionData;
+  data: UpdateWithdrawUnclaimedAtInstructionData;
 };
 
-export function parseEndGameInstruction<
+export function parseUpdateWithdrawUnclaimedAtInstruction<
   TProgram extends string,
   TAccountMetas extends readonly IAccountMeta[],
 >(
   instruction: IInstruction<TProgram> &
     IInstructionWithAccounts<TAccountMetas> &
     IInstructionWithData<Uint8Array>
-): ParsedEndGameInstruction<TProgram, TAccountMetas> {
-  if (instruction.accounts.length < 4) {
+): ParsedUpdateWithdrawUnclaimedAtInstruction<TProgram, TAccountMetas> {
+  if (instruction.accounts.length < 3) {
     // TODO: Coded error.
     throw new Error('Not enough accounts');
   }
@@ -220,9 +220,10 @@ export function parseEndGameInstruction<
     accounts: {
       admin: getNextAccount(),
       state: getNextAccount(),
-      recentSlothashes: getNextAccount(),
       systemProgram: getNextAccount(),
     },
-    data: getEndGameInstructionDataDecoder().decode(instruction.data),
+    data: getUpdateWithdrawUnclaimedAtInstructionDataDecoder().decode(
+      instruction.data
+    ),
   };
 }

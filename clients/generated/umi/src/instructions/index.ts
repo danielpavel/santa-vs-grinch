@@ -11,5 +11,7 @@ export * from './buyMysteryBox';
 export * from './claimWinnings';
 export * from './endGame';
 export * from './initialize';
+export * from './updateWithdrawUnclaimedAt';
 export * from './withdrawCreatorsWinnings';
 export * from './withdrawFees';
+export * from './withdrawUnclaimedCreatorsWinnings';

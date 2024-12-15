@@ -49,6 +49,15 @@ pub enum SantaVsGrinchError {
     /// 6012 - InvalidBetTag
     #[error("InvalidBetTag")]
     InvalidBetTag = 0x177C,
+    /// 6013 - InvalidCreatorConfig
+    #[error("InvalidCreatorConfig")]
+    InvalidCreatorConfig = 0x177D,
+    /// 6014 - Creators withdrawal already claimed
+    #[error("Creators withdrawal already claimed")]
+    CreatorWithdrawalAlreadyClaimed = 0x177E,
+    /// 6015 - Witdrawal unclaimed period not ended
+    #[error("Witdrawal unclaimed period not ended")]
+    WitdrawalUnclaimedPeriodNotEnded = 0x177F,
 }
 
 impl solana_program::program_error::PrintProgramError for SantaVsGrinchError {

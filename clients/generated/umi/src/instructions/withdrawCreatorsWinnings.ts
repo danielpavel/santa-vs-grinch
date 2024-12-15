@@ -74,7 +74,7 @@ export function withdrawCreatorsWinnings(
   // Program ID.
   const programId = context.programs.getPublicKey(
     'santaVsGrinch',
-    'BZGCW6asmdxFTxo1xNpgBPnX9Seb5oLfPDEy3QqLpPPE'
+    '5Kox1zWxgz9oGXCYw65iGKAHYmiFov6FpPCib71NZ75x'
   );
 
   // Accounts.

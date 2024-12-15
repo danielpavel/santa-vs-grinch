@@ -40,38 +40,50 @@ export const SANTA_VS_GRINCH_ERROR__TOO_MANY_CREATORS = 0x177a; // 6010
 export const SANTA_VS_GRINCH_ERROR__INVALID_CREATOR_ADDRESS = 0x177b; // 6011
 /** InvalidBetTag: InvalidBetTag */
 export const SANTA_VS_GRINCH_ERROR__INVALID_BET_TAG = 0x177c; // 6012
+/** InvalidCreatorConfig: InvalidCreatorConfig */
+export const SANTA_VS_GRINCH_ERROR__INVALID_CREATOR_CONFIG = 0x177d; // 6013
+/** CreatorWithdrawalAlreadyClaimed: Creators withdrawal already claimed */
+export const SANTA_VS_GRINCH_ERROR__CREATOR_WITHDRAWAL_ALREADY_CLAIMED = 0x177e; // 6014
+/** WitdrawalUnclaimedPeriodNotEnded: Witdrawal unclaimed period not ended */
+export const SANTA_VS_GRINCH_ERROR__WITDRAWAL_UNCLAIMED_PERIOD_NOT_ENDED = 0x177f; // 6015
 
 export type SantaVsGrinchError =
   | typeof SANTA_VS_GRINCH_ERROR__ALREADY_CLAIMED
+  | typeof SANTA_VS_GRINCH_ERROR__CREATOR_WITHDRAWAL_ALREADY_CLAIMED
   | typeof SANTA_VS_GRINCH_ERROR__GAME_ENDED
   | typeof SANTA_VS_GRINCH_ERROR__GAME_NOT_ENDED
   | typeof SANTA_VS_GRINCH_ERROR__INVALID_ADMIN
   | typeof SANTA_VS_GRINCH_ERROR__INVALID_BET_SIDE
   | typeof SANTA_VS_GRINCH_ERROR__INVALID_BET_TAG
   | typeof SANTA_VS_GRINCH_ERROR__INVALID_CREATOR_ADDRESS
+  | typeof SANTA_VS_GRINCH_ERROR__INVALID_CREATOR_CONFIG
   | typeof SANTA_VS_GRINCH_ERROR__INVALID_FEES_VAULT_DEPOSIT_ACCOUNT
   | typeof SANTA_VS_GRINCH_ERROR__INVALID_PERCENTAGE
   | typeof SANTA_VS_GRINCH_ERROR__INVALID_TOTAL_SHARES
   | typeof SANTA_VS_GRINCH_ERROR__INVALID_VAULT_DEPOSIT_ACCOUNT
   | typeof SANTA_VS_GRINCH_ERROR__INVALID_VAULT_WINNINGS_ACCOUNT
-  | typeof SANTA_VS_GRINCH_ERROR__TOO_MANY_CREATORS;
+  | typeof SANTA_VS_GRINCH_ERROR__TOO_MANY_CREATORS
+  | typeof SANTA_VS_GRINCH_ERROR__WITDRAWAL_UNCLAIMED_PERIOD_NOT_ENDED;
 
 let santaVsGrinchErrorMessages: Record<SantaVsGrinchError, string> | undefined;
 if (process.env.NODE_ENV !== 'production') {
   santaVsGrinchErrorMessages = {
     [SANTA_VS_GRINCH_ERROR__ALREADY_CLAIMED]: `User has already claimed`,
+    [SANTA_VS_GRINCH_ERROR__CREATOR_WITHDRAWAL_ALREADY_CLAIMED]: `Creators withdrawal already claimed`,
     [SANTA_VS_GRINCH_ERROR__GAME_ENDED]: `Game has already ended`,
     [SANTA_VS_GRINCH_ERROR__GAME_NOT_ENDED]: `Game has not ended yet`,
     [SANTA_VS_GRINCH_ERROR__INVALID_ADMIN]: `Invalid admin`,
     [SANTA_VS_GRINCH_ERROR__INVALID_BET_SIDE]: `Invalid bet side`,
     [SANTA_VS_GRINCH_ERROR__INVALID_BET_TAG]: `InvalidBetTag`,
     [SANTA_VS_GRINCH_ERROR__INVALID_CREATOR_ADDRESS]: `InvalidCreatorAddress`,
+    [SANTA_VS_GRINCH_ERROR__INVALID_CREATOR_CONFIG]: `InvalidCreatorConfig`,
     [SANTA_VS_GRINCH_ERROR__INVALID_FEES_VAULT_DEPOSIT_ACCOUNT]: `Invalid fees vault account`,
     [SANTA_VS_GRINCH_ERROR__INVALID_PERCENTAGE]: `Invalid Percentage`,
     [SANTA_VS_GRINCH_ERROR__INVALID_TOTAL_SHARES]: `Invalid total shares`,
     [SANTA_VS_GRINCH_ERROR__INVALID_VAULT_DEPOSIT_ACCOUNT]: `Invalid deposit vault account`,
     [SANTA_VS_GRINCH_ERROR__INVALID_VAULT_WINNINGS_ACCOUNT]: `Invalid winnings vault account`,
     [SANTA_VS_GRINCH_ERROR__TOO_MANY_CREATORS]: `Too Many Creators`,
+    [SANTA_VS_GRINCH_ERROR__WITDRAWAL_UNCLAIMED_PERIOD_NOT_ENDED]: `Witdrawal unclaimed period not ended`,
   };
 }
 

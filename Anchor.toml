@@ -5,7 +5,7 @@ resolution = true
 skip-lint = false
 
 [programs.localnet]
-santa_vs_grinch = "BZGCW6asmdxFTxo1xNpgBPnX9Seb5oLfPDEy3QqLpPPE"
+santa_vs_grinch = "5Kox1zWxgz9oGXCYw65iGKAHYmiFov6FpPCib71NZ75x"
 
 [registry]
 url = "https://api.apr.dev"

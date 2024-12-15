@@ -10,6 +10,8 @@ import {
   combineCodec,
   getAddressDecoder,
   getAddressEncoder,
+  getBooleanDecoder,
+  getBooleanEncoder,
   getStructDecoder,
   getStructEncoder,
   getU16Decoder,
@@ -20,7 +22,7 @@ import {
   type Encoder,
 } from '@solana/web3.js';
 
-export type Creator = { pubkey: Address; shareInBp: number };
+export type Creator = { pubkey: Address; shareInBp: number; claimed: boolean };
 
 export type CreatorArgs = Creator;
 
@@ -28,6 +30,7 @@ export function getCreatorEncoder(): Encoder<CreatorArgs> {
   return getStructEncoder([
     ['pubkey', getAddressEncoder()],
     ['shareInBp', getU16Encoder()],
+    ['claimed', getBooleanEncoder()],
   ]);
 }
 
@@ -35,6 +38,7 @@ export function getCreatorDecoder(): Decoder<Creator> {
   return getStructDecoder([
     ['pubkey', getAddressDecoder()],
     ['shareInBp', getU16Decoder()],
+    ['claimed', getBooleanDecoder()],
   ]);
 }
 

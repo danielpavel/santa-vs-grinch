@@ -19,12 +19,14 @@ import {
   type ParsedClaimWinningsInstruction,
   type ParsedEndGameInstruction,
   type ParsedInitializeInstruction,
+  type ParsedUpdateWithdrawUnclaimedAtInstruction,
   type ParsedWithdrawCreatorsWinningsInstruction,
   type ParsedWithdrawFeesInstruction,
+  type ParsedWithdrawUnclaimedCreatorsWinningsInstruction,
 } from '../instructions';
 
 export const SANTA_VS_GRINCH_PROGRAM_ADDRESS =
-  'BZGCW6asmdxFTxo1xNpgBPnX9Seb5oLfPDEy3QqLpPPE' as Address<'BZGCW6asmdxFTxo1xNpgBPnX9Seb5oLfPDEy3QqLpPPE'>;
+  '5Kox1zWxgz9oGXCYw65iGKAHYmiFov6FpPCib71NZ75x' as Address<'5Kox1zWxgz9oGXCYw65iGKAHYmiFov6FpPCib71NZ75x'>;
 
 export enum SantaVsGrinchAccount {
   Config,
@@ -68,8 +70,10 @@ export enum SantaVsGrinchInstruction {
   ClaimWinnings,
   EndGame,
   Initialize,
+  UpdateWithdrawUnclaimedAt,
   WithdrawCreatorsWinnings,
   WithdrawFees,
+  WithdrawUnclaimedCreatorsWinnings,
 }
 
 export function identifySantaVsGrinchInstruction(
@@ -135,6 +139,17 @@ export function identifySantaVsGrinchInstruction(
     containsBytes(
       data,
       fixEncoderSize(getBytesEncoder(), 8).encode(
+        new Uint8Array([201, 9, 21, 79, 188, 80, 2, 89])
+      ),
+      0
+    )
+  ) {
+    return SantaVsGrinchInstruction.UpdateWithdrawUnclaimedAt;
+  }
+  if (
+    containsBytes(
+      data,
+      fixEncoderSize(getBytesEncoder(), 8).encode(
         new Uint8Array([210, 104, 160, 53, 155, 35, 222, 249])
       ),
       0
@@ -153,13 +168,24 @@ export function identifySantaVsGrinchInstruction(
   ) {
     return SantaVsGrinchInstruction.WithdrawFees;
   }
+  if (
+    containsBytes(
+      data,
+      fixEncoderSize(getBytesEncoder(), 8).encode(
+        new Uint8Array([223, 124, 225, 226, 237, 254, 93, 105])
+      ),
+      0
+    )
+  ) {
+    return SantaVsGrinchInstruction.WithdrawUnclaimedCreatorsWinnings;
+  }
   throw new Error(
     'The provided instruction could not be identified as a santaVsGrinch instruction.'
   );
 }
 
 export type ParsedSantaVsGrinchInstruction<
-  TProgram extends string = 'BZGCW6asmdxFTxo1xNpgBPnX9Seb5oLfPDEy3QqLpPPE',
+  TProgram extends string = '5Kox1zWxgz9oGXCYw65iGKAHYmiFov6FpPCib71NZ75x',
 > =
   | ({
       instructionType: SantaVsGrinchInstruction.Bet;
@@ -177,8 +203,14 @@ export type ParsedSantaVsGrinchInstruction<
       instructionType: SantaVsGrinchInstruction.Initialize;
     } & ParsedInitializeInstruction<TProgram>)
   | ({
+      instructionType: SantaVsGrinchInstruction.UpdateWithdrawUnclaimedAt;
+    } & ParsedUpdateWithdrawUnclaimedAtInstruction<TProgram>)
+  | ({
       instructionType: SantaVsGrinchInstruction.WithdrawCreatorsWinnings;
     } & ParsedWithdrawCreatorsWinningsInstruction<TProgram>)
   | ({
       instructionType: SantaVsGrinchInstruction.WithdrawFees;
-    } & ParsedWithdrawFeesInstruction<TProgram>);
+    } & ParsedWithdrawFeesInstruction<TProgram>)
+  | ({
+      instructionType: SantaVsGrinchInstruction.WithdrawUnclaimedCreatorsWinnings;
+    } & ParsedWithdrawUnclaimedCreatorsWinningsInstruction<TProgram>);

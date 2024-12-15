@@ -9,7 +9,7 @@ use borsh::BorshDeserialize;
 use borsh::BorshSerialize;
 
 /// Accounts.
-pub struct EndGame {
+pub struct WithdrawUnclaimedCreatorsWinnings {
       
               
           pub admin: solana_program::pubkey::Pubkey,
@@ -18,13 +18,13 @@ pub struct EndGame {
           pub state: solana_program::pubkey::Pubkey,
           
               
-          pub recent_slothashes: solana_program::pubkey::Pubkey,
+          pub vault: solana_program::pubkey::Pubkey,
           
               
           pub system_program: solana_program::pubkey::Pubkey,
       }
 
-impl EndGame {
+impl WithdrawUnclaimedCreatorsWinnings {
   pub fn instruction(&self) -> solana_program::instruction::Instruction {
     self.instruction_with_remaining_accounts(&[])
   }
@@ -39,8 +39,8 @@ impl EndGame {
             self.state,
             false
           ));
-                                          accounts.push(solana_program::instruction::AccountMeta::new_readonly(
-            self.recent_slothashes,
+                                          accounts.push(solana_program::instruction::AccountMeta::new(
+            self.vault,
             false
           ));
                                           accounts.push(solana_program::instruction::AccountMeta::new_readonly(
@@ -48,7 +48,7 @@ impl EndGame {
             false
           ));
                       accounts.extend_from_slice(remaining_accounts);
-    let data = EndGameInstructionData::new().try_to_vec().unwrap();
+    let data = WithdrawUnclaimedCreatorsWinningsInstructionData::new().try_to_vec().unwrap();
     
     solana_program::instruction::Instruction {
       program_id: crate::SANTA_VS_GRINCH_ID,
@@ -59,19 +59,19 @@ impl EndGame {
 }
 
 #[derive(BorshDeserialize, BorshSerialize)]
-pub struct EndGameInstructionData {
+pub struct WithdrawUnclaimedCreatorsWinningsInstructionData {
             discriminator: [u8; 8],
       }
 
-impl EndGameInstructionData {
+impl WithdrawUnclaimedCreatorsWinningsInstructionData {
   pub fn new() -> Self {
     Self {
-                        discriminator: [224, 135, 245, 99, 67, 175, 121, 252],
+                        discriminator: [223, 124, 225, 226, 237, 254, 93, 105],
                   }
   }
 }
 
-impl Default for EndGameInstructionData {
+impl Default for WithdrawUnclaimedCreatorsWinningsInstructionData {
   fn default() -> Self {
     Self::new()
   }
@@ -79,24 +79,24 @@ impl Default for EndGameInstructionData {
 
 
 
-/// Instruction builder for `EndGame`.
+/// Instruction builder for `WithdrawUnclaimedCreatorsWinnings`.
 ///
 /// ### Accounts:
 ///
                       ///   0. `[writable, signer]` admin
                 ///   1. `[writable]` state
-                ///   2. `[optional]` recent_slothashes (default to `SysvarS1otHashes111111111111111111111111111`)
+                ///   2. `[writable]` vault
                 ///   3. `[optional]` system_program (default to `11111111111111111111111111111111`)
 #[derive(Clone, Debug, Default)]
-pub struct EndGameBuilder {
+pub struct WithdrawUnclaimedCreatorsWinningsBuilder {
             admin: Option<solana_program::pubkey::Pubkey>,
                 state: Option<solana_program::pubkey::Pubkey>,
-                recent_slothashes: Option<solana_program::pubkey::Pubkey>,
+                vault: Option<solana_program::pubkey::Pubkey>,
                 system_program: Option<solana_program::pubkey::Pubkey>,
                 __remaining_accounts: Vec<solana_program::instruction::AccountMeta>,
 }
 
-impl EndGameBuilder {
+impl WithdrawUnclaimedCreatorsWinningsBuilder {
   pub fn new() -> Self {
     Self::default()
   }
@@ -110,10 +110,9 @@ impl EndGameBuilder {
                         self.state = Some(state);
                     self
     }
-            /// `[optional account, default to 'SysvarS1otHashes111111111111111111111111111']`
-#[inline(always)]
-    pub fn recent_slothashes(&mut self, recent_slothashes: solana_program::pubkey::Pubkey) -> &mut Self {
-                        self.recent_slothashes = Some(recent_slothashes);
+            #[inline(always)]
+    pub fn vault(&mut self, vault: solana_program::pubkey::Pubkey) -> &mut Self {
+                        self.vault = Some(vault);
                     self
     }
             /// `[optional account, default to '11111111111111111111111111111111']`
@@ -136,10 +135,10 @@ impl EndGameBuilder {
   }
   #[allow(clippy::clone_on_copy)]
   pub fn instruction(&self) -> solana_program::instruction::Instruction {
-    let accounts = EndGame {
+    let accounts = WithdrawUnclaimedCreatorsWinnings {
                               admin: self.admin.expect("admin is not set"),
                                         state: self.state.expect("state is not set"),
-                                        recent_slothashes: self.recent_slothashes.unwrap_or(solana_program::pubkey!("SysvarS1otHashes111111111111111111111111111")),
+                                        vault: self.vault.expect("vault is not set"),
                                         system_program: self.system_program.unwrap_or(solana_program::pubkey!("11111111111111111111111111111111")),
                       };
     
@@ -147,8 +146,8 @@ impl EndGameBuilder {
   }
 }
 
-  /// `end_game` CPI accounts.
-  pub struct EndGameCpiAccounts<'a, 'b> {
+  /// `withdraw_unclaimed_creators_winnings` CPI accounts.
+  pub struct WithdrawUnclaimedCreatorsWinningsCpiAccounts<'a, 'b> {
           
                     
               pub admin: &'b solana_program::account_info::AccountInfo<'a>,
@@ -157,14 +156,14 @@ impl EndGameBuilder {
               pub state: &'b solana_program::account_info::AccountInfo<'a>,
                 
                     
-              pub recent_slothashes: &'b solana_program::account_info::AccountInfo<'a>,
+              pub vault: &'b solana_program::account_info::AccountInfo<'a>,
                 
                     
               pub system_program: &'b solana_program::account_info::AccountInfo<'a>,
             }
 
-/// `end_game` CPI instruction.
-pub struct EndGameCpi<'a, 'b> {
+/// `withdraw_unclaimed_creators_winnings` CPI instruction.
+pub struct WithdrawUnclaimedCreatorsWinningsCpi<'a, 'b> {
   /// The program to invoke.
   pub __program: &'b solana_program::account_info::AccountInfo<'a>,
       
@@ -175,22 +174,22 @@ pub struct EndGameCpi<'a, 'b> {
           pub state: &'b solana_program::account_info::AccountInfo<'a>,
           
               
-          pub recent_slothashes: &'b solana_program::account_info::AccountInfo<'a>,
+          pub vault: &'b solana_program::account_info::AccountInfo<'a>,
           
               
           pub system_program: &'b solana_program::account_info::AccountInfo<'a>,
         }
 
-impl<'a, 'b> EndGameCpi<'a, 'b> {
+impl<'a, 'b> WithdrawUnclaimedCreatorsWinningsCpi<'a, 'b> {
   pub fn new(
     program: &'b solana_program::account_info::AccountInfo<'a>,
-          accounts: EndGameCpiAccounts<'a, 'b>,
+          accounts: WithdrawUnclaimedCreatorsWinningsCpiAccounts<'a, 'b>,
           ) -> Self {
     Self {
       __program: program,
               admin: accounts.admin,
               state: accounts.state,
-              recent_slothashes: accounts.recent_slothashes,
+              vault: accounts.vault,
               system_program: accounts.system_program,
                 }
   }
@@ -222,8 +221,8 @@ impl<'a, 'b> EndGameCpi<'a, 'b> {
             *self.state.key,
             false
           ));
-                                          accounts.push(solana_program::instruction::AccountMeta::new_readonly(
-            *self.recent_slothashes.key,
+                                          accounts.push(solana_program::instruction::AccountMeta::new(
+            *self.vault.key,
             false
           ));
                                           accounts.push(solana_program::instruction::AccountMeta::new_readonly(
@@ -237,7 +236,7 @@ impl<'a, 'b> EndGameCpi<'a, 'b> {
           is_writable: remaining_account.2,
       })
     });
-    let data = EndGameInstructionData::new().try_to_vec().unwrap();
+    let data = WithdrawUnclaimedCreatorsWinningsInstructionData::new().try_to_vec().unwrap();
     
     let instruction = solana_program::instruction::Instruction {
       program_id: crate::SANTA_VS_GRINCH_ID,
@@ -248,7 +247,7 @@ impl<'a, 'b> EndGameCpi<'a, 'b> {
     account_infos.push(self.__program.clone());
                   account_infos.push(self.admin.clone());
                         account_infos.push(self.state.clone());
-                        account_infos.push(self.recent_slothashes.clone());
+                        account_infos.push(self.vault.clone());
                         account_infos.push(self.system_program.clone());
               remaining_accounts.iter().for_each(|remaining_account| account_infos.push(remaining_account.0.clone()));
 
@@ -260,26 +259,26 @@ impl<'a, 'b> EndGameCpi<'a, 'b> {
   }
 }
 
-/// Instruction builder for `EndGame` via CPI.
+/// Instruction builder for `WithdrawUnclaimedCreatorsWinnings` via CPI.
 ///
 /// ### Accounts:
 ///
                       ///   0. `[writable, signer]` admin
                 ///   1. `[writable]` state
-          ///   2. `[]` recent_slothashes
+                ///   2. `[writable]` vault
           ///   3. `[]` system_program
 #[derive(Clone, Debug)]
-pub struct EndGameCpiBuilder<'a, 'b> {
-  instruction: Box<EndGameCpiBuilderInstruction<'a, 'b>>,
+pub struct WithdrawUnclaimedCreatorsWinningsCpiBuilder<'a, 'b> {
+  instruction: Box<WithdrawUnclaimedCreatorsWinningsCpiBuilderInstruction<'a, 'b>>,
 }
 
-impl<'a, 'b> EndGameCpiBuilder<'a, 'b> {
+impl<'a, 'b> WithdrawUnclaimedCreatorsWinningsCpiBuilder<'a, 'b> {
   pub fn new(program: &'b solana_program::account_info::AccountInfo<'a>) -> Self {
-    let instruction = Box::new(EndGameCpiBuilderInstruction {
+    let instruction = Box::new(WithdrawUnclaimedCreatorsWinningsCpiBuilderInstruction {
       __program: program,
               admin: None,
               state: None,
-              recent_slothashes: None,
+              vault: None,
               system_program: None,
                                 __remaining_accounts: Vec::new(),
     });
@@ -296,8 +295,8 @@ impl<'a, 'b> EndGameCpiBuilder<'a, 'b> {
                     self
     }
       #[inline(always)]
-    pub fn recent_slothashes(&mut self, recent_slothashes: &'b solana_program::account_info::AccountInfo<'a>) -> &mut Self {
-                        self.instruction.recent_slothashes = Some(recent_slothashes);
+    pub fn vault(&mut self, vault: &'b solana_program::account_info::AccountInfo<'a>) -> &mut Self {
+                        self.instruction.vault = Some(vault);
                     self
     }
       #[inline(always)]
@@ -327,14 +326,14 @@ impl<'a, 'b> EndGameCpiBuilder<'a, 'b> {
   #[allow(clippy::clone_on_copy)]
   #[allow(clippy::vec_init_then_push)]
   pub fn invoke_signed(&self, signers_seeds: &[&[&[u8]]]) -> solana_program::entrypoint::ProgramResult {
-        let instruction = EndGameCpi {
+        let instruction = WithdrawUnclaimedCreatorsWinningsCpi {
         __program: self.instruction.__program,
                   
           admin: self.instruction.admin.expect("admin is not set"),
                   
           state: self.instruction.state.expect("state is not set"),
                   
-          recent_slothashes: self.instruction.recent_slothashes.expect("recent_slothashes is not set"),
+          vault: self.instruction.vault.expect("vault is not set"),
                   
           system_program: self.instruction.system_program.expect("system_program is not set"),
                     };
@@ -343,11 +342,11 @@ impl<'a, 'b> EndGameCpiBuilder<'a, 'b> {
 }
 
 #[derive(Clone, Debug)]
-struct EndGameCpiBuilderInstruction<'a, 'b> {
+struct WithdrawUnclaimedCreatorsWinningsCpiBuilderInstruction<'a, 'b> {
   __program: &'b solana_program::account_info::AccountInfo<'a>,
             admin: Option<&'b solana_program::account_info::AccountInfo<'a>>,
                 state: Option<&'b solana_program::account_info::AccountInfo<'a>>,
-                recent_slothashes: Option<&'b solana_program::account_info::AccountInfo<'a>>,
+                vault: Option<&'b solana_program::account_info::AccountInfo<'a>>,
                 system_program: Option<&'b solana_program::account_info::AccountInfo<'a>>,
                 /// Additional instruction accounts `(AccountInfo, is_writable, is_signer)`.
   __remaining_accounts: Vec<(&'b solana_program::account_info::AccountInfo<'a>, bool, bool)>,

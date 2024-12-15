@@ -9,5 +9,5 @@ use solana_program::{pubkey, pubkey::Pubkey};
 
 
   /// `santa_vs_grinch` program ID.
-  pub const SANTA_VS_GRINCH_ID: Pubkey = pubkey!("BZGCW6asmdxFTxo1xNpgBPnX9Seb5oLfPDEy3QqLpPPE");
+  pub const SANTA_VS_GRINCH_ID: Pubkey = pubkey!("5Kox1zWxgz9oGXCYw65iGKAHYmiFov6FpPCib71NZ75x");
 
