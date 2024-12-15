@@ -63,4 +63,11 @@ pub mod santa_vs_grinch {
     ) -> Result<()> {
         ctx.accounts.withdraw_unclaimed_fees(ctx.remaining_accounts)
     }
+
+    pub fn update_withdraw_unclaimed_at(
+        ctx: Context<UpdateWithdrawUnclaimed>,
+        ts: i64,
+    ) -> Result<()> {
+        ctx.accounts.update_withdraw_unclaimed_period(ts)
+    }
 }

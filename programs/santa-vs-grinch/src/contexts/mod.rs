@@ -16,5 +16,8 @@ pub use withdraw_fees::*;
 pub mod withdraw_creators_winnings;
 pub use withdraw_creators_winnings::*;
 
+pub mod update_withdraw_unclaimed;
+pub use update_withdraw_unclaimed::*;
+
 pub mod bet;
 pub use bet::*;

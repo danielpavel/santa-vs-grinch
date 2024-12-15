@@ -130,6 +130,30 @@ describe("santa-vs-grinch", () => {
     assert.deepEqual(config.creators[2], accounts.creator3);
   });
 
+  it("Update withdraw unclaimed at", async () => {
+    let config = await program.account.config.fetch(
+      accounts.configState as PublicKey
+    );
+
+    const now = Date.now() / 1000;
+    const WITHDRAWAL_PERIOD = 90 * 24 * 60 * 60; // 90 days
+    const ts = new anchor.BN(now + WITHDRAWAL_PERIOD);
+
+    await program.methods
+      .updateWithdrawUnclaimedAt(ts)
+      .accounts({
+        admin: provider.publicKey,
+        state: accounts.configState,
+      })
+      .rpc();
+
+    config = await program.account.config.fetch(
+      accounts.configState as PublicKey
+    );
+
+    expect(config.withdrawUnclaimedAt.toNumber()).to.eq(ts.toNumber());
+  });
+
   it("Bet on Santa", async () => {
     const [user1UserStatePubkey, _bump] = web3.PublicKey.findProgramAddressSync(
       [
