@@ -1,0 +1,21 @@
+{
+  "admin_fee_percentage_bp": "100",
+  "max_num_creators": 3,
+  "creators": [
+    {
+      "pubkey": "5GY5g8w1x1NZYkehip6nSG3FHdBgvhGnUJVNoK9zVGKs",
+      "share_in_bp": 3333,
+      "claimed": false
+    },
+    {
+      "pubkey": "5GY5g8w1x1NZYkehip6nSG3FHdBgvhGnUJVNoK9zVGKs",
+      "share_in_bp": 3333,
+      "claimed": false
+    },
+    {
+      "pubkey": "5GY5g8w1x1NZYkehip6nSG3FHdBgvhGnUJVNoK9zVGKs",
+      "share_in_bp": 3334,
+      "claimed": false
+    }
+  ]
+}

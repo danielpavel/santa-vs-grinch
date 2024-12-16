@@ -19,6 +19,19 @@ import {
   publicKey as publicKeySerializer,
   string,
 } from "@metaplex-foundation/umi/serializers";
+import { readFileSync } from "fs";
+
+interface CreatorConfig {
+  pubkey: string;
+  share_in_bp: number;
+  claimed: boolean;
+}
+
+interface InitializeConfig {
+  admin_fee_percentage_bp: number;
+  max_num_creators: number;
+  creators: CreatorConfig[];
+}
 
 const options: TransactionBuilderSendAndConfirmOptions = {
   confirm: { commitment: "confirmed" },
@@ -38,28 +51,68 @@ async function getConfig(umi: Umi) {
   return configStateAccount;
 }
 
-async function initializeGame(umi: Umi) {
-  const fee_bp = 100;
-  const creators: Array<Creator> = [
-    {
-      pubkey: publicKey("5GY5g8w1x1NZYkehip6nSG3FHdBgvhGnUJVNoK9zVGKs"),
-      shareInBp: 3333,
-    },
-    {
-      pubkey: publicKey("5GY5g8w1x1NZYkehip6nSG3FHdBgvhGnUJVNoK9zVGKs"),
-      shareInBp: 3333,
-    },
-    {
-      pubkey: publicKey("5GY5g8w1x1NZYkehip6nSG3FHdBgvhGnUJVNoK9zVGKs"),
-      shareInBp: 3334,
-    },
-  ];
+async function initializeGame(umi: Umi, configFname: string) {
+  console.log("Initializing game...");
+
+  const configPath = path.join(process.cwd(), configFname);
+
+  // Read and parse the config file
+  const configFile = readFileSync(configPath, "utf-8");
+  const config: InitializeConfig = JSON.parse(configFile);
+
+  // Validate the config
+  if (!config.creators || !Array.isArray(config.creators)) {
+    throw new Error("Invalid config: creators array is required");
+  }
+
+  if (config.creators.length > config.max_num_creators) {
+    throw new Error(
+      `Number of creators (${config.creators.length}) exceeds max_num_creators (${config.max_num_creators})`
+    );
+  }
+
+  // Validate total shares
+  const totalShares = config.creators.reduce(
+    (sum, creator) => sum + creator.share_in_bp,
+    0
+  );
+  if (totalShares !== 10000) {
+    throw new Error(
+      `Total creator shares must equal 10000 basis points (100%). Current total: ${totalShares}`
+    );
+  }
+
+  config.creators.map((creator) => {
+    if (creator.claimed) {
+      throw new Error("All creators must have claimed: false");
+    }
+  });
+
+  // Convert creator pubkeys to PublicKey objects
+  const creators = config.creators.map((creator) => ({
+    pubkey: publicKey(creator.pubkey),
+    shareInBp: creator.share_in_bp,
+    claimed: creator.claimed,
+  }));
+
+  console.log("Initializing game with config:");
+  console.log("Admin:");
+  console.log("Admin Fee:", config.admin_fee_percentage_bp, "basis points");
+  console.log("Max Creators:", config.max_num_creators);
+  console.log("Creators:", creators);
+
+  // await initialize(umi, {
+  //   admin: umi.payer,
+  //   creators,
+  //   maxNumCreators: creators.length,
+  //   adminFeePercentageBp: parseInt(options.fee),
+  // }).sendAndConfirm(umi, options);
 
   await initialize(umi, {
     admin: umi.payer,
     creators,
-    maxNumCreators: creators.length,
-    adminFeePercentageBp: fee_bp,
+    maxNumCreators: config.max_num_creators,
+    adminFeePercentageBp: config.admin_fee_percentage_bp,
   }).sendAndConfirm(umi, options);
 }
 
@@ -101,16 +154,10 @@ const main = async () => {
 
   umi.use(keypairIdentity(admin));
 
-  let config = await getConfig(umi);
-  console.log("config first", config);
+  // await initializeGame(umi, "cli/initialize_config.json");
 
-  // await placeBet(umi, BigInt(1 * LAMPORTS_PER_SOL), "santa");
-  //
-  // console.log("Sleeeping ...");
-  // await new Promise((h) => setTimeout(h, 2000));
-  //
-  // config = await getConfig(umi);
-  // console.log("config", config);
+  const c = await getConfig(umi);
+  console.log(c);
 };
 
 main()
