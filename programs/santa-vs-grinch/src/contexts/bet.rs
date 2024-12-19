@@ -1,16 +1,17 @@
-use anchor_lang::{
-    prelude::*,
-    system_program::{transfer, Transfer},
+use anchor_lang::prelude::*;
+
+use anchor_spl::{
+    associated_token::AssociatedToken,
+    token_interface::{
+        burn, transfer_checked, Burn, Mint, TokenAccount, TokenInterface, TransferChecked,
+    },
 };
 
 use crate::{
     constants::{GRINCH_BET_TAG, SANTA_BET_TAG},
     errors::SantaVsGrinchErrorCode,
-    utils::assert_bet_tag,
-};
-use crate::{
     state::{Config, UserBet},
-    utils::{assert_game_is_active, calculate_admin_fee},
+    utils::{assert_bet_tag, assert_game_is_active, calculate_amount_to_burn},
 };
 
 #[derive(Accounts)]
@@ -19,17 +20,20 @@ pub struct Bet<'info> {
     #[account(mut)]
     user: Signer<'info>,
 
+    mint: InterfaceAccount<'info, Mint>,
+
     #[account(
         mut,
+        has_one = mint @ SantaVsGrinchErrorCode::InvalidMint,
         has_one = vault @ SantaVsGrinchErrorCode::InvalidVaultDepositAccount,
-        seeds = [b"state", state.admin.key().as_ref()],
+        has_one = fees_vault @ SantaVsGrinchErrorCode::InvalidFeesVaultDepositAccount,
+        seeds = [b"state", state.admin.key().as_ref(), state.seed.to_le_bytes().as_ref(), state.mint.key().as_ref()],
         bump = state.bump
      )]
     pub state: Account<'info, Config>,
 
     #[account(
         mut,
-        address = state.vault @ SantaVsGrinchErrorCode::InvalidVaultDepositAccount,
         seeds = [b"vault", state.key().as_ref(), b"santa-vs-grinch"],
         bump = state.vault_bump
     )]
@@ -37,7 +41,8 @@ pub struct Bet<'info> {
 
     #[account(
         mut,
-        address = state.fees_vault @ SantaVsGrinchErrorCode::InvalidFeesVaultDepositAccount,
+        seeds = [b"vault", state.key().as_ref(), b"fees"],
+        bump = state.fees_vault_bump
     )]
     pub fees_vault: SystemAccount<'info>,
 
@@ -50,6 +55,17 @@ pub struct Bet<'info> {
     )]
     user_bet: Account<'info, UserBet>,
 
+    #[account(
+        mut,
+        associated_token::mint = state.mint,
+        associated_token::authority = user,
+        associated_token::token_program = token_program
+    )]
+    user_ata: InterfaceAccount<'info, TokenAccount>,
+
+    token_program: Interface<'info, TokenInterface>,
+    associated_token_program: Program<'info, AssociatedToken>,
+
     system_program: Program<'info, System>,
 }
 
@@ -58,30 +74,13 @@ impl<'info> Bet<'info> {
         assert_game_is_active(&self.state)?;
         assert_bet_tag(&bet_tag)?;
 
-        let fee = calculate_admin_fee(amount, self.state.admin_fee_percentage_bp);
+        let amount_to_burn = calculate_amount_to_burn(amount, self.state.bet_burn_percentage_bp);
         let amount_to_deposit = amount
-            .checked_sub(fee)
+            .checked_sub(amount_to_burn)
             .ok_or(ProgramError::ArithmeticOverflow)?;
 
-        // deposit to vault
-        let accounts = Transfer {
-            from: self.user.to_account_info(),
-            to: self.vault.to_account_info(),
-        };
-
-        let cpi_context = CpiContext::new(self.system_program.to_account_info(), accounts);
-
-        transfer(cpi_context, amount_to_deposit)?;
-
-        // deposit to fee vault;
-        let accounts = Transfer {
-            from: self.user.to_account_info(),
-            to: self.fees_vault.to_account_info(),
-        };
-
-        let cpi_context = CpiContext::new(self.system_program.to_account_info(), accounts);
-
-        transfer(cpi_context, fee)?;
+        self.transfer_to_vault(amount_to_deposit)?;
+        self.burn_to_hell(amount_to_burn)?;
 
         let user_bet = &mut self.user_bet;
         user_bet.owner = self.user.key();
@@ -110,6 +109,37 @@ impl<'info> Bet<'info> {
             _ => {}
         }
 
+        self.state.total_burned = self
+            .state
+            .total_burned
+            .checked_add(amount_to_burn)
+            .ok_or(ProgramError::ArithmeticOverflow)?;
+
         Ok(())
+    }
+
+    fn transfer_to_vault(&mut self, amount: u64) -> Result<()> {
+        let accounts = TransferChecked {
+            from: self.user_ata.to_account_info(),
+            mint: self.mint.to_account_info(),
+            to: self.vault.to_account_info(),
+            authority: self.user.to_account_info(),
+        };
+
+        let cpi_context = CpiContext::new(self.token_program.to_account_info(), accounts);
+
+        transfer_checked(cpi_context, amount, self.mint.decimals)
+    }
+
+    fn burn_to_hell(&mut self, amount: u64) -> Result<()> {
+        let accounts = Burn {
+            mint: self.mint.to_account_info(),
+            from: self.user_ata.to_account_info(),
+            authority: self.user.to_account_info(),
+        };
+
+        let cpi_ctx = CpiContext::new(self.token_program.to_account_info(), accounts);
+
+        burn(cpi_ctx, amount)
     }
 }

@@ -9,25 +9,15 @@ mod state;
 mod utils;
 
 use contexts::*;
-use state::Creator;
+use state::InitializeArgs;
 
 #[program]
 pub mod santa_vs_grinch {
 
     use super::*;
 
-    pub fn initialize(
-        ctx: Context<Initialize>,
-        creators: Vec<Creator>,
-        max_num_creators: u8,
-        admin_fee_percentage_bp: u16,
-    ) -> Result<()> {
-        ctx.accounts.initialize(
-            creators,
-            max_num_creators,
-            admin_fee_percentage_bp,
-            &ctx.bumps,
-        )
+    pub fn initialize(ctx: Context<Initialize>, args: InitializeArgs) -> Result<()> {
+        ctx.accounts.initialize(&args, &ctx.bumps)
     }
 
     pub fn bet(ctx: Context<Bet>, amount: u64, bet_tag: String) -> Result<()> {

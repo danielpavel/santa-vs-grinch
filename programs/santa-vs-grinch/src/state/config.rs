@@ -15,15 +15,33 @@ pub struct Creator {
     pub claimed: bool,
 }
 
+#[derive(AnchorSerialize, AnchorDeserialize, Clone, Copy, PartialEq, Debug)]
+pub struct InitializeArgs {
+    pub seed: u64,
+    pub max_num_creators: u8,
+    pub admin_fee_percentage_bp: u16,
+    pub bet_burn_percentage_bp: u16,
+    pub mystery_box_burn_percentage_bp: u16,
+    pub mystery_box_price: u32,
+    pub creators: [Creator; MAX_CREATORS],
+}
+
 #[account]
 #[derive(InitSpace)]
 pub struct Config {
     pub admin: Pubkey,
+    pub mint: Pubkey,
 
     pub admin_fee_percentage_bp: u16,
+    pub bet_burn_percentage_bp: u16,
+    pub mystery_box_burn_percentage_bp: u16,
+
+    pub mystery_box_price: u32,
 
     pub vault: Pubkey,
     pub fees_vault: Pubkey,
+
+    pub total_burned: u64,
 
     pub santa_pot: u64,
     pub grinch_pot: u64,
@@ -33,8 +51,10 @@ pub struct Config {
     pub grinch_multiplier: u32,
 
     pub game_ended: bool,
-    pub initialized_at: i64,
+
+    pub is_active_at: i64,
     pub withdraw_unclaimed_at: i64,
+
     pub winning_side: Option<BettingSide>,
 
     #[max_len(MAX_CREATORS * mem::size_of::<Creator>())]
@@ -43,4 +63,6 @@ pub struct Config {
     pub vault_bump: u8,
     pub fees_vault_bump: u8,
     pub bump: u8,
+
+    pub seed: u64,
 }

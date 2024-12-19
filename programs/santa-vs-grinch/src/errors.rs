@@ -49,4 +49,10 @@ pub enum SantaVsGrinchErrorCode {
 
     #[msg("Witdrawal unclaimed period not ended")]
     WitdrawalUnclaimedPeriodNotEnded,
+
+    #[msg("Invalid Mint")]
+    InvalidMint,
+
+    #[msg("Amount to burn should be 100% of box price")]
+    InvalidAmountToBurn,
 }
