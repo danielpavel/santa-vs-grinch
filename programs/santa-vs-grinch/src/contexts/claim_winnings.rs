@@ -1,6 +1,7 @@
-use anchor_lang::{
-    prelude::*,
-    system_program::{transfer, Transfer},
+use anchor_lang::prelude::*;
+use anchor_spl::{
+    associated_token::AssociatedToken,
+    token_interface::{transfer_checked, Mint, TokenAccount, TokenInterface, TransferChecked},
 };
 
 use crate::{
@@ -18,21 +19,23 @@ pub struct ClaimWinnings<'info> {
     #[account(mut)]
     claimer: Signer<'info>,
 
+    mint: InterfaceAccount<'info, Mint>,
+
     #[account(
         mut,
+        has_one = mint @ SantaVsGrinchErrorCode::InvalidMint,
         has_one = vault @ SantaVsGrinchErrorCode::InvalidVaultDepositAccount,
-        seeds = [b"state", state.admin.key().as_ref()],
+        seeds = [b"state", state.admin.key().as_ref(), state.seed.to_le_bytes().as_ref(), state.mint.key().as_ref()],
         bump = state.bump
      )]
     pub state: Account<'info, Config>,
 
     #[account(
         mut,
-        address = state.vault @ SantaVsGrinchErrorCode::InvalidVaultDepositAccount,
         seeds = [b"vault", state.key().as_ref(), b"santa-vs-grinch"],
         bump = state.vault_bump
     )]
-    pub vault: SystemAccount<'info>,
+    pub vault: InterfaceAccount<'info, TokenAccount>,
 
     #[account(
         mut,
@@ -41,6 +44,16 @@ pub struct ClaimWinnings<'info> {
     )]
     user_bet: Account<'info, UserBet>,
 
+    #[account(
+        mut,
+        associated_token::mint = mint,
+        associated_token::authority = claimer,
+        associated_token::token_program = token_program
+    )]
+    user_ata: InterfaceAccount<'info, TokenAccount>,
+
+    token_program: Interface<'info, TokenInterface>,
+    associated_token_program: Program<'info, AssociatedToken>,
     system_program: Program<'info, System>,
 }
 
@@ -77,14 +90,16 @@ impl<'info> ClaimWinnings<'info> {
 
             let cpi_context = CpiContext::new_with_signer(
                 self.system_program.to_account_info(),
-                Transfer {
+                TransferChecked {
                     from: self.vault.to_account_info(),
-                    to: self.claimer.to_account_info(),
+                    to: self.user_ata.to_account_info(),
+                    mint: self.mint.to_account_info(),
+                    authority: self.state.to_account_info(),
                 },
                 &signer_seeds,
             );
 
-            transfer(cpi_context, winning_amount)?;
+            transfer_checked(cpi_context, winning_amount, self.mint.decimals)?;
         }
 
         user_bet.claimed = true;

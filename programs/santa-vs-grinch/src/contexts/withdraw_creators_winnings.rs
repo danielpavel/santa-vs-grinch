@@ -1,6 +1,6 @@
-use anchor_lang::{
-    prelude::*,
-    system_program::{transfer, Transfer},
+use anchor_lang::prelude::*;
+use anchor_spl::token_interface::{
+    transfer_checked, Mint, TokenAccount, TokenInterface, TransferChecked,
 };
 
 use crate::state::Config;
@@ -13,6 +13,8 @@ pub struct WithdrawCreatorsWinnings<'info> {
         address = state.admin @ SantaVsGrinchErrorCode::InvalidAdmin
         )]
     admin: Signer<'info>,
+
+    mint: InterfaceAccount<'info, Mint>,
 
     #[account(
         mut,
@@ -27,9 +29,10 @@ pub struct WithdrawCreatorsWinnings<'info> {
         seeds = [b"vault", state.key().as_ref(), b"santa-vs-grinch"],
         bump = state.vault_bump
     )]
-    pub vault: SystemAccount<'info>,
+    pub vault: InterfaceAccount<'info, TokenAccount>,
 
     system_program: Program<'info, System>,
+    token_program: Interface<'info, TokenInterface>,
 }
 
 impl<'info> WithdrawCreatorsWinnings<'info> {
@@ -39,10 +42,8 @@ impl<'info> WithdrawCreatorsWinnings<'info> {
     ) -> Result<()> {
         require!(self.state.game_ended, SantaVsGrinchErrorCode::GameNotEnded);
 
-        // TODO: MAYBE Extra - add withdraw window
-
         let state = self.state.clone();
-        let pot = calculate_creators_winnings(self.vault.lamports(), &state)?;
+        let pot = calculate_creators_winnings(self.vault.amount, &state)?;
 
         let bump = [self.state.vault_bump];
         let signer_seeds = [&[
@@ -54,9 +55,9 @@ impl<'info> WithdrawCreatorsWinnings<'info> {
 
         let remaining_accounts_iter = &mut remaining_accounts.iter();
         for creator in self.state.creators.iter_mut() {
-            let current_creator_info = next_account_info(remaining_accounts_iter)?;
+            let current_creator_ata = next_account_info(remaining_accounts_iter)?;
             require!(
-                creator.pubkey == current_creator_info.key(),
+                creator.pubkey == current_creator_ata.key(),
                 SantaVsGrinchErrorCode::InvalidCreatorAddress
             );
             require!(
@@ -72,14 +73,16 @@ impl<'info> WithdrawCreatorsWinnings<'info> {
 
             let cpi_context = CpiContext::new_with_signer(
                 self.system_program.to_account_info(),
-                Transfer {
+                TransferChecked {
                     from: self.vault.to_account_info(),
-                    to: current_creator_info.to_account_info(),
+                    to: current_creator_ata.to_account_info(),
+                    mint: self.mint.to_account_info(),
+                    authority: state.to_account_info(),
                 },
                 &signer_seeds,
             );
 
-            transfer(cpi_context, amount)?;
+            transfer_checked(cpi_context, amount, self.mint.decimals)?;
 
             creator.claimed = true;
         }
@@ -100,7 +103,7 @@ impl<'info> WithdrawCreatorsWinnings<'info> {
         require!(self.state.game_ended, SantaVsGrinchErrorCode::GameNotEnded);
 
         let state = self.state.clone();
-        let total = self.vault.lamports();
+        let total = self.vault.amount;
 
         let bump = [self.state.vault_bump];
         let signer_seeds = [&[
@@ -112,9 +115,9 @@ impl<'info> WithdrawCreatorsWinnings<'info> {
 
         let remaining_accounts_iter = &mut remaining_accounts.iter();
         for creator in self.state.creators.iter_mut() {
-            let current_creator_info = next_account_info(remaining_accounts_iter)?;
+            let current_creator_ata = next_account_info(remaining_accounts_iter)?;
             require!(
-                creator.pubkey == current_creator_info.key(),
+                creator.pubkey == current_creator_ata.key(),
                 SantaVsGrinchErrorCode::InvalidCreatorAddress
             );
 
@@ -126,14 +129,16 @@ impl<'info> WithdrawCreatorsWinnings<'info> {
 
             let cpi_context = CpiContext::new_with_signer(
                 self.system_program.to_account_info(),
-                Transfer {
+                TransferChecked {
                     from: self.vault.to_account_info(),
-                    to: current_creator_info.to_account_info(),
+                    to: current_creator_ata.to_account_info(),
+                    mint: self.mint.to_account_info(),
+                    authority: state.to_account_info(),
                 },
                 &signer_seeds,
             );
 
-            transfer(cpi_context, amount)?;
+            transfer_checked(cpi_context, amount, self.mint.decimals)?;
         }
 
         Ok(())

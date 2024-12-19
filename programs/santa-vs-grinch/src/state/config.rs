@@ -22,7 +22,7 @@ pub struct InitializeArgs {
     pub admin_fee_percentage_bp: u16,
     pub bet_burn_percentage_bp: u16,
     pub mystery_box_burn_percentage_bp: u16,
-    pub mystery_box_price: u32,
+    pub mystery_box_price: u64,
     pub creators: [Creator; MAX_CREATORS],
 }
 
@@ -36,7 +36,7 @@ pub struct Config {
     pub bet_burn_percentage_bp: u16,
     pub mystery_box_burn_percentage_bp: u16,
 
-    pub mystery_box_price: u32,
+    pub mystery_box_price: u64,
 
     pub vault: Pubkey,
     pub fees_vault: Pubkey,

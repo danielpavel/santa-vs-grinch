@@ -37,14 +37,14 @@ pub struct Bet<'info> {
         seeds = [b"vault", state.key().as_ref(), b"santa-vs-grinch"],
         bump = state.vault_bump
     )]
-    pub vault: SystemAccount<'info>,
+    pub vault: InterfaceAccount<'info, TokenAccount>,
 
     #[account(
         mut,
         seeds = [b"vault", state.key().as_ref(), b"fees"],
         bump = state.fees_vault_bump
     )]
-    pub fees_vault: SystemAccount<'info>,
+    pub fees_vault: InterfaceAccount<'info, TokenAccount>,
 
     #[account(
         init_if_needed,

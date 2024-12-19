@@ -1,12 +1,7 @@
-use anchor_lang::{
-    prelude::*,
-    system_program::{transfer, Transfer},
-};
+use anchor_lang::prelude::*;
 use anchor_spl::{
     associated_token::AssociatedToken,
-    token_interface::{
-        burn, transfer_checked, Burn, Mint, TokenAccount, TokenInterface, TransferChecked,
-    },
+    token_interface::{burn, Burn, Mint, TokenAccount, TokenInterface},
 };
 
 use crate::{
@@ -61,11 +56,10 @@ impl<'info> MysteryBox<'info> {
         assert_game_is_active(&self.state)?;
         assert_bet_tag(&bet_tag)?;
 
-        let amount = (self.state.mystery_box_price as u64)
-            .checked_mul(10_f64.powi(self.mint.decimals as i32) as u64)
-            .ok_or(ProgramError::ArithmeticOverflow)?;
-        let amount_to_burn =
-            calculate_amount_to_burn(amount, self.state.mystery_box_burn_percentage_bp);
+        let amount_to_burn = calculate_amount_to_burn(
+            self.state.mystery_box_price,
+            self.state.mystery_box_burn_percentage_bp,
+        );
 
         let accounts = Burn {
             mint: self.mint.to_account_info(),
