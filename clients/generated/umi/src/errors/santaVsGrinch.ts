@@ -238,6 +238,32 @@ nameToErrorMap.set(
   WitdrawalUnclaimedPeriodNotEndedError
 );
 
+/** InvalidMint: Invalid Mint */
+export class InvalidMintError extends ProgramError {
+  override readonly name: string = 'InvalidMint';
+
+  readonly code: number = 0x1780; // 6016
+
+  constructor(program: Program, cause?: Error) {
+    super('Invalid Mint', program, cause);
+  }
+}
+codeToErrorMap.set(0x1780, InvalidMintError);
+nameToErrorMap.set('InvalidMint', InvalidMintError);
+
+/** InvalidAmountToBurn: Amount to burn should be 100% of box price */
+export class InvalidAmountToBurnError extends ProgramError {
+  override readonly name: string = 'InvalidAmountToBurn';
+
+  readonly code: number = 0x1781; // 6017
+
+  constructor(program: Program, cause?: Error) {
+    super('Amount to burn should be 100% of box price', program, cause);
+  }
+}
+codeToErrorMap.set(0x1781, InvalidAmountToBurnError);
+nameToErrorMap.set('InvalidAmountToBurn', InvalidAmountToBurnError);
+
 /**
  * Attempts to resolve a custom program error from the provided error code.
  * @category Errors

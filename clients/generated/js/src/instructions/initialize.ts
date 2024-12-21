@@ -11,17 +11,13 @@ import {
   fixDecoderSize,
   fixEncoderSize,
   getAddressEncoder,
-  getArrayDecoder,
-  getArrayEncoder,
   getBytesDecoder,
   getBytesEncoder,
   getProgramDerivedAddress,
   getStructDecoder,
   getStructEncoder,
-  getU16Decoder,
-  getU16Encoder,
-  getU8Decoder,
-  getU8Encoder,
+  getU64Decoder,
+  getU64Encoder,
   transformEncoder,
   type Address,
   type Codec,
@@ -41,14 +37,15 @@ import {
 import { SANTA_VS_GRINCH_PROGRAM_ADDRESS } from '../programs';
 import {
   expectAddress,
+  expectSome,
   getAccountMetaFactory,
   type ResolvedAccount,
 } from '../shared';
 import {
-  getCreatorDecoder,
-  getCreatorEncoder,
-  type Creator,
-  type CreatorArgs,
+  getInitializeArgsDecoder,
+  getInitializeArgsEncoder,
+  type InitializeArgs,
+  type InitializeArgsArgs,
 } from '../types';
 
 export const INITIALIZE_DISCRIMINATOR = new Uint8Array([
@@ -62,9 +59,11 @@ export function getInitializeDiscriminatorBytes() {
 export type InitializeInstruction<
   TProgram extends string = typeof SANTA_VS_GRINCH_PROGRAM_ADDRESS,
   TAccountAdmin extends string | IAccountMeta<string> = string,
+  TAccountMint extends string | IAccountMeta<string> = string,
   TAccountState extends string | IAccountMeta<string> = string,
   TAccountVault extends string | IAccountMeta<string> = string,
   TAccountFeesVault extends string | IAccountMeta<string> = string,
+  TAccountTokenProgram extends string | IAccountMeta<string> = string,
   TAccountSystemProgram extends
     | string
     | IAccountMeta<string> = '11111111111111111111111111111111',
@@ -77,15 +76,21 @@ export type InitializeInstruction<
         ? WritableSignerAccount<TAccountAdmin> &
             IAccountSignerMeta<TAccountAdmin>
         : TAccountAdmin,
+      TAccountMint extends string
+        ? ReadonlyAccount<TAccountMint>
+        : TAccountMint,
       TAccountState extends string
         ? WritableAccount<TAccountState>
         : TAccountState,
       TAccountVault extends string
-        ? ReadonlyAccount<TAccountVault>
+        ? WritableAccount<TAccountVault>
         : TAccountVault,
       TAccountFeesVault extends string
-        ? ReadonlyAccount<TAccountFeesVault>
+        ? WritableAccount<TAccountFeesVault>
         : TAccountFeesVault,
+      TAccountTokenProgram extends string
+        ? ReadonlyAccount<TAccountTokenProgram>
+        : TAccountTokenProgram,
       TAccountSystemProgram extends string
         ? ReadonlyAccount<TAccountSystemProgram>
         : TAccountSystemProgram,
@@ -95,24 +100,21 @@ export type InitializeInstruction<
 
 export type InitializeInstructionData = {
   discriminator: ReadonlyUint8Array;
-  creators: Array<Creator>;
-  maxNumCreators: number;
-  adminFeePercentageBp: number;
+  args: InitializeArgs;
+  seed: bigint;
 };
 
 export type InitializeInstructionDataArgs = {
-  creators: Array<CreatorArgs>;
-  maxNumCreators: number;
-  adminFeePercentageBp: number;
+  args: InitializeArgsArgs;
+  seed: number | bigint;
 };
 
 export function getInitializeInstructionDataEncoder(): Encoder<InitializeInstructionDataArgs> {
   return transformEncoder(
     getStructEncoder([
       ['discriminator', fixEncoderSize(getBytesEncoder(), 8)],
-      ['creators', getArrayEncoder(getCreatorEncoder())],
-      ['maxNumCreators', getU8Encoder()],
-      ['adminFeePercentageBp', getU16Encoder()],
+      ['args', getInitializeArgsEncoder()],
+      ['seed', getU64Encoder()],
     ]),
     (value) => ({ ...value, discriminator: INITIALIZE_DISCRIMINATOR })
   );
@@ -121,9 +123,8 @@ export function getInitializeInstructionDataEncoder(): Encoder<InitializeInstruc
 export function getInitializeInstructionDataDecoder(): Decoder<InitializeInstructionData> {
   return getStructDecoder([
     ['discriminator', fixDecoderSize(getBytesDecoder(), 8)],
-    ['creators', getArrayDecoder(getCreatorDecoder())],
-    ['maxNumCreators', getU8Decoder()],
-    ['adminFeePercentageBp', getU16Decoder()],
+    ['args', getInitializeArgsDecoder()],
+    ['seed', getU64Decoder()],
   ]);
 }
 
@@ -139,34 +140,41 @@ export function getInitializeInstructionDataCodec(): Codec<
 
 export type InitializeAsyncInput<
   TAccountAdmin extends string = string,
+  TAccountMint extends string = string,
   TAccountState extends string = string,
   TAccountVault extends string = string,
   TAccountFeesVault extends string = string,
+  TAccountTokenProgram extends string = string,
   TAccountSystemProgram extends string = string,
 > = {
   admin: TransactionSigner<TAccountAdmin>;
+  mint: Address<TAccountMint>;
   state?: Address<TAccountState>;
   vault?: Address<TAccountVault>;
   feesVault?: Address<TAccountFeesVault>;
+  tokenProgram: Address<TAccountTokenProgram>;
   systemProgram?: Address<TAccountSystemProgram>;
-  creators: InitializeInstructionDataArgs['creators'];
-  maxNumCreators: InitializeInstructionDataArgs['maxNumCreators'];
-  adminFeePercentageBp: InitializeInstructionDataArgs['adminFeePercentageBp'];
+  args: InitializeInstructionDataArgs['args'];
+  seed: InitializeInstructionDataArgs['seed'];
 };
 
 export async function getInitializeInstructionAsync<
   TAccountAdmin extends string,
+  TAccountMint extends string,
   TAccountState extends string,
   TAccountVault extends string,
   TAccountFeesVault extends string,
+  TAccountTokenProgram extends string,
   TAccountSystemProgram extends string,
   TProgramAddress extends Address = typeof SANTA_VS_GRINCH_PROGRAM_ADDRESS,
 >(
   input: InitializeAsyncInput<
     TAccountAdmin,
+    TAccountMint,
     TAccountState,
     TAccountVault,
     TAccountFeesVault,
+    TAccountTokenProgram,
     TAccountSystemProgram
   >,
   config?: { programAddress?: TProgramAddress }
@@ -174,9 +182,11 @@ export async function getInitializeInstructionAsync<
   InitializeInstruction<
     TProgramAddress,
     TAccountAdmin,
+    TAccountMint,
     TAccountState,
     TAccountVault,
     TAccountFeesVault,
+    TAccountTokenProgram,
     TAccountSystemProgram
   >
 > {
@@ -187,9 +197,11 @@ export async function getInitializeInstructionAsync<
   // Original accounts.
   const originalAccounts = {
     admin: { value: input.admin ?? null, isWritable: true },
+    mint: { value: input.mint ?? null, isWritable: false },
     state: { value: input.state ?? null, isWritable: true },
-    vault: { value: input.vault ?? null, isWritable: false },
-    feesVault: { value: input.feesVault ?? null, isWritable: false },
+    vault: { value: input.vault ?? null, isWritable: true },
+    feesVault: { value: input.feesVault ?? null, isWritable: true },
+    tokenProgram: { value: input.tokenProgram ?? null, isWritable: false },
     systemProgram: { value: input.systemProgram ?? null, isWritable: false },
   };
   const accounts = originalAccounts as Record<
@@ -207,6 +219,8 @@ export async function getInitializeInstructionAsync<
       seeds: [
         getBytesEncoder().encode(new Uint8Array([115, 116, 97, 116, 101])),
         getAddressEncoder().encode(expectAddress(accounts.admin.value)),
+        getU64Encoder().encode(expectSome(args.seed)),
+        getAddressEncoder().encode(expectAddress(accounts.mint.value)),
       ],
     });
   }
@@ -244,9 +258,11 @@ export async function getInitializeInstructionAsync<
   const instruction = {
     accounts: [
       getAccountMeta(accounts.admin),
+      getAccountMeta(accounts.mint),
       getAccountMeta(accounts.state),
       getAccountMeta(accounts.vault),
       getAccountMeta(accounts.feesVault),
+      getAccountMeta(accounts.tokenProgram),
       getAccountMeta(accounts.systemProgram),
     ],
     programAddress,
@@ -256,9 +272,11 @@ export async function getInitializeInstructionAsync<
   } as InitializeInstruction<
     TProgramAddress,
     TAccountAdmin,
+    TAccountMint,
     TAccountState,
     TAccountVault,
     TAccountFeesVault,
+    TAccountTokenProgram,
     TAccountSystemProgram
   >;
 
@@ -267,43 +285,52 @@ export async function getInitializeInstructionAsync<
 
 export type InitializeInput<
   TAccountAdmin extends string = string,
+  TAccountMint extends string = string,
   TAccountState extends string = string,
   TAccountVault extends string = string,
   TAccountFeesVault extends string = string,
+  TAccountTokenProgram extends string = string,
   TAccountSystemProgram extends string = string,
 > = {
   admin: TransactionSigner<TAccountAdmin>;
+  mint: Address<TAccountMint>;
   state: Address<TAccountState>;
   vault: Address<TAccountVault>;
   feesVault: Address<TAccountFeesVault>;
+  tokenProgram: Address<TAccountTokenProgram>;
   systemProgram?: Address<TAccountSystemProgram>;
-  creators: InitializeInstructionDataArgs['creators'];
-  maxNumCreators: InitializeInstructionDataArgs['maxNumCreators'];
-  adminFeePercentageBp: InitializeInstructionDataArgs['adminFeePercentageBp'];
+  args: InitializeInstructionDataArgs['args'];
+  seed: InitializeInstructionDataArgs['seed'];
 };
 
 export function getInitializeInstruction<
   TAccountAdmin extends string,
+  TAccountMint extends string,
   TAccountState extends string,
   TAccountVault extends string,
   TAccountFeesVault extends string,
+  TAccountTokenProgram extends string,
   TAccountSystemProgram extends string,
   TProgramAddress extends Address = typeof SANTA_VS_GRINCH_PROGRAM_ADDRESS,
 >(
   input: InitializeInput<
     TAccountAdmin,
+    TAccountMint,
     TAccountState,
     TAccountVault,
     TAccountFeesVault,
+    TAccountTokenProgram,
     TAccountSystemProgram
   >,
   config?: { programAddress?: TProgramAddress }
 ): InitializeInstruction<
   TProgramAddress,
   TAccountAdmin,
+  TAccountMint,
   TAccountState,
   TAccountVault,
   TAccountFeesVault,
+  TAccountTokenProgram,
   TAccountSystemProgram
 > {
   // Program address.
@@ -313,9 +340,11 @@ export function getInitializeInstruction<
   // Original accounts.
   const originalAccounts = {
     admin: { value: input.admin ?? null, isWritable: true },
+    mint: { value: input.mint ?? null, isWritable: false },
     state: { value: input.state ?? null, isWritable: true },
-    vault: { value: input.vault ?? null, isWritable: false },
-    feesVault: { value: input.feesVault ?? null, isWritable: false },
+    vault: { value: input.vault ?? null, isWritable: true },
+    feesVault: { value: input.feesVault ?? null, isWritable: true },
+    tokenProgram: { value: input.tokenProgram ?? null, isWritable: false },
     systemProgram: { value: input.systemProgram ?? null, isWritable: false },
   };
   const accounts = originalAccounts as Record<
@@ -336,9 +365,11 @@ export function getInitializeInstruction<
   const instruction = {
     accounts: [
       getAccountMeta(accounts.admin),
+      getAccountMeta(accounts.mint),
       getAccountMeta(accounts.state),
       getAccountMeta(accounts.vault),
       getAccountMeta(accounts.feesVault),
+      getAccountMeta(accounts.tokenProgram),
       getAccountMeta(accounts.systemProgram),
     ],
     programAddress,
@@ -348,9 +379,11 @@ export function getInitializeInstruction<
   } as InitializeInstruction<
     TProgramAddress,
     TAccountAdmin,
+    TAccountMint,
     TAccountState,
     TAccountVault,
     TAccountFeesVault,
+    TAccountTokenProgram,
     TAccountSystemProgram
   >;
 
@@ -364,10 +397,12 @@ export type ParsedInitializeInstruction<
   programAddress: Address<TProgram>;
   accounts: {
     admin: TAccountMetas[0];
-    state: TAccountMetas[1];
-    vault: TAccountMetas[2];
-    feesVault: TAccountMetas[3];
-    systemProgram: TAccountMetas[4];
+    mint: TAccountMetas[1];
+    state: TAccountMetas[2];
+    vault: TAccountMetas[3];
+    feesVault: TAccountMetas[4];
+    tokenProgram: TAccountMetas[5];
+    systemProgram: TAccountMetas[6];
   };
   data: InitializeInstructionData;
 };
@@ -380,7 +415,7 @@ export function parseInitializeInstruction<
     IInstructionWithAccounts<TAccountMetas> &
     IInstructionWithData<Uint8Array>
 ): ParsedInitializeInstruction<TProgram, TAccountMetas> {
-  if (instruction.accounts.length < 5) {
+  if (instruction.accounts.length < 7) {
     // TODO: Coded error.
     throw new Error('Not enough accounts');
   }
@@ -394,9 +429,11 @@ export function parseInitializeInstruction<
     programAddress: instruction.programAddress,
     accounts: {
       admin: getNextAccount(),
+      mint: getNextAccount(),
       state: getNextAccount(),
       vault: getNextAccount(),
       feesVault: getNextAccount(),
+      tokenProgram: getNextAccount(),
       systemProgram: getNextAccount(),
     },
     data: getInitializeInstructionDataDecoder().decode(instruction.data),

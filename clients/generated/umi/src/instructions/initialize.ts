@@ -16,43 +16,46 @@ import {
 } from '@metaplex-foundation/umi';
 import {
   Serializer,
-  array,
   bytes,
   mapSerializer,
   publicKey as publicKeySerializer,
   struct,
-  u16,
-  u8,
+  u64,
 } from '@metaplex-foundation/umi/serializers';
 import {
   ResolvedAccount,
   ResolvedAccountsWithIndices,
   expectPublicKey,
+  expectSome,
   getAccountMetasAndSigners,
 } from '../shared';
-import { Creator, CreatorArgs, getCreatorSerializer } from '../types';
+import {
+  InitializeArgs,
+  InitializeArgsArgs,
+  getInitializeArgsSerializer,
+} from '../types';
 
 // Accounts.
 export type InitializeInstructionAccounts = {
   admin: Signer;
+  mint: PublicKey | Pda;
   state?: PublicKey | Pda;
   vault?: PublicKey | Pda;
   feesVault?: PublicKey | Pda;
+  tokenProgram: PublicKey | Pda;
   systemProgram?: PublicKey | Pda;
 };
 
 // Data.
 export type InitializeInstructionData = {
   discriminator: Uint8Array;
-  creators: Array<Creator>;
-  maxNumCreators: number;
-  adminFeePercentageBp: number;
+  args: InitializeArgs;
+  seed: bigint;
 };
 
 export type InitializeInstructionDataArgs = {
-  creators: Array<CreatorArgs>;
-  maxNumCreators: number;
-  adminFeePercentageBp: number;
+  args: InitializeArgsArgs;
+  seed: number | bigint;
 };
 
 export function getInitializeInstructionDataSerializer(): Serializer<
@@ -67,9 +70,8 @@ export function getInitializeInstructionDataSerializer(): Serializer<
     struct<InitializeInstructionData>(
       [
         ['discriminator', bytes({ size: 8 })],
-        ['creators', array(getCreatorSerializer())],
-        ['maxNumCreators', u8()],
-        ['adminFeePercentageBp', u16()],
+        ['args', getInitializeArgsSerializer()],
+        ['seed', u64()],
       ],
       { description: 'InitializeInstructionData' }
     ),
@@ -101,23 +103,29 @@ export function initialize(
       isWritable: true as boolean,
       value: input.admin ?? null,
     },
+    mint: { index: 1, isWritable: false as boolean, value: input.mint ?? null },
     state: {
-      index: 1,
+      index: 2,
       isWritable: true as boolean,
       value: input.state ?? null,
     },
     vault: {
-      index: 2,
-      isWritable: false as boolean,
+      index: 3,
+      isWritable: true as boolean,
       value: input.vault ?? null,
     },
     feesVault: {
-      index: 3,
-      isWritable: false as boolean,
+      index: 4,
+      isWritable: true as boolean,
       value: input.feesVault ?? null,
     },
+    tokenProgram: {
+      index: 5,
+      isWritable: false as boolean,
+      value: input.tokenProgram ?? null,
+    },
     systemProgram: {
-      index: 4,
+      index: 6,
       isWritable: false as boolean,
       value: input.systemProgram ?? null,
     },
@@ -132,6 +140,10 @@ export function initialize(
       bytes().serialize(new Uint8Array([115, 116, 97, 116, 101])),
       publicKeySerializer().serialize(
         expectPublicKey(resolvedAccounts.admin.value)
+      ),
+      u64().serialize(expectSome(resolvedArgs.seed)),
+      publicKeySerializer().serialize(
+        expectPublicKey(resolvedAccounts.mint.value)
       ),
     ]);
   }

@@ -6,11 +6,11 @@ use crate::errors::SantaVsGrinchErrorCode;
 use crate::state::{Config, InitializeArgs};
 
 #[derive(Accounts)]
-#[instruction(seed: u64)]
+#[instruction(_args: InitializeArgs, seed: u64)]
 pub struct Initialize<'info> {
     #[account(
         mut,
-        address = ADMIN_PUBKEY
+        //address = ADMIN_PUBKEY
     )]
     admin: Signer<'info>,
 
@@ -50,7 +50,12 @@ pub struct Initialize<'info> {
 }
 
 impl<'info> Initialize<'info> {
-    pub fn initialize(&mut self, args: &InitializeArgs, bumps: &InitializeBumps) -> Result<()> {
+    pub fn initialize(
+        &mut self,
+        args: &InitializeArgs,
+        seed: u64,
+        bumps: &InitializeBumps,
+    ) -> Result<()> {
         require!(
             args.admin_fee_percentage_bp <= 10_000,
             SantaVsGrinchErrorCode::InvalidPercentage
@@ -114,7 +119,7 @@ impl<'info> Initialize<'info> {
             vault_bump: bumps.vault,
             fees_vault_bump: bumps.fees_vault,
             bump: bumps.state,
-            seed: args.seed,
+            seed,
         });
 
         Ok(())

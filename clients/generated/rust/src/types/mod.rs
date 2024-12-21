@@ -7,7 +7,9 @@
 
   pub(crate) mod r#betting_side;
   pub(crate) mod r#creator;
+  pub(crate) mod r#initialize_args;
 
   pub use self::r#betting_side::*;
   pub use self::r#creator::*;
+  pub use self::r#initialize_args::*;
 

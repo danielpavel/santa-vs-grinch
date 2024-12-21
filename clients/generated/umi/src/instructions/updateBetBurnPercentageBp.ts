@@ -18,53 +18,67 @@ import {
   Serializer,
   bytes,
   mapSerializer,
-  publicKey as publicKeySerializer,
   struct,
+  u16,
 } from '@metaplex-foundation/umi/serializers';
 import {
   ResolvedAccount,
   ResolvedAccountsWithIndices,
-  expectPublicKey,
   getAccountMetasAndSigners,
 } from '../shared';
 
 // Accounts.
-export type WithdrawFeesInstructionAccounts = {
+export type UpdateBetBurnPercentageBpInstructionAccounts = {
   admin: Signer;
   state: PublicKey | Pda;
-  feesVault?: PublicKey | Pda;
   systemProgram?: PublicKey | Pda;
 };
 
 // Data.
-export type WithdrawFeesInstructionData = { discriminator: Uint8Array };
+export type UpdateBetBurnPercentageBpInstructionData = {
+  discriminator: Uint8Array;
+  percentageInBp: number;
+};
 
-export type WithdrawFeesInstructionDataArgs = {};
+export type UpdateBetBurnPercentageBpInstructionDataArgs = {
+  percentageInBp: number;
+};
 
-export function getWithdrawFeesInstructionDataSerializer(): Serializer<
-  WithdrawFeesInstructionDataArgs,
-  WithdrawFeesInstructionData
+export function getUpdateBetBurnPercentageBpInstructionDataSerializer(): Serializer<
+  UpdateBetBurnPercentageBpInstructionDataArgs,
+  UpdateBetBurnPercentageBpInstructionData
 > {
   return mapSerializer<
-    WithdrawFeesInstructionDataArgs,
+    UpdateBetBurnPercentageBpInstructionDataArgs,
     any,
-    WithdrawFeesInstructionData
+    UpdateBetBurnPercentageBpInstructionData
   >(
-    struct<WithdrawFeesInstructionData>(
-      [['discriminator', bytes({ size: 8 })]],
-      { description: 'WithdrawFeesInstructionData' }
+    struct<UpdateBetBurnPercentageBpInstructionData>(
+      [
+        ['discriminator', bytes({ size: 8 })],
+        ['percentageInBp', u16()],
+      ],
+      { description: 'UpdateBetBurnPercentageBpInstructionData' }
     ),
     (value) => ({
       ...value,
-      discriminator: new Uint8Array([198, 212, 171, 109, 144, 215, 174, 89]),
+      discriminator: new Uint8Array([66, 140, 0, 157, 24, 57, 76, 30]),
     })
-  ) as Serializer<WithdrawFeesInstructionDataArgs, WithdrawFeesInstructionData>;
+  ) as Serializer<
+    UpdateBetBurnPercentageBpInstructionDataArgs,
+    UpdateBetBurnPercentageBpInstructionData
+  >;
 }
 
+// Args.
+export type UpdateBetBurnPercentageBpInstructionArgs =
+  UpdateBetBurnPercentageBpInstructionDataArgs;
+
 // Instruction.
-export function withdrawFees(
-  context: Pick<Context, 'eddsa' | 'programs'>,
-  input: WithdrawFeesInstructionAccounts
+export function updateBetBurnPercentageBp(
+  context: Pick<Context, 'programs'>,
+  input: UpdateBetBurnPercentageBpInstructionAccounts &
+    UpdateBetBurnPercentageBpInstructionArgs
 ): TransactionBuilder {
   // Program ID.
   const programId = context.programs.getPublicKey(
@@ -84,28 +98,17 @@ export function withdrawFees(
       isWritable: true as boolean,
       value: input.state ?? null,
     },
-    feesVault: {
-      index: 2,
-      isWritable: true as boolean,
-      value: input.feesVault ?? null,
-    },
     systemProgram: {
-      index: 3,
+      index: 2,
       isWritable: false as boolean,
       value: input.systemProgram ?? null,
     },
   } satisfies ResolvedAccountsWithIndices;
 
+  // Arguments.
+  const resolvedArgs: UpdateBetBurnPercentageBpInstructionArgs = { ...input };
+
   // Default values.
-  if (!resolvedAccounts.feesVault.value) {
-    resolvedAccounts.feesVault.value = context.eddsa.findPda(programId, [
-      bytes().serialize(new Uint8Array([118, 97, 117, 108, 116])),
-      publicKeySerializer().serialize(
-        expectPublicKey(resolvedAccounts.state.value)
-      ),
-      bytes().serialize(new Uint8Array([102, 101, 101, 115])),
-    ]);
-  }
   if (!resolvedAccounts.systemProgram.value) {
     resolvedAccounts.systemProgram.value = context.programs.getPublicKey(
       'systemProgram',
@@ -127,7 +130,10 @@ export function withdrawFees(
   );
 
   // Data.
-  const data = getWithdrawFeesInstructionDataSerializer().serialize({});
+  const data =
+    getUpdateBetBurnPercentageBpInstructionDataSerializer().serialize(
+      resolvedArgs as UpdateBetBurnPercentageBpInstructionDataArgs
+    );
 
   // Bytes Created On Chain.
   const bytesCreatedOnChain = 0;

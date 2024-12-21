@@ -17,7 +17,6 @@ pub struct Creator {
 
 #[derive(AnchorSerialize, AnchorDeserialize, Clone, Copy, PartialEq, Debug)]
 pub struct InitializeArgs {
-    pub seed: u64,
     pub max_num_creators: u8,
     pub admin_fee_percentage_bp: u16,
     pub bet_burn_percentage_bp: u16,

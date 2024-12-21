@@ -18,11 +18,17 @@ pub struct Config {
 pub discriminator: [u8; 8],
 #[cfg_attr(feature = "serde", serde(with = "serde_with::As::<serde_with::DisplayFromStr>"))]
 pub admin: Pubkey,
+#[cfg_attr(feature = "serde", serde(with = "serde_with::As::<serde_with::DisplayFromStr>"))]
+pub mint: Pubkey,
 pub admin_fee_percentage_bp: u16,
+pub bet_burn_percentage_bp: u16,
+pub mystery_box_burn_percentage_bp: u16,
+pub mystery_box_price: u64,
 #[cfg_attr(feature = "serde", serde(with = "serde_with::As::<serde_with::DisplayFromStr>"))]
 pub vault: Pubkey,
 #[cfg_attr(feature = "serde", serde(with = "serde_with::As::<serde_with::DisplayFromStr>"))]
 pub fees_vault: Pubkey,
+pub total_burned: u64,
 pub santa_pot: u64,
 pub grinch_pot: u64,
 pub santa_boxes: u64,
@@ -30,13 +36,14 @@ pub grinch_boxes: u64,
 pub santa_multiplier: u32,
 pub grinch_multiplier: u32,
 pub game_ended: bool,
-pub initialized_at: i64,
+pub is_active_at: i64,
 pub withdraw_unclaimed_at: i64,
 pub winning_side: Option<BettingSide>,
 pub creators: [Creator; 3],
 pub vault_bump: u8,
 pub fees_vault_bump: u8,
 pub bump: u8,
+pub seed: u64,
 }
 
 

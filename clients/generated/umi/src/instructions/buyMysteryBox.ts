@@ -33,9 +33,12 @@ import {
 // Accounts.
 export type BuyMysteryBoxInstructionAccounts = {
   user: Signer;
+  mint: PublicKey | Pda;
   state: PublicKey | Pda;
-  feesVault?: PublicKey | Pda;
   userBet?: PublicKey | Pda;
+  userAta: PublicKey | Pda;
+  tokenProgram: PublicKey | Pda;
+  associatedTokenProgram?: PublicKey | Pda;
   systemProgram?: PublicKey | Pda;
 };
 
@@ -90,23 +93,34 @@ export function buyMysteryBox(
   // Accounts.
   const resolvedAccounts = {
     user: { index: 0, isWritable: true as boolean, value: input.user ?? null },
+    mint: { index: 1, isWritable: false as boolean, value: input.mint ?? null },
     state: {
-      index: 1,
-      isWritable: true as boolean,
-      value: input.state ?? null,
-    },
-    feesVault: {
       index: 2,
       isWritable: true as boolean,
-      value: input.feesVault ?? null,
+      value: input.state ?? null,
     },
     userBet: {
       index: 3,
       isWritable: true as boolean,
       value: input.userBet ?? null,
     },
-    systemProgram: {
+    userAta: {
       index: 4,
+      isWritable: true as boolean,
+      value: input.userAta ?? null,
+    },
+    tokenProgram: {
+      index: 5,
+      isWritable: false as boolean,
+      value: input.tokenProgram ?? null,
+    },
+    associatedTokenProgram: {
+      index: 6,
+      isWritable: false as boolean,
+      value: input.associatedTokenProgram ?? null,
+    },
+    systemProgram: {
+      index: 7,
       isWritable: false as boolean,
       value: input.systemProgram ?? null,
     },
@@ -116,15 +130,6 @@ export function buyMysteryBox(
   const resolvedArgs: BuyMysteryBoxInstructionArgs = { ...input };
 
   // Default values.
-  if (!resolvedAccounts.feesVault.value) {
-    resolvedAccounts.feesVault.value = context.eddsa.findPda(programId, [
-      bytes().serialize(new Uint8Array([118, 97, 117, 108, 116])),
-      publicKeySerializer().serialize(
-        expectPublicKey(resolvedAccounts.state.value)
-      ),
-      bytes().serialize(new Uint8Array([102, 101, 101, 115])),
-    ]);
-  }
   if (!resolvedAccounts.userBet.value) {
     resolvedAccounts.userBet.value = context.eddsa.findPda(programId, [
       bytes().serialize(new Uint8Array([117, 115, 101, 114])),
@@ -133,6 +138,14 @@ export function buyMysteryBox(
       ),
       string().serialize(expectSome(resolvedArgs.betTag)),
     ]);
+  }
+  if (!resolvedAccounts.associatedTokenProgram.value) {
+    resolvedAccounts.associatedTokenProgram.value =
+      context.programs.getPublicKey(
+        'associatedTokenProgram',
+        'ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL'
+      );
+    resolvedAccounts.associatedTokenProgram.isWritable = false;
   }
   if (!resolvedAccounts.systemProgram.value) {
     resolvedAccounts.systemProgram.value = context.programs.getPublicKey(

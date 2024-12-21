@@ -18,58 +18,67 @@ import {
   Serializer,
   bytes,
   mapSerializer,
-  publicKey as publicKeySerializer,
   struct,
+  u64,
 } from '@metaplex-foundation/umi/serializers';
 import {
   ResolvedAccount,
   ResolvedAccountsWithIndices,
-  expectPublicKey,
   getAccountMetasAndSigners,
 } from '../shared';
 
 // Accounts.
-export type WithdrawUnclaimedCreatorsWinningsInstructionAccounts = {
+export type UpdateMysteryBoxPriceInstructionAccounts = {
   admin: Signer;
   state: PublicKey | Pda;
-  vault?: PublicKey | Pda;
   systemProgram?: PublicKey | Pda;
 };
 
 // Data.
-export type WithdrawUnclaimedCreatorsWinningsInstructionData = {
+export type UpdateMysteryBoxPriceInstructionData = {
   discriminator: Uint8Array;
+  price: bigint;
 };
 
-export type WithdrawUnclaimedCreatorsWinningsInstructionDataArgs = {};
+export type UpdateMysteryBoxPriceInstructionDataArgs = {
+  price: number | bigint;
+};
 
-export function getWithdrawUnclaimedCreatorsWinningsInstructionDataSerializer(): Serializer<
-  WithdrawUnclaimedCreatorsWinningsInstructionDataArgs,
-  WithdrawUnclaimedCreatorsWinningsInstructionData
+export function getUpdateMysteryBoxPriceInstructionDataSerializer(): Serializer<
+  UpdateMysteryBoxPriceInstructionDataArgs,
+  UpdateMysteryBoxPriceInstructionData
 > {
   return mapSerializer<
-    WithdrawUnclaimedCreatorsWinningsInstructionDataArgs,
+    UpdateMysteryBoxPriceInstructionDataArgs,
     any,
-    WithdrawUnclaimedCreatorsWinningsInstructionData
+    UpdateMysteryBoxPriceInstructionData
   >(
-    struct<WithdrawUnclaimedCreatorsWinningsInstructionData>(
-      [['discriminator', bytes({ size: 8 })]],
-      { description: 'WithdrawUnclaimedCreatorsWinningsInstructionData' }
+    struct<UpdateMysteryBoxPriceInstructionData>(
+      [
+        ['discriminator', bytes({ size: 8 })],
+        ['price', u64()],
+      ],
+      { description: 'UpdateMysteryBoxPriceInstructionData' }
     ),
     (value) => ({
       ...value,
-      discriminator: new Uint8Array([223, 124, 225, 226, 237, 254, 93, 105]),
+      discriminator: new Uint8Array([122, 152, 143, 112, 173, 18, 192, 165]),
     })
   ) as Serializer<
-    WithdrawUnclaimedCreatorsWinningsInstructionDataArgs,
-    WithdrawUnclaimedCreatorsWinningsInstructionData
+    UpdateMysteryBoxPriceInstructionDataArgs,
+    UpdateMysteryBoxPriceInstructionData
   >;
 }
 
+// Args.
+export type UpdateMysteryBoxPriceInstructionArgs =
+  UpdateMysteryBoxPriceInstructionDataArgs;
+
 // Instruction.
-export function withdrawUnclaimedCreatorsWinnings(
-  context: Pick<Context, 'eddsa' | 'programs'>,
-  input: WithdrawUnclaimedCreatorsWinningsInstructionAccounts
+export function updateMysteryBoxPrice(
+  context: Pick<Context, 'programs'>,
+  input: UpdateMysteryBoxPriceInstructionAccounts &
+    UpdateMysteryBoxPriceInstructionArgs
 ): TransactionBuilder {
   // Program ID.
   const programId = context.programs.getPublicKey(
@@ -89,32 +98,17 @@ export function withdrawUnclaimedCreatorsWinnings(
       isWritable: true as boolean,
       value: input.state ?? null,
     },
-    vault: {
-      index: 2,
-      isWritable: true as boolean,
-      value: input.vault ?? null,
-    },
     systemProgram: {
-      index: 3,
+      index: 2,
       isWritable: false as boolean,
       value: input.systemProgram ?? null,
     },
   } satisfies ResolvedAccountsWithIndices;
 
+  // Arguments.
+  const resolvedArgs: UpdateMysteryBoxPriceInstructionArgs = { ...input };
+
   // Default values.
-  if (!resolvedAccounts.vault.value) {
-    resolvedAccounts.vault.value = context.eddsa.findPda(programId, [
-      bytes().serialize(new Uint8Array([118, 97, 117, 108, 116])),
-      publicKeySerializer().serialize(
-        expectPublicKey(resolvedAccounts.state.value)
-      ),
-      bytes().serialize(
-        new Uint8Array([
-          115, 97, 110, 116, 97, 45, 118, 115, 45, 103, 114, 105, 110, 99, 104,
-        ])
-      ),
-    ]);
-  }
   if (!resolvedAccounts.systemProgram.value) {
     resolvedAccounts.systemProgram.value = context.programs.getPublicKey(
       'systemProgram',
@@ -136,10 +130,9 @@ export function withdrawUnclaimedCreatorsWinnings(
   );
 
   // Data.
-  const data =
-    getWithdrawUnclaimedCreatorsWinningsInstructionDataSerializer().serialize(
-      {}
-    );
+  const data = getUpdateMysteryBoxPriceInstructionDataSerializer().serialize(
+    resolvedArgs as UpdateMysteryBoxPriceInstructionDataArgs
+  );
 
   // Bytes Created On Chain.
   const bytesCreatedOnChain = 0;

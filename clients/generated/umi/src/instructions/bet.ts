@@ -34,10 +34,14 @@ import {
 // Accounts.
 export type BetInstructionAccounts = {
   user: Signer;
+  mint: PublicKey | Pda;
   state: PublicKey | Pda;
   vault?: PublicKey | Pda;
-  feesVault: PublicKey | Pda;
+  feesVault?: PublicKey | Pda;
   userBet?: PublicKey | Pda;
+  userAta: PublicKey | Pda;
+  tokenProgram: PublicKey | Pda;
+  associatedTokenProgram?: PublicKey | Pda;
   systemProgram?: PublicKey | Pda;
 };
 
@@ -90,28 +94,44 @@ export function bet(
   // Accounts.
   const resolvedAccounts = {
     user: { index: 0, isWritable: true as boolean, value: input.user ?? null },
+    mint: { index: 1, isWritable: false as boolean, value: input.mint ?? null },
     state: {
-      index: 1,
+      index: 2,
       isWritable: true as boolean,
       value: input.state ?? null,
     },
     vault: {
-      index: 2,
+      index: 3,
       isWritable: true as boolean,
       value: input.vault ?? null,
     },
     feesVault: {
-      index: 3,
+      index: 4,
       isWritable: true as boolean,
       value: input.feesVault ?? null,
     },
     userBet: {
-      index: 4,
+      index: 5,
       isWritable: true as boolean,
       value: input.userBet ?? null,
     },
+    userAta: {
+      index: 6,
+      isWritable: true as boolean,
+      value: input.userAta ?? null,
+    },
+    tokenProgram: {
+      index: 7,
+      isWritable: false as boolean,
+      value: input.tokenProgram ?? null,
+    },
+    associatedTokenProgram: {
+      index: 8,
+      isWritable: false as boolean,
+      value: input.associatedTokenProgram ?? null,
+    },
     systemProgram: {
-      index: 5,
+      index: 9,
       isWritable: false as boolean,
       value: input.systemProgram ?? null,
     },
@@ -134,6 +154,15 @@ export function bet(
       ),
     ]);
   }
+  if (!resolvedAccounts.feesVault.value) {
+    resolvedAccounts.feesVault.value = context.eddsa.findPda(programId, [
+      bytes().serialize(new Uint8Array([118, 97, 117, 108, 116])),
+      publicKeySerializer().serialize(
+        expectPublicKey(resolvedAccounts.state.value)
+      ),
+      bytes().serialize(new Uint8Array([102, 101, 101, 115])),
+    ]);
+  }
   if (!resolvedAccounts.userBet.value) {
     resolvedAccounts.userBet.value = context.eddsa.findPda(programId, [
       bytes().serialize(new Uint8Array([117, 115, 101, 114])),
@@ -142,6 +171,14 @@ export function bet(
       ),
       string().serialize(expectSome(resolvedArgs.betTag)),
     ]);
+  }
+  if (!resolvedAccounts.associatedTokenProgram.value) {
+    resolvedAccounts.associatedTokenProgram.value =
+      context.programs.getPublicKey(
+        'associatedTokenProgram',
+        'ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL'
+      );
+    resolvedAccounts.associatedTokenProgram.isWritable = false;
   }
   if (!resolvedAccounts.systemProgram.value) {
     resolvedAccounts.systemProgram.value = context.programs.getPublicKey(

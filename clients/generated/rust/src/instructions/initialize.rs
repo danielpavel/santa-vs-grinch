@@ -7,13 +7,16 @@
 
 use borsh::BorshDeserialize;
 use borsh::BorshSerialize;
-use crate::generated::types::Creator;
+use crate::generated::types::InitializeArgs;
 
 /// Accounts.
 pub struct Initialize {
       
               
           pub admin: solana_program::pubkey::Pubkey,
+          
+              
+          pub mint: solana_program::pubkey::Pubkey,
           
               
           pub state: solana_program::pubkey::Pubkey,
@@ -25,6 +28,9 @@ pub struct Initialize {
           pub fees_vault: solana_program::pubkey::Pubkey,
           
               
+          pub token_program: solana_program::pubkey::Pubkey,
+          
+              
           pub system_program: solana_program::pubkey::Pubkey,
       }
 
@@ -34,21 +40,29 @@ impl Initialize {
   }
   #[allow(clippy::vec_init_then_push)]
   pub fn instruction_with_remaining_accounts(&self, args: InitializeInstructionArgs, remaining_accounts: &[solana_program::instruction::AccountMeta]) -> solana_program::instruction::Instruction {
-    let mut accounts = Vec::with_capacity(5 + remaining_accounts.len());
+    let mut accounts = Vec::with_capacity(7 + remaining_accounts.len());
                             accounts.push(solana_program::instruction::AccountMeta::new(
             self.admin,
             true
+          ));
+                                          accounts.push(solana_program::instruction::AccountMeta::new_readonly(
+            self.mint,
+            false
           ));
                                           accounts.push(solana_program::instruction::AccountMeta::new(
             self.state,
             false
           ));
-                                          accounts.push(solana_program::instruction::AccountMeta::new_readonly(
+                                          accounts.push(solana_program::instruction::AccountMeta::new(
             self.vault,
             false
           ));
-                                          accounts.push(solana_program::instruction::AccountMeta::new_readonly(
+                                          accounts.push(solana_program::instruction::AccountMeta::new(
             self.fees_vault,
+            false
+          ));
+                                          accounts.push(solana_program::instruction::AccountMeta::new_readonly(
+            self.token_program,
             false
           ));
                                           accounts.push(solana_program::instruction::AccountMeta::new_readonly(
@@ -71,13 +85,13 @@ impl Initialize {
 #[derive(BorshDeserialize, BorshSerialize)]
 pub struct InitializeInstructionData {
             discriminator: [u8; 8],
-                        }
+                  }
 
 impl InitializeInstructionData {
   pub fn new() -> Self {
     Self {
                         discriminator: [175, 175, 109, 31, 13, 152, 155, 237],
-                                                            }
+                                              }
   }
 }
 
@@ -90,9 +104,8 @@ impl Default for InitializeInstructionData {
 #[derive(BorshSerialize, BorshDeserialize, Clone, Debug, Eq, PartialEq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct InitializeInstructionArgs {
-                  pub creators: Vec<Creator>,
-                pub max_num_creators: u8,
-                pub admin_fee_percentage_bp: u16,
+                  pub args: InitializeArgs,
+                pub seed: u64,
       }
 
 
@@ -101,20 +114,23 @@ pub struct InitializeInstructionArgs {
 /// ### Accounts:
 ///
                       ///   0. `[writable, signer]` admin
-                ///   1. `[writable]` state
-          ///   2. `[]` vault
-          ///   3. `[]` fees_vault
-                ///   4. `[optional]` system_program (default to `11111111111111111111111111111111`)
+          ///   1. `[]` mint
+                ///   2. `[writable]` state
+                ///   3. `[writable]` vault
+                ///   4. `[writable]` fees_vault
+          ///   5. `[]` token_program
+                ///   6. `[optional]` system_program (default to `11111111111111111111111111111111`)
 #[derive(Clone, Debug, Default)]
 pub struct InitializeBuilder {
             admin: Option<solana_program::pubkey::Pubkey>,
+                mint: Option<solana_program::pubkey::Pubkey>,
                 state: Option<solana_program::pubkey::Pubkey>,
                 vault: Option<solana_program::pubkey::Pubkey>,
                 fees_vault: Option<solana_program::pubkey::Pubkey>,
+                token_program: Option<solana_program::pubkey::Pubkey>,
                 system_program: Option<solana_program::pubkey::Pubkey>,
-                        creators: Option<Vec<Creator>>,
-                max_num_creators: Option<u8>,
-                admin_fee_percentage_bp: Option<u16>,
+                        args: Option<InitializeArgs>,
+                seed: Option<u64>,
         __remaining_accounts: Vec<solana_program::instruction::AccountMeta>,
 }
 
@@ -125,6 +141,11 @@ impl InitializeBuilder {
             #[inline(always)]
     pub fn admin(&mut self, admin: solana_program::pubkey::Pubkey) -> &mut Self {
                         self.admin = Some(admin);
+                    self
+    }
+            #[inline(always)]
+    pub fn mint(&mut self, mint: solana_program::pubkey::Pubkey) -> &mut Self {
+                        self.mint = Some(mint);
                     self
     }
             #[inline(always)]
@@ -142,6 +163,11 @@ impl InitializeBuilder {
                         self.fees_vault = Some(fees_vault);
                     self
     }
+            #[inline(always)]
+    pub fn token_program(&mut self, token_program: solana_program::pubkey::Pubkey) -> &mut Self {
+                        self.token_program = Some(token_program);
+                    self
+    }
             /// `[optional account, default to '11111111111111111111111111111111']`
 #[inline(always)]
     pub fn system_program(&mut self, system_program: solana_program::pubkey::Pubkey) -> &mut Self {
@@ -149,18 +175,13 @@ impl InitializeBuilder {
                     self
     }
                     #[inline(always)]
-      pub fn creators(&mut self, creators: Vec<Creator>) -> &mut Self {
-        self.creators = Some(creators);
+      pub fn args(&mut self, args: InitializeArgs) -> &mut Self {
+        self.args = Some(args);
         self
       }
                 #[inline(always)]
-      pub fn max_num_creators(&mut self, max_num_creators: u8) -> &mut Self {
-        self.max_num_creators = Some(max_num_creators);
-        self
-      }
-                #[inline(always)]
-      pub fn admin_fee_percentage_bp(&mut self, admin_fee_percentage_bp: u16) -> &mut Self {
-        self.admin_fee_percentage_bp = Some(admin_fee_percentage_bp);
+      pub fn seed(&mut self, seed: u64) -> &mut Self {
+        self.seed = Some(seed);
         self
       }
         /// Add an additional account to the instruction.
@@ -179,15 +200,16 @@ impl InitializeBuilder {
   pub fn instruction(&self) -> solana_program::instruction::Instruction {
     let accounts = Initialize {
                               admin: self.admin.expect("admin is not set"),
+                                        mint: self.mint.expect("mint is not set"),
                                         state: self.state.expect("state is not set"),
                                         vault: self.vault.expect("vault is not set"),
                                         fees_vault: self.fees_vault.expect("fees_vault is not set"),
+                                        token_program: self.token_program.expect("token_program is not set"),
                                         system_program: self.system_program.unwrap_or(solana_program::pubkey!("11111111111111111111111111111111")),
                       };
           let args = InitializeInstructionArgs {
-                                                              creators: self.creators.clone().expect("creators is not set"),
-                                                                  max_num_creators: self.max_num_creators.clone().expect("max_num_creators is not set"),
-                                                                  admin_fee_percentage_bp: self.admin_fee_percentage_bp.clone().expect("admin_fee_percentage_bp is not set"),
+                                                              args: self.args.clone().expect("args is not set"),
+                                                                  seed: self.seed.clone().expect("seed is not set"),
                                     };
     
     accounts.instruction_with_remaining_accounts(args, &self.__remaining_accounts)
@@ -201,6 +223,9 @@ impl InitializeBuilder {
               pub admin: &'b solana_program::account_info::AccountInfo<'a>,
                 
                     
+              pub mint: &'b solana_program::account_info::AccountInfo<'a>,
+                
+                    
               pub state: &'b solana_program::account_info::AccountInfo<'a>,
                 
                     
@@ -208,6 +233,9 @@ impl InitializeBuilder {
                 
                     
               pub fees_vault: &'b solana_program::account_info::AccountInfo<'a>,
+                
+                    
+              pub token_program: &'b solana_program::account_info::AccountInfo<'a>,
                 
                     
               pub system_program: &'b solana_program::account_info::AccountInfo<'a>,
@@ -222,6 +250,9 @@ pub struct InitializeCpi<'a, 'b> {
           pub admin: &'b solana_program::account_info::AccountInfo<'a>,
           
               
+          pub mint: &'b solana_program::account_info::AccountInfo<'a>,
+          
+              
           pub state: &'b solana_program::account_info::AccountInfo<'a>,
           
               
@@ -229,6 +260,9 @@ pub struct InitializeCpi<'a, 'b> {
           
               
           pub fees_vault: &'b solana_program::account_info::AccountInfo<'a>,
+          
+              
+          pub token_program: &'b solana_program::account_info::AccountInfo<'a>,
           
               
           pub system_program: &'b solana_program::account_info::AccountInfo<'a>,
@@ -245,9 +279,11 @@ impl<'a, 'b> InitializeCpi<'a, 'b> {
     Self {
       __program: program,
               admin: accounts.admin,
+              mint: accounts.mint,
               state: accounts.state,
               vault: accounts.vault,
               fees_vault: accounts.fees_vault,
+              token_program: accounts.token_program,
               system_program: accounts.system_program,
                     __args: args,
           }
@@ -271,21 +307,29 @@ impl<'a, 'b> InitializeCpi<'a, 'b> {
     signers_seeds: &[&[&[u8]]],
     remaining_accounts: &[(&'b solana_program::account_info::AccountInfo<'a>, bool, bool)]
   ) -> solana_program::entrypoint::ProgramResult {
-    let mut accounts = Vec::with_capacity(5 + remaining_accounts.len());
+    let mut accounts = Vec::with_capacity(7 + remaining_accounts.len());
                             accounts.push(solana_program::instruction::AccountMeta::new(
             *self.admin.key,
             true
+          ));
+                                          accounts.push(solana_program::instruction::AccountMeta::new_readonly(
+            *self.mint.key,
+            false
           ));
                                           accounts.push(solana_program::instruction::AccountMeta::new(
             *self.state.key,
             false
           ));
-                                          accounts.push(solana_program::instruction::AccountMeta::new_readonly(
+                                          accounts.push(solana_program::instruction::AccountMeta::new(
             *self.vault.key,
             false
           ));
-                                          accounts.push(solana_program::instruction::AccountMeta::new_readonly(
+                                          accounts.push(solana_program::instruction::AccountMeta::new(
             *self.fees_vault.key,
+            false
+          ));
+                                          accounts.push(solana_program::instruction::AccountMeta::new_readonly(
+            *self.token_program.key,
             false
           ));
                                           accounts.push(solana_program::instruction::AccountMeta::new_readonly(
@@ -308,12 +352,14 @@ impl<'a, 'b> InitializeCpi<'a, 'b> {
       accounts,
       data,
     };
-    let mut account_infos = Vec::with_capacity(5 + 1 + remaining_accounts.len());
+    let mut account_infos = Vec::with_capacity(7 + 1 + remaining_accounts.len());
     account_infos.push(self.__program.clone());
                   account_infos.push(self.admin.clone());
+                        account_infos.push(self.mint.clone());
                         account_infos.push(self.state.clone());
                         account_infos.push(self.vault.clone());
                         account_infos.push(self.fees_vault.clone());
+                        account_infos.push(self.token_program.clone());
                         account_infos.push(self.system_program.clone());
               remaining_accounts.iter().for_each(|remaining_account| account_infos.push(remaining_account.0.clone()));
 
@@ -330,10 +376,12 @@ impl<'a, 'b> InitializeCpi<'a, 'b> {
 /// ### Accounts:
 ///
                       ///   0. `[writable, signer]` admin
-                ///   1. `[writable]` state
-          ///   2. `[]` vault
-          ///   3. `[]` fees_vault
-          ///   4. `[]` system_program
+          ///   1. `[]` mint
+                ///   2. `[writable]` state
+                ///   3. `[writable]` vault
+                ///   4. `[writable]` fees_vault
+          ///   5. `[]` token_program
+          ///   6. `[]` system_program
 #[derive(Clone, Debug)]
 pub struct InitializeCpiBuilder<'a, 'b> {
   instruction: Box<InitializeCpiBuilderInstruction<'a, 'b>>,
@@ -344,13 +392,14 @@ impl<'a, 'b> InitializeCpiBuilder<'a, 'b> {
     let instruction = Box::new(InitializeCpiBuilderInstruction {
       __program: program,
               admin: None,
+              mint: None,
               state: None,
               vault: None,
               fees_vault: None,
+              token_program: None,
               system_program: None,
-                                            creators: None,
-                                max_num_creators: None,
-                                admin_fee_percentage_bp: None,
+                                            args: None,
+                                seed: None,
                     __remaining_accounts: Vec::new(),
     });
     Self { instruction }
@@ -358,6 +407,11 @@ impl<'a, 'b> InitializeCpiBuilder<'a, 'b> {
       #[inline(always)]
     pub fn admin(&mut self, admin: &'b solana_program::account_info::AccountInfo<'a>) -> &mut Self {
                         self.instruction.admin = Some(admin);
+                    self
+    }
+      #[inline(always)]
+    pub fn mint(&mut self, mint: &'b solana_program::account_info::AccountInfo<'a>) -> &mut Self {
+                        self.instruction.mint = Some(mint);
                     self
     }
       #[inline(always)]
@@ -376,23 +430,23 @@ impl<'a, 'b> InitializeCpiBuilder<'a, 'b> {
                     self
     }
       #[inline(always)]
+    pub fn token_program(&mut self, token_program: &'b solana_program::account_info::AccountInfo<'a>) -> &mut Self {
+                        self.instruction.token_program = Some(token_program);
+                    self
+    }
+      #[inline(always)]
     pub fn system_program(&mut self, system_program: &'b solana_program::account_info::AccountInfo<'a>) -> &mut Self {
                         self.instruction.system_program = Some(system_program);
                     self
     }
                     #[inline(always)]
-      pub fn creators(&mut self, creators: Vec<Creator>) -> &mut Self {
-        self.instruction.creators = Some(creators);
+      pub fn args(&mut self, args: InitializeArgs) -> &mut Self {
+        self.instruction.args = Some(args);
         self
       }
                 #[inline(always)]
-      pub fn max_num_creators(&mut self, max_num_creators: u8) -> &mut Self {
-        self.instruction.max_num_creators = Some(max_num_creators);
-        self
-      }
-                #[inline(always)]
-      pub fn admin_fee_percentage_bp(&mut self, admin_fee_percentage_bp: u16) -> &mut Self {
-        self.instruction.admin_fee_percentage_bp = Some(admin_fee_percentage_bp);
+      pub fn seed(&mut self, seed: u64) -> &mut Self {
+        self.instruction.seed = Some(seed);
         self
       }
         /// Add an additional account to the instruction.
@@ -418,20 +472,23 @@ impl<'a, 'b> InitializeCpiBuilder<'a, 'b> {
   #[allow(clippy::vec_init_then_push)]
   pub fn invoke_signed(&self, signers_seeds: &[&[&[u8]]]) -> solana_program::entrypoint::ProgramResult {
           let args = InitializeInstructionArgs {
-                                                              creators: self.instruction.creators.clone().expect("creators is not set"),
-                                                                  max_num_creators: self.instruction.max_num_creators.clone().expect("max_num_creators is not set"),
-                                                                  admin_fee_percentage_bp: self.instruction.admin_fee_percentage_bp.clone().expect("admin_fee_percentage_bp is not set"),
+                                                              args: self.instruction.args.clone().expect("args is not set"),
+                                                                  seed: self.instruction.seed.clone().expect("seed is not set"),
                                     };
         let instruction = InitializeCpi {
         __program: self.instruction.__program,
                   
           admin: self.instruction.admin.expect("admin is not set"),
                   
+          mint: self.instruction.mint.expect("mint is not set"),
+                  
           state: self.instruction.state.expect("state is not set"),
                   
           vault: self.instruction.vault.expect("vault is not set"),
                   
           fees_vault: self.instruction.fees_vault.expect("fees_vault is not set"),
+                  
+          token_program: self.instruction.token_program.expect("token_program is not set"),
                   
           system_program: self.instruction.system_program.expect("system_program is not set"),
                           __args: args,
@@ -444,13 +501,14 @@ impl<'a, 'b> InitializeCpiBuilder<'a, 'b> {
 struct InitializeCpiBuilderInstruction<'a, 'b> {
   __program: &'b solana_program::account_info::AccountInfo<'a>,
             admin: Option<&'b solana_program::account_info::AccountInfo<'a>>,
+                mint: Option<&'b solana_program::account_info::AccountInfo<'a>>,
                 state: Option<&'b solana_program::account_info::AccountInfo<'a>>,
                 vault: Option<&'b solana_program::account_info::AccountInfo<'a>>,
                 fees_vault: Option<&'b solana_program::account_info::AccountInfo<'a>>,
+                token_program: Option<&'b solana_program::account_info::AccountInfo<'a>>,
                 system_program: Option<&'b solana_program::account_info::AccountInfo<'a>>,
-                        creators: Option<Vec<Creator>>,
-                max_num_creators: Option<u8>,
-                admin_fee_percentage_bp: Option<u16>,
+                        args: Option<InitializeArgs>,
+                seed: Option<u64>,
         /// Additional instruction accounts `(AccountInfo, is_writable, is_signer)`.
   __remaining_accounts: Vec<(&'b solana_program::account_info::AccountInfo<'a>, bool, bool)>,
 }

@@ -18,60 +18,67 @@ import {
   Serializer,
   bytes,
   mapSerializer,
-  publicKey as publicKeySerializer,
   struct,
+  u16,
 } from '@metaplex-foundation/umi/serializers';
 import {
   ResolvedAccount,
   ResolvedAccountsWithIndices,
-  expectPublicKey,
   getAccountMetasAndSigners,
 } from '../shared';
 
 // Accounts.
-export type WithdrawCreatorsWinningsInstructionAccounts = {
+export type UpdateMysteryBoxBurnPercentageBpInstructionAccounts = {
   admin: Signer;
-  mint: PublicKey | Pda;
   state: PublicKey | Pda;
-  vault?: PublicKey | Pda;
   systemProgram?: PublicKey | Pda;
-  tokenProgram: PublicKey | Pda;
 };
 
 // Data.
-export type WithdrawCreatorsWinningsInstructionData = {
+export type UpdateMysteryBoxBurnPercentageBpInstructionData = {
   discriminator: Uint8Array;
+  percentageInBp: number;
 };
 
-export type WithdrawCreatorsWinningsInstructionDataArgs = {};
+export type UpdateMysteryBoxBurnPercentageBpInstructionDataArgs = {
+  percentageInBp: number;
+};
 
-export function getWithdrawCreatorsWinningsInstructionDataSerializer(): Serializer<
-  WithdrawCreatorsWinningsInstructionDataArgs,
-  WithdrawCreatorsWinningsInstructionData
+export function getUpdateMysteryBoxBurnPercentageBpInstructionDataSerializer(): Serializer<
+  UpdateMysteryBoxBurnPercentageBpInstructionDataArgs,
+  UpdateMysteryBoxBurnPercentageBpInstructionData
 > {
   return mapSerializer<
-    WithdrawCreatorsWinningsInstructionDataArgs,
+    UpdateMysteryBoxBurnPercentageBpInstructionDataArgs,
     any,
-    WithdrawCreatorsWinningsInstructionData
+    UpdateMysteryBoxBurnPercentageBpInstructionData
   >(
-    struct<WithdrawCreatorsWinningsInstructionData>(
-      [['discriminator', bytes({ size: 8 })]],
-      { description: 'WithdrawCreatorsWinningsInstructionData' }
+    struct<UpdateMysteryBoxBurnPercentageBpInstructionData>(
+      [
+        ['discriminator', bytes({ size: 8 })],
+        ['percentageInBp', u16()],
+      ],
+      { description: 'UpdateMysteryBoxBurnPercentageBpInstructionData' }
     ),
     (value) => ({
       ...value,
-      discriminator: new Uint8Array([210, 104, 160, 53, 155, 35, 222, 249]),
+      discriminator: new Uint8Array([64, 140, 239, 163, 43, 68, 59, 219]),
     })
   ) as Serializer<
-    WithdrawCreatorsWinningsInstructionDataArgs,
-    WithdrawCreatorsWinningsInstructionData
+    UpdateMysteryBoxBurnPercentageBpInstructionDataArgs,
+    UpdateMysteryBoxBurnPercentageBpInstructionData
   >;
 }
 
+// Args.
+export type UpdateMysteryBoxBurnPercentageBpInstructionArgs =
+  UpdateMysteryBoxBurnPercentageBpInstructionDataArgs;
+
 // Instruction.
-export function withdrawCreatorsWinnings(
-  context: Pick<Context, 'eddsa' | 'programs'>,
-  input: WithdrawCreatorsWinningsInstructionAccounts
+export function updateMysteryBoxBurnPercentageBp(
+  context: Pick<Context, 'programs'>,
+  input: UpdateMysteryBoxBurnPercentageBpInstructionAccounts &
+    UpdateMysteryBoxBurnPercentageBpInstructionArgs
 ): TransactionBuilder {
   // Program ID.
   const programId = context.programs.getPublicKey(
@@ -86,43 +93,24 @@ export function withdrawCreatorsWinnings(
       isWritable: true as boolean,
       value: input.admin ?? null,
     },
-    mint: { index: 1, isWritable: false as boolean, value: input.mint ?? null },
     state: {
-      index: 2,
+      index: 1,
       isWritable: true as boolean,
       value: input.state ?? null,
     },
-    vault: {
-      index: 3,
-      isWritable: true as boolean,
-      value: input.vault ?? null,
-    },
     systemProgram: {
-      index: 4,
+      index: 2,
       isWritable: false as boolean,
       value: input.systemProgram ?? null,
     },
-    tokenProgram: {
-      index: 5,
-      isWritable: false as boolean,
-      value: input.tokenProgram ?? null,
-    },
   } satisfies ResolvedAccountsWithIndices;
 
+  // Arguments.
+  const resolvedArgs: UpdateMysteryBoxBurnPercentageBpInstructionArgs = {
+    ...input,
+  };
+
   // Default values.
-  if (!resolvedAccounts.vault.value) {
-    resolvedAccounts.vault.value = context.eddsa.findPda(programId, [
-      bytes().serialize(new Uint8Array([118, 97, 117, 108, 116])),
-      publicKeySerializer().serialize(
-        expectPublicKey(resolvedAccounts.state.value)
-      ),
-      bytes().serialize(
-        new Uint8Array([
-          115, 97, 110, 116, 97, 45, 118, 115, 45, 103, 114, 105, 110, 99, 104,
-        ])
-      ),
-    ]);
-  }
   if (!resolvedAccounts.systemProgram.value) {
     resolvedAccounts.systemProgram.value = context.programs.getPublicKey(
       'systemProgram',
@@ -144,9 +132,10 @@ export function withdrawCreatorsWinnings(
   );
 
   // Data.
-  const data = getWithdrawCreatorsWinningsInstructionDataSerializer().serialize(
-    {}
-  );
+  const data =
+    getUpdateMysteryBoxBurnPercentageBpInstructionDataSerializer().serialize(
+      resolvedArgs as UpdateMysteryBoxBurnPercentageBpInstructionDataArgs
+    );
 
   // Bytes Created On Chain.
   const bytesCreatedOnChain = 0;

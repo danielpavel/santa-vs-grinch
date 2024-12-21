@@ -50,9 +50,14 @@ export type Config = Account<ConfigAccountData>;
 export type ConfigAccountData = {
   discriminator: Uint8Array;
   admin: PublicKey;
+  mint: PublicKey;
   adminFeePercentageBp: number;
+  betBurnPercentageBp: number;
+  mysteryBoxBurnPercentageBp: number;
+  mysteryBoxPrice: bigint;
   vault: PublicKey;
   feesVault: PublicKey;
+  totalBurned: bigint;
   santaPot: bigint;
   grinchPot: bigint;
   santaBoxes: bigint;
@@ -60,20 +65,26 @@ export type ConfigAccountData = {
   santaMultiplier: number;
   grinchMultiplier: number;
   gameEnded: boolean;
-  initializedAt: bigint;
+  isActiveAt: bigint;
   withdrawUnclaimedAt: bigint;
   winningSide: Option<BettingSide>;
   creators: Array<Creator>;
   vaultBump: number;
   feesVaultBump: number;
   bump: number;
+  seed: bigint;
 };
 
 export type ConfigAccountDataArgs = {
   admin: PublicKey;
+  mint: PublicKey;
   adminFeePercentageBp: number;
+  betBurnPercentageBp: number;
+  mysteryBoxBurnPercentageBp: number;
+  mysteryBoxPrice: number | bigint;
   vault: PublicKey;
   feesVault: PublicKey;
+  totalBurned: number | bigint;
   santaPot: number | bigint;
   grinchPot: number | bigint;
   santaBoxes: number | bigint;
@@ -81,13 +92,14 @@ export type ConfigAccountDataArgs = {
   santaMultiplier: number;
   grinchMultiplier: number;
   gameEnded: boolean;
-  initializedAt: number | bigint;
+  isActiveAt: number | bigint;
   withdrawUnclaimedAt: number | bigint;
   winningSide: OptionOrNullable<BettingSideArgs>;
   creators: Array<CreatorArgs>;
   vaultBump: number;
   feesVaultBump: number;
   bump: number;
+  seed: number | bigint;
 };
 
 export function getConfigAccountDataSerializer(): Serializer<
@@ -99,9 +111,14 @@ export function getConfigAccountDataSerializer(): Serializer<
       [
         ['discriminator', bytes({ size: 8 })],
         ['admin', publicKeySerializer()],
+        ['mint', publicKeySerializer()],
         ['adminFeePercentageBp', u16()],
+        ['betBurnPercentageBp', u16()],
+        ['mysteryBoxBurnPercentageBp', u16()],
+        ['mysteryBoxPrice', u64()],
         ['vault', publicKeySerializer()],
         ['feesVault', publicKeySerializer()],
+        ['totalBurned', u64()],
         ['santaPot', u64()],
         ['grinchPot', u64()],
         ['santaBoxes', u64()],
@@ -109,13 +126,14 @@ export function getConfigAccountDataSerializer(): Serializer<
         ['santaMultiplier', u32()],
         ['grinchMultiplier', u32()],
         ['gameEnded', bool()],
-        ['initializedAt', i64()],
+        ['isActiveAt', i64()],
         ['withdrawUnclaimedAt', i64()],
         ['winningSide', option(getBettingSideSerializer())],
         ['creators', array(getCreatorSerializer(), { size: 3 })],
         ['vaultBump', u8()],
         ['feesVaultBump', u8()],
         ['bump', u8()],
+        ['seed', u64()],
       ],
       { description: 'ConfigAccountData' }
     ),
@@ -195,9 +213,14 @@ export function getConfigGpaBuilder(
     .registerFields<{
       discriminator: Uint8Array;
       admin: PublicKey;
+      mint: PublicKey;
       adminFeePercentageBp: number;
+      betBurnPercentageBp: number;
+      mysteryBoxBurnPercentageBp: number;
+      mysteryBoxPrice: number | bigint;
       vault: PublicKey;
       feesVault: PublicKey;
+      totalBurned: number | bigint;
       santaPot: number | bigint;
       grinchPot: number | bigint;
       santaBoxes: number | bigint;
@@ -205,33 +228,40 @@ export function getConfigGpaBuilder(
       santaMultiplier: number;
       grinchMultiplier: number;
       gameEnded: boolean;
-      initializedAt: number | bigint;
+      isActiveAt: number | bigint;
       withdrawUnclaimedAt: number | bigint;
       winningSide: OptionOrNullable<BettingSideArgs>;
       creators: Array<CreatorArgs>;
       vaultBump: number;
       feesVaultBump: number;
       bump: number;
+      seed: number | bigint;
     }>({
       discriminator: [0, bytes({ size: 8 })],
       admin: [8, publicKeySerializer()],
-      adminFeePercentageBp: [40, u16()],
-      vault: [42, publicKeySerializer()],
-      feesVault: [74, publicKeySerializer()],
-      santaPot: [106, u64()],
-      grinchPot: [114, u64()],
-      santaBoxes: [122, u64()],
-      grinchBoxes: [130, u64()],
-      santaMultiplier: [138, u32()],
-      grinchMultiplier: [142, u32()],
-      gameEnded: [146, bool()],
-      initializedAt: [147, i64()],
-      withdrawUnclaimedAt: [155, i64()],
-      winningSide: [163, option(getBettingSideSerializer())],
+      mint: [40, publicKeySerializer()],
+      adminFeePercentageBp: [72, u16()],
+      betBurnPercentageBp: [74, u16()],
+      mysteryBoxBurnPercentageBp: [76, u16()],
+      mysteryBoxPrice: [78, u64()],
+      vault: [86, publicKeySerializer()],
+      feesVault: [118, publicKeySerializer()],
+      totalBurned: [150, u64()],
+      santaPot: [158, u64()],
+      grinchPot: [166, u64()],
+      santaBoxes: [174, u64()],
+      grinchBoxes: [182, u64()],
+      santaMultiplier: [190, u32()],
+      grinchMultiplier: [194, u32()],
+      gameEnded: [198, bool()],
+      isActiveAt: [199, i64()],
+      withdrawUnclaimedAt: [207, i64()],
+      winningSide: [215, option(getBettingSideSerializer())],
       creators: [null, array(getCreatorSerializer(), { size: 3 })],
       vaultBump: [null, u8()],
       feesVaultBump: [null, u8()],
       bump: [null, u8()],
+      seed: [null, u64()],
     })
     .deserializeUsing<Config>((account) => deserializeConfig(account))
     .whereField(

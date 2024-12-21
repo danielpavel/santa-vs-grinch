@@ -9,60 +9,41 @@ use borsh::BorshDeserialize;
 use borsh::BorshSerialize;
 
 /// Accounts.
-pub struct WithdrawCreatorsWinnings {
+pub struct UpdateBetBurnPercentageBp {
       
               
           pub admin: solana_program::pubkey::Pubkey,
           
               
-          pub mint: solana_program::pubkey::Pubkey,
-          
-              
           pub state: solana_program::pubkey::Pubkey,
           
               
-          pub vault: solana_program::pubkey::Pubkey,
-          
-              
           pub system_program: solana_program::pubkey::Pubkey,
-          
-              
-          pub token_program: solana_program::pubkey::Pubkey,
       }
 
-impl WithdrawCreatorsWinnings {
-  pub fn instruction(&self) -> solana_program::instruction::Instruction {
-    self.instruction_with_remaining_accounts(&[])
+impl UpdateBetBurnPercentageBp {
+  pub fn instruction(&self, args: UpdateBetBurnPercentageBpInstructionArgs) -> solana_program::instruction::Instruction {
+    self.instruction_with_remaining_accounts(args, &[])
   }
   #[allow(clippy::vec_init_then_push)]
-  pub fn instruction_with_remaining_accounts(&self, remaining_accounts: &[solana_program::instruction::AccountMeta]) -> solana_program::instruction::Instruction {
-    let mut accounts = Vec::with_capacity(6 + remaining_accounts.len());
+  pub fn instruction_with_remaining_accounts(&self, args: UpdateBetBurnPercentageBpInstructionArgs, remaining_accounts: &[solana_program::instruction::AccountMeta]) -> solana_program::instruction::Instruction {
+    let mut accounts = Vec::with_capacity(3 + remaining_accounts.len());
                             accounts.push(solana_program::instruction::AccountMeta::new(
             self.admin,
             true
           ));
-                                          accounts.push(solana_program::instruction::AccountMeta::new_readonly(
-            self.mint,
-            false
-          ));
                                           accounts.push(solana_program::instruction::AccountMeta::new(
             self.state,
-            false
-          ));
-                                          accounts.push(solana_program::instruction::AccountMeta::new(
-            self.vault,
             false
           ));
                                           accounts.push(solana_program::instruction::AccountMeta::new_readonly(
             self.system_program,
             false
           ));
-                                          accounts.push(solana_program::instruction::AccountMeta::new_readonly(
-            self.token_program,
-            false
-          ));
                       accounts.extend_from_slice(remaining_accounts);
-    let data = WithdrawCreatorsWinningsInstructionData::new().try_to_vec().unwrap();
+    let mut data = UpdateBetBurnPercentageBpInstructionData::new().try_to_vec().unwrap();
+          let mut args = args.try_to_vec().unwrap();
+      data.append(&mut args);
     
     solana_program::instruction::Instruction {
       program_id: crate::SANTA_VS_GRINCH_ID,
@@ -73,48 +54,48 @@ impl WithdrawCreatorsWinnings {
 }
 
 #[derive(BorshDeserialize, BorshSerialize)]
-pub struct WithdrawCreatorsWinningsInstructionData {
+pub struct UpdateBetBurnPercentageBpInstructionData {
             discriminator: [u8; 8],
-      }
+            }
 
-impl WithdrawCreatorsWinningsInstructionData {
+impl UpdateBetBurnPercentageBpInstructionData {
   pub fn new() -> Self {
     Self {
-                        discriminator: [210, 104, 160, 53, 155, 35, 222, 249],
-                  }
+                        discriminator: [66, 140, 0, 157, 24, 57, 76, 30],
+                                }
   }
 }
 
-impl Default for WithdrawCreatorsWinningsInstructionData {
+impl Default for UpdateBetBurnPercentageBpInstructionData {
   fn default() -> Self {
     Self::new()
   }
 }
 
+#[derive(BorshSerialize, BorshDeserialize, Clone, Debug, Eq, PartialEq)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+pub struct UpdateBetBurnPercentageBpInstructionArgs {
+                  pub percentage_in_bp: u16,
+      }
 
 
-/// Instruction builder for `WithdrawCreatorsWinnings`.
+/// Instruction builder for `UpdateBetBurnPercentageBp`.
 ///
 /// ### Accounts:
 ///
                       ///   0. `[writable, signer]` admin
-          ///   1. `[]` mint
-                ///   2. `[writable]` state
-                ///   3. `[writable]` vault
-                ///   4. `[optional]` system_program (default to `11111111111111111111111111111111`)
-          ///   5. `[]` token_program
+                ///   1. `[writable]` state
+                ///   2. `[optional]` system_program (default to `11111111111111111111111111111111`)
 #[derive(Clone, Debug, Default)]
-pub struct WithdrawCreatorsWinningsBuilder {
+pub struct UpdateBetBurnPercentageBpBuilder {
             admin: Option<solana_program::pubkey::Pubkey>,
-                mint: Option<solana_program::pubkey::Pubkey>,
                 state: Option<solana_program::pubkey::Pubkey>,
-                vault: Option<solana_program::pubkey::Pubkey>,
                 system_program: Option<solana_program::pubkey::Pubkey>,
-                token_program: Option<solana_program::pubkey::Pubkey>,
-                __remaining_accounts: Vec<solana_program::instruction::AccountMeta>,
+                        percentage_in_bp: Option<u16>,
+        __remaining_accounts: Vec<solana_program::instruction::AccountMeta>,
 }
 
-impl WithdrawCreatorsWinningsBuilder {
+impl UpdateBetBurnPercentageBpBuilder {
   pub fn new() -> Self {
     Self::default()
   }
@@ -124,18 +105,8 @@ impl WithdrawCreatorsWinningsBuilder {
                     self
     }
             #[inline(always)]
-    pub fn mint(&mut self, mint: solana_program::pubkey::Pubkey) -> &mut Self {
-                        self.mint = Some(mint);
-                    self
-    }
-            #[inline(always)]
     pub fn state(&mut self, state: solana_program::pubkey::Pubkey) -> &mut Self {
                         self.state = Some(state);
-                    self
-    }
-            #[inline(always)]
-    pub fn vault(&mut self, vault: solana_program::pubkey::Pubkey) -> &mut Self {
-                        self.vault = Some(vault);
                     self
     }
             /// `[optional account, default to '11111111111111111111111111111111']`
@@ -144,12 +115,12 @@ impl WithdrawCreatorsWinningsBuilder {
                         self.system_program = Some(system_program);
                     self
     }
-            #[inline(always)]
-    pub fn token_program(&mut self, token_program: solana_program::pubkey::Pubkey) -> &mut Self {
-                        self.token_program = Some(token_program);
-                    self
-    }
-            /// Add an additional account to the instruction.
+                    #[inline(always)]
+      pub fn percentage_in_bp(&mut self, percentage_in_bp: u16) -> &mut Self {
+        self.percentage_in_bp = Some(percentage_in_bp);
+        self
+      }
+        /// Add an additional account to the instruction.
   #[inline(always)]
   pub fn add_remaining_account(&mut self, account: solana_program::instruction::AccountMeta) -> &mut Self {
     self.__remaining_accounts.push(account);
@@ -163,43 +134,34 @@ impl WithdrawCreatorsWinningsBuilder {
   }
   #[allow(clippy::clone_on_copy)]
   pub fn instruction(&self) -> solana_program::instruction::Instruction {
-    let accounts = WithdrawCreatorsWinnings {
+    let accounts = UpdateBetBurnPercentageBp {
                               admin: self.admin.expect("admin is not set"),
-                                        mint: self.mint.expect("mint is not set"),
                                         state: self.state.expect("state is not set"),
-                                        vault: self.vault.expect("vault is not set"),
                                         system_program: self.system_program.unwrap_or(solana_program::pubkey!("11111111111111111111111111111111")),
-                                        token_program: self.token_program.expect("token_program is not set"),
                       };
+          let args = UpdateBetBurnPercentageBpInstructionArgs {
+                                                              percentage_in_bp: self.percentage_in_bp.clone().expect("percentage_in_bp is not set"),
+                                    };
     
-    accounts.instruction_with_remaining_accounts(&self.__remaining_accounts)
+    accounts.instruction_with_remaining_accounts(args, &self.__remaining_accounts)
   }
 }
 
-  /// `withdraw_creators_winnings` CPI accounts.
-  pub struct WithdrawCreatorsWinningsCpiAccounts<'a, 'b> {
+  /// `update_bet_burn_percentage_bp` CPI accounts.
+  pub struct UpdateBetBurnPercentageBpCpiAccounts<'a, 'b> {
           
                     
               pub admin: &'b solana_program::account_info::AccountInfo<'a>,
                 
                     
-              pub mint: &'b solana_program::account_info::AccountInfo<'a>,
-                
-                    
               pub state: &'b solana_program::account_info::AccountInfo<'a>,
                 
                     
-              pub vault: &'b solana_program::account_info::AccountInfo<'a>,
-                
-                    
               pub system_program: &'b solana_program::account_info::AccountInfo<'a>,
-                
-                    
-              pub token_program: &'b solana_program::account_info::AccountInfo<'a>,
             }
 
-/// `withdraw_creators_winnings` CPI instruction.
-pub struct WithdrawCreatorsWinningsCpi<'a, 'b> {
+/// `update_bet_burn_percentage_bp` CPI instruction.
+pub struct UpdateBetBurnPercentageBpCpi<'a, 'b> {
   /// The program to invoke.
   pub __program: &'b solana_program::account_info::AccountInfo<'a>,
       
@@ -207,35 +169,27 @@ pub struct WithdrawCreatorsWinningsCpi<'a, 'b> {
           pub admin: &'b solana_program::account_info::AccountInfo<'a>,
           
               
-          pub mint: &'b solana_program::account_info::AccountInfo<'a>,
-          
-              
           pub state: &'b solana_program::account_info::AccountInfo<'a>,
           
               
-          pub vault: &'b solana_program::account_info::AccountInfo<'a>,
-          
-              
           pub system_program: &'b solana_program::account_info::AccountInfo<'a>,
-          
-              
-          pub token_program: &'b solana_program::account_info::AccountInfo<'a>,
-        }
+            /// The arguments for the instruction.
+    pub __args: UpdateBetBurnPercentageBpInstructionArgs,
+  }
 
-impl<'a, 'b> WithdrawCreatorsWinningsCpi<'a, 'b> {
+impl<'a, 'b> UpdateBetBurnPercentageBpCpi<'a, 'b> {
   pub fn new(
     program: &'b solana_program::account_info::AccountInfo<'a>,
-          accounts: WithdrawCreatorsWinningsCpiAccounts<'a, 'b>,
-          ) -> Self {
+          accounts: UpdateBetBurnPercentageBpCpiAccounts<'a, 'b>,
+              args: UpdateBetBurnPercentageBpInstructionArgs,
+      ) -> Self {
     Self {
       __program: program,
               admin: accounts.admin,
-              mint: accounts.mint,
               state: accounts.state,
-              vault: accounts.vault,
               system_program: accounts.system_program,
-              token_program: accounts.token_program,
-                }
+                    __args: args,
+          }
   }
   #[inline(always)]
   pub fn invoke(&self) -> solana_program::entrypoint::ProgramResult {
@@ -256,29 +210,17 @@ impl<'a, 'b> WithdrawCreatorsWinningsCpi<'a, 'b> {
     signers_seeds: &[&[&[u8]]],
     remaining_accounts: &[(&'b solana_program::account_info::AccountInfo<'a>, bool, bool)]
   ) -> solana_program::entrypoint::ProgramResult {
-    let mut accounts = Vec::with_capacity(6 + remaining_accounts.len());
+    let mut accounts = Vec::with_capacity(3 + remaining_accounts.len());
                             accounts.push(solana_program::instruction::AccountMeta::new(
             *self.admin.key,
             true
-          ));
-                                          accounts.push(solana_program::instruction::AccountMeta::new_readonly(
-            *self.mint.key,
-            false
           ));
                                           accounts.push(solana_program::instruction::AccountMeta::new(
             *self.state.key,
             false
           ));
-                                          accounts.push(solana_program::instruction::AccountMeta::new(
-            *self.vault.key,
-            false
-          ));
                                           accounts.push(solana_program::instruction::AccountMeta::new_readonly(
             *self.system_program.key,
-            false
-          ));
-                                          accounts.push(solana_program::instruction::AccountMeta::new_readonly(
-            *self.token_program.key,
             false
           ));
                       remaining_accounts.iter().for_each(|remaining_account| {
@@ -288,21 +230,20 @@ impl<'a, 'b> WithdrawCreatorsWinningsCpi<'a, 'b> {
           is_writable: remaining_account.2,
       })
     });
-    let data = WithdrawCreatorsWinningsInstructionData::new().try_to_vec().unwrap();
+    let mut data = UpdateBetBurnPercentageBpInstructionData::new().try_to_vec().unwrap();
+          let mut args = self.__args.try_to_vec().unwrap();
+      data.append(&mut args);
     
     let instruction = solana_program::instruction::Instruction {
       program_id: crate::SANTA_VS_GRINCH_ID,
       accounts,
       data,
     };
-    let mut account_infos = Vec::with_capacity(6 + 1 + remaining_accounts.len());
+    let mut account_infos = Vec::with_capacity(3 + 1 + remaining_accounts.len());
     account_infos.push(self.__program.clone());
                   account_infos.push(self.admin.clone());
-                        account_infos.push(self.mint.clone());
                         account_infos.push(self.state.clone());
-                        account_infos.push(self.vault.clone());
                         account_infos.push(self.system_program.clone());
-                        account_infos.push(self.token_program.clone());
               remaining_accounts.iter().for_each(|remaining_account| account_infos.push(remaining_account.0.clone()));
 
     if signers_seeds.is_empty() {
@@ -313,32 +254,27 @@ impl<'a, 'b> WithdrawCreatorsWinningsCpi<'a, 'b> {
   }
 }
 
-/// Instruction builder for `WithdrawCreatorsWinnings` via CPI.
+/// Instruction builder for `UpdateBetBurnPercentageBp` via CPI.
 ///
 /// ### Accounts:
 ///
                       ///   0. `[writable, signer]` admin
-          ///   1. `[]` mint
-                ///   2. `[writable]` state
-                ///   3. `[writable]` vault
-          ///   4. `[]` system_program
-          ///   5. `[]` token_program
+                ///   1. `[writable]` state
+          ///   2. `[]` system_program
 #[derive(Clone, Debug)]
-pub struct WithdrawCreatorsWinningsCpiBuilder<'a, 'b> {
-  instruction: Box<WithdrawCreatorsWinningsCpiBuilderInstruction<'a, 'b>>,
+pub struct UpdateBetBurnPercentageBpCpiBuilder<'a, 'b> {
+  instruction: Box<UpdateBetBurnPercentageBpCpiBuilderInstruction<'a, 'b>>,
 }
 
-impl<'a, 'b> WithdrawCreatorsWinningsCpiBuilder<'a, 'b> {
+impl<'a, 'b> UpdateBetBurnPercentageBpCpiBuilder<'a, 'b> {
   pub fn new(program: &'b solana_program::account_info::AccountInfo<'a>) -> Self {
-    let instruction = Box::new(WithdrawCreatorsWinningsCpiBuilderInstruction {
+    let instruction = Box::new(UpdateBetBurnPercentageBpCpiBuilderInstruction {
       __program: program,
               admin: None,
-              mint: None,
               state: None,
-              vault: None,
               system_program: None,
-              token_program: None,
-                                __remaining_accounts: Vec::new(),
+                                            percentage_in_bp: None,
+                    __remaining_accounts: Vec::new(),
     });
     Self { instruction }
   }
@@ -348,18 +284,8 @@ impl<'a, 'b> WithdrawCreatorsWinningsCpiBuilder<'a, 'b> {
                     self
     }
       #[inline(always)]
-    pub fn mint(&mut self, mint: &'b solana_program::account_info::AccountInfo<'a>) -> &mut Self {
-                        self.instruction.mint = Some(mint);
-                    self
-    }
-      #[inline(always)]
     pub fn state(&mut self, state: &'b solana_program::account_info::AccountInfo<'a>) -> &mut Self {
                         self.instruction.state = Some(state);
-                    self
-    }
-      #[inline(always)]
-    pub fn vault(&mut self, vault: &'b solana_program::account_info::AccountInfo<'a>) -> &mut Self {
-                        self.instruction.vault = Some(vault);
                     self
     }
       #[inline(always)]
@@ -367,12 +293,12 @@ impl<'a, 'b> WithdrawCreatorsWinningsCpiBuilder<'a, 'b> {
                         self.instruction.system_program = Some(system_program);
                     self
     }
-      #[inline(always)]
-    pub fn token_program(&mut self, token_program: &'b solana_program::account_info::AccountInfo<'a>) -> &mut Self {
-                        self.instruction.token_program = Some(token_program);
-                    self
-    }
-            /// Add an additional account to the instruction.
+                    #[inline(always)]
+      pub fn percentage_in_bp(&mut self, percentage_in_bp: u16) -> &mut Self {
+        self.instruction.percentage_in_bp = Some(percentage_in_bp);
+        self
+      }
+        /// Add an additional account to the instruction.
   #[inline(always)]
   pub fn add_remaining_account(&mut self, account: &'b solana_program::account_info::AccountInfo<'a>, is_writable: bool, is_signer: bool) -> &mut Self {
     self.instruction.__remaining_accounts.push((account, is_writable, is_signer));
@@ -394,35 +320,31 @@ impl<'a, 'b> WithdrawCreatorsWinningsCpiBuilder<'a, 'b> {
   #[allow(clippy::clone_on_copy)]
   #[allow(clippy::vec_init_then_push)]
   pub fn invoke_signed(&self, signers_seeds: &[&[&[u8]]]) -> solana_program::entrypoint::ProgramResult {
-        let instruction = WithdrawCreatorsWinningsCpi {
+          let args = UpdateBetBurnPercentageBpInstructionArgs {
+                                                              percentage_in_bp: self.instruction.percentage_in_bp.clone().expect("percentage_in_bp is not set"),
+                                    };
+        let instruction = UpdateBetBurnPercentageBpCpi {
         __program: self.instruction.__program,
                   
           admin: self.instruction.admin.expect("admin is not set"),
                   
-          mint: self.instruction.mint.expect("mint is not set"),
-                  
           state: self.instruction.state.expect("state is not set"),
                   
-          vault: self.instruction.vault.expect("vault is not set"),
-                  
           system_program: self.instruction.system_program.expect("system_program is not set"),
-                  
-          token_program: self.instruction.token_program.expect("token_program is not set"),
-                    };
+                          __args: args,
+            };
     instruction.invoke_signed_with_remaining_accounts(signers_seeds, &self.instruction.__remaining_accounts)
   }
 }
 
 #[derive(Clone, Debug)]
-struct WithdrawCreatorsWinningsCpiBuilderInstruction<'a, 'b> {
+struct UpdateBetBurnPercentageBpCpiBuilderInstruction<'a, 'b> {
   __program: &'b solana_program::account_info::AccountInfo<'a>,
             admin: Option<&'b solana_program::account_info::AccountInfo<'a>>,
-                mint: Option<&'b solana_program::account_info::AccountInfo<'a>>,
                 state: Option<&'b solana_program::account_info::AccountInfo<'a>>,
-                vault: Option<&'b solana_program::account_info::AccountInfo<'a>>,
                 system_program: Option<&'b solana_program::account_info::AccountInfo<'a>>,
-                token_program: Option<&'b solana_program::account_info::AccountInfo<'a>>,
-                /// Additional instruction accounts `(AccountInfo, is_writable, is_signer)`.
+                        percentage_in_bp: Option<u16>,
+        /// Additional instruction accounts `(AccountInfo, is_writable, is_signer)`.
   __remaining_accounts: Vec<(&'b solana_program::account_info::AccountInfo<'a>, bool, bool)>,
 }
 

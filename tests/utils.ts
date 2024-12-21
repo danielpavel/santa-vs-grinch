@@ -1,27 +1,23 @@
-import { web3, BN } from "@coral-xyz/anchor";
+import { web3, BN, Provider } from "@coral-xyz/anchor";
 import { ConfigType, UserBetEnumType } from "./onChain.types";
+
+import {
+  keypairIdentity,
+  Umi,
+  createSignerFromKeypair,
+  generateSigner,
+  publicKey,
+  assertAccountExists,
+} from "@metaplex-foundation/umi";
+import { mplToolbox } from "@metaplex-foundation/mpl-toolbox";
+import { createUmi } from "@metaplex-foundation/umi-bundle-defaults";
+import { Connection, Keypair } from "@solana/web3.js";
+import { createMint } from "@solana/spl-token";
+import { toWeb3JsKeypair } from "@metaplex-foundation/umi-web3js-adapters";
 
 export const confirmOpts: web3.ConfirmOptions = {
   preflightCommitment: "confirmed",
   commitment: "confirmed",
-};
-
-// Helpers
-export const confirmTx = async (signature: string) => {
-  const latestBlockhash = await anchor
-    .getProvider()
-    .connection.getLatestBlockhash();
-  await anchor.getProvider().connection.confirmTransaction(
-    {
-      signature,
-      ...latestBlockhash,
-    },
-    confirmOpts.commitment
-  );
-};
-
-export const confirmTxs = async (signatures: string[]) => {
-  await Promise.all(signatures.map(confirmTx));
 };
 
 export const calculateFee = (amount: BN, fee_bp: number) => {
@@ -93,4 +89,49 @@ export function calculateWinnings(
   const winnerShare = (losingPotShare * betAmount) / winningPot.toNumber();
 
   return betAmount + winnerShare;
+}
+
+export async function createSplMint(umi: Umi) {
+  try {
+    const connection = new Connection(umi.rpc.getEndpoint());
+    const keypair = Keypair.generate();
+
+    const payer = toWeb3JsKeypair(umi.payer);
+
+    const mint = await createMint(
+      connection,
+      payer,
+      keypair.publicKey,
+      null,
+      6
+    );
+
+    return mint;
+  } catch (error) {
+    console.error("Error creating mint:", error);
+    throw error;
+  }
+}
+
+export function initializeUmi(provider: Provider) {
+  const umi = createUmi(provider.connection.rpcEndpoint, {
+    commitment: "confirmed",
+  });
+
+  // Anchor Wallet interface is a wrapper over NodeWallet which has payer keypair that we need not exposed to Provider
+  const admin = umi.eddsa.createKeypairFromSecretKey(
+    // @ts-ignore
+    (provider.wallet.payer as Keypair).secretKey
+  );
+
+  umi.use(keypairIdentity(admin));
+  umi.use(mplToolbox());
+
+  return umi;
+}
+
+export function generateRandomU64Seed(): BigInt {
+  const randomBytes = web3.Keypair.generate().secretKey.slice(0, 8);
+
+  return BigInt(new BN(randomBytes).toString());
 }

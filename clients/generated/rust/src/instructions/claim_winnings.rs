@@ -15,6 +15,9 @@ pub struct ClaimWinnings {
           pub claimer: solana_program::pubkey::Pubkey,
           
               
+          pub mint: solana_program::pubkey::Pubkey,
+          
+              
           pub state: solana_program::pubkey::Pubkey,
           
               
@@ -22,6 +25,15 @@ pub struct ClaimWinnings {
           
               
           pub user_bet: solana_program::pubkey::Pubkey,
+          
+              
+          pub user_ata: solana_program::pubkey::Pubkey,
+          
+              
+          pub token_program: solana_program::pubkey::Pubkey,
+          
+              
+          pub associated_token_program: solana_program::pubkey::Pubkey,
           
               
           pub system_program: solana_program::pubkey::Pubkey,
@@ -33,10 +45,14 @@ impl ClaimWinnings {
   }
   #[allow(clippy::vec_init_then_push)]
   pub fn instruction_with_remaining_accounts(&self, args: ClaimWinningsInstructionArgs, remaining_accounts: &[solana_program::instruction::AccountMeta]) -> solana_program::instruction::Instruction {
-    let mut accounts = Vec::with_capacity(5 + remaining_accounts.len());
+    let mut accounts = Vec::with_capacity(9 + remaining_accounts.len());
                             accounts.push(solana_program::instruction::AccountMeta::new(
             self.claimer,
             true
+          ));
+                                          accounts.push(solana_program::instruction::AccountMeta::new_readonly(
+            self.mint,
+            false
           ));
                                           accounts.push(solana_program::instruction::AccountMeta::new(
             self.state,
@@ -48,6 +64,18 @@ impl ClaimWinnings {
           ));
                                           accounts.push(solana_program::instruction::AccountMeta::new(
             self.user_bet,
+            false
+          ));
+                                          accounts.push(solana_program::instruction::AccountMeta::new(
+            self.user_ata,
+            false
+          ));
+                                          accounts.push(solana_program::instruction::AccountMeta::new_readonly(
+            self.token_program,
+            false
+          ));
+                                          accounts.push(solana_program::instruction::AccountMeta::new_readonly(
+            self.associated_token_program,
             false
           ));
                                           accounts.push(solana_program::instruction::AccountMeta::new_readonly(
@@ -98,16 +126,24 @@ pub struct ClaimWinningsInstructionArgs {
 /// ### Accounts:
 ///
                       ///   0. `[writable, signer]` claimer
-                ///   1. `[writable]` state
-                ///   2. `[writable]` vault
-                ///   3. `[writable]` user_bet
-                ///   4. `[optional]` system_program (default to `11111111111111111111111111111111`)
+          ///   1. `[]` mint
+                ///   2. `[writable]` state
+                ///   3. `[writable]` vault
+                ///   4. `[writable]` user_bet
+                ///   5. `[writable]` user_ata
+          ///   6. `[]` token_program
+                ///   7. `[optional]` associated_token_program (default to `ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL`)
+                ///   8. `[optional]` system_program (default to `11111111111111111111111111111111`)
 #[derive(Clone, Debug, Default)]
 pub struct ClaimWinningsBuilder {
             claimer: Option<solana_program::pubkey::Pubkey>,
+                mint: Option<solana_program::pubkey::Pubkey>,
                 state: Option<solana_program::pubkey::Pubkey>,
                 vault: Option<solana_program::pubkey::Pubkey>,
                 user_bet: Option<solana_program::pubkey::Pubkey>,
+                user_ata: Option<solana_program::pubkey::Pubkey>,
+                token_program: Option<solana_program::pubkey::Pubkey>,
+                associated_token_program: Option<solana_program::pubkey::Pubkey>,
                 system_program: Option<solana_program::pubkey::Pubkey>,
                         bet_tag: Option<String>,
         __remaining_accounts: Vec<solana_program::instruction::AccountMeta>,
@@ -123,6 +159,11 @@ impl ClaimWinningsBuilder {
                     self
     }
             #[inline(always)]
+    pub fn mint(&mut self, mint: solana_program::pubkey::Pubkey) -> &mut Self {
+                        self.mint = Some(mint);
+                    self
+    }
+            #[inline(always)]
     pub fn state(&mut self, state: solana_program::pubkey::Pubkey) -> &mut Self {
                         self.state = Some(state);
                     self
@@ -135,6 +176,22 @@ impl ClaimWinningsBuilder {
             #[inline(always)]
     pub fn user_bet(&mut self, user_bet: solana_program::pubkey::Pubkey) -> &mut Self {
                         self.user_bet = Some(user_bet);
+                    self
+    }
+            #[inline(always)]
+    pub fn user_ata(&mut self, user_ata: solana_program::pubkey::Pubkey) -> &mut Self {
+                        self.user_ata = Some(user_ata);
+                    self
+    }
+            #[inline(always)]
+    pub fn token_program(&mut self, token_program: solana_program::pubkey::Pubkey) -> &mut Self {
+                        self.token_program = Some(token_program);
+                    self
+    }
+            /// `[optional account, default to 'ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL']`
+#[inline(always)]
+    pub fn associated_token_program(&mut self, associated_token_program: solana_program::pubkey::Pubkey) -> &mut Self {
+                        self.associated_token_program = Some(associated_token_program);
                     self
     }
             /// `[optional account, default to '11111111111111111111111111111111']`
@@ -164,9 +221,13 @@ impl ClaimWinningsBuilder {
   pub fn instruction(&self) -> solana_program::instruction::Instruction {
     let accounts = ClaimWinnings {
                               claimer: self.claimer.expect("claimer is not set"),
+                                        mint: self.mint.expect("mint is not set"),
                                         state: self.state.expect("state is not set"),
                                         vault: self.vault.expect("vault is not set"),
                                         user_bet: self.user_bet.expect("user_bet is not set"),
+                                        user_ata: self.user_ata.expect("user_ata is not set"),
+                                        token_program: self.token_program.expect("token_program is not set"),
+                                        associated_token_program: self.associated_token_program.unwrap_or(solana_program::pubkey!("ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL")),
                                         system_program: self.system_program.unwrap_or(solana_program::pubkey!("11111111111111111111111111111111")),
                       };
           let args = ClaimWinningsInstructionArgs {
@@ -184,6 +245,9 @@ impl ClaimWinningsBuilder {
               pub claimer: &'b solana_program::account_info::AccountInfo<'a>,
                 
                     
+              pub mint: &'b solana_program::account_info::AccountInfo<'a>,
+                
+                    
               pub state: &'b solana_program::account_info::AccountInfo<'a>,
                 
                     
@@ -191,6 +255,15 @@ impl ClaimWinningsBuilder {
                 
                     
               pub user_bet: &'b solana_program::account_info::AccountInfo<'a>,
+                
+                    
+              pub user_ata: &'b solana_program::account_info::AccountInfo<'a>,
+                
+                    
+              pub token_program: &'b solana_program::account_info::AccountInfo<'a>,
+                
+                    
+              pub associated_token_program: &'b solana_program::account_info::AccountInfo<'a>,
                 
                     
               pub system_program: &'b solana_program::account_info::AccountInfo<'a>,
@@ -205,6 +278,9 @@ pub struct ClaimWinningsCpi<'a, 'b> {
           pub claimer: &'b solana_program::account_info::AccountInfo<'a>,
           
               
+          pub mint: &'b solana_program::account_info::AccountInfo<'a>,
+          
+              
           pub state: &'b solana_program::account_info::AccountInfo<'a>,
           
               
@@ -212,6 +288,15 @@ pub struct ClaimWinningsCpi<'a, 'b> {
           
               
           pub user_bet: &'b solana_program::account_info::AccountInfo<'a>,
+          
+              
+          pub user_ata: &'b solana_program::account_info::AccountInfo<'a>,
+          
+              
+          pub token_program: &'b solana_program::account_info::AccountInfo<'a>,
+          
+              
+          pub associated_token_program: &'b solana_program::account_info::AccountInfo<'a>,
           
               
           pub system_program: &'b solana_program::account_info::AccountInfo<'a>,
@@ -228,9 +313,13 @@ impl<'a, 'b> ClaimWinningsCpi<'a, 'b> {
     Self {
       __program: program,
               claimer: accounts.claimer,
+              mint: accounts.mint,
               state: accounts.state,
               vault: accounts.vault,
               user_bet: accounts.user_bet,
+              user_ata: accounts.user_ata,
+              token_program: accounts.token_program,
+              associated_token_program: accounts.associated_token_program,
               system_program: accounts.system_program,
                     __args: args,
           }
@@ -254,10 +343,14 @@ impl<'a, 'b> ClaimWinningsCpi<'a, 'b> {
     signers_seeds: &[&[&[u8]]],
     remaining_accounts: &[(&'b solana_program::account_info::AccountInfo<'a>, bool, bool)]
   ) -> solana_program::entrypoint::ProgramResult {
-    let mut accounts = Vec::with_capacity(5 + remaining_accounts.len());
+    let mut accounts = Vec::with_capacity(9 + remaining_accounts.len());
                             accounts.push(solana_program::instruction::AccountMeta::new(
             *self.claimer.key,
             true
+          ));
+                                          accounts.push(solana_program::instruction::AccountMeta::new_readonly(
+            *self.mint.key,
+            false
           ));
                                           accounts.push(solana_program::instruction::AccountMeta::new(
             *self.state.key,
@@ -269,6 +362,18 @@ impl<'a, 'b> ClaimWinningsCpi<'a, 'b> {
           ));
                                           accounts.push(solana_program::instruction::AccountMeta::new(
             *self.user_bet.key,
+            false
+          ));
+                                          accounts.push(solana_program::instruction::AccountMeta::new(
+            *self.user_ata.key,
+            false
+          ));
+                                          accounts.push(solana_program::instruction::AccountMeta::new_readonly(
+            *self.token_program.key,
+            false
+          ));
+                                          accounts.push(solana_program::instruction::AccountMeta::new_readonly(
+            *self.associated_token_program.key,
             false
           ));
                                           accounts.push(solana_program::instruction::AccountMeta::new_readonly(
@@ -291,12 +396,16 @@ impl<'a, 'b> ClaimWinningsCpi<'a, 'b> {
       accounts,
       data,
     };
-    let mut account_infos = Vec::with_capacity(5 + 1 + remaining_accounts.len());
+    let mut account_infos = Vec::with_capacity(9 + 1 + remaining_accounts.len());
     account_infos.push(self.__program.clone());
                   account_infos.push(self.claimer.clone());
+                        account_infos.push(self.mint.clone());
                         account_infos.push(self.state.clone());
                         account_infos.push(self.vault.clone());
                         account_infos.push(self.user_bet.clone());
+                        account_infos.push(self.user_ata.clone());
+                        account_infos.push(self.token_program.clone());
+                        account_infos.push(self.associated_token_program.clone());
                         account_infos.push(self.system_program.clone());
               remaining_accounts.iter().for_each(|remaining_account| account_infos.push(remaining_account.0.clone()));
 
@@ -313,10 +422,14 @@ impl<'a, 'b> ClaimWinningsCpi<'a, 'b> {
 /// ### Accounts:
 ///
                       ///   0. `[writable, signer]` claimer
-                ///   1. `[writable]` state
-                ///   2. `[writable]` vault
-                ///   3. `[writable]` user_bet
-          ///   4. `[]` system_program
+          ///   1. `[]` mint
+                ///   2. `[writable]` state
+                ///   3. `[writable]` vault
+                ///   4. `[writable]` user_bet
+                ///   5. `[writable]` user_ata
+          ///   6. `[]` token_program
+          ///   7. `[]` associated_token_program
+          ///   8. `[]` system_program
 #[derive(Clone, Debug)]
 pub struct ClaimWinningsCpiBuilder<'a, 'b> {
   instruction: Box<ClaimWinningsCpiBuilderInstruction<'a, 'b>>,
@@ -327,9 +440,13 @@ impl<'a, 'b> ClaimWinningsCpiBuilder<'a, 'b> {
     let instruction = Box::new(ClaimWinningsCpiBuilderInstruction {
       __program: program,
               claimer: None,
+              mint: None,
               state: None,
               vault: None,
               user_bet: None,
+              user_ata: None,
+              token_program: None,
+              associated_token_program: None,
               system_program: None,
                                             bet_tag: None,
                     __remaining_accounts: Vec::new(),
@@ -339,6 +456,11 @@ impl<'a, 'b> ClaimWinningsCpiBuilder<'a, 'b> {
       #[inline(always)]
     pub fn claimer(&mut self, claimer: &'b solana_program::account_info::AccountInfo<'a>) -> &mut Self {
                         self.instruction.claimer = Some(claimer);
+                    self
+    }
+      #[inline(always)]
+    pub fn mint(&mut self, mint: &'b solana_program::account_info::AccountInfo<'a>) -> &mut Self {
+                        self.instruction.mint = Some(mint);
                     self
     }
       #[inline(always)]
@@ -354,6 +476,21 @@ impl<'a, 'b> ClaimWinningsCpiBuilder<'a, 'b> {
       #[inline(always)]
     pub fn user_bet(&mut self, user_bet: &'b solana_program::account_info::AccountInfo<'a>) -> &mut Self {
                         self.instruction.user_bet = Some(user_bet);
+                    self
+    }
+      #[inline(always)]
+    pub fn user_ata(&mut self, user_ata: &'b solana_program::account_info::AccountInfo<'a>) -> &mut Self {
+                        self.instruction.user_ata = Some(user_ata);
+                    self
+    }
+      #[inline(always)]
+    pub fn token_program(&mut self, token_program: &'b solana_program::account_info::AccountInfo<'a>) -> &mut Self {
+                        self.instruction.token_program = Some(token_program);
+                    self
+    }
+      #[inline(always)]
+    pub fn associated_token_program(&mut self, associated_token_program: &'b solana_program::account_info::AccountInfo<'a>) -> &mut Self {
+                        self.instruction.associated_token_program = Some(associated_token_program);
                     self
     }
       #[inline(always)]
@@ -396,11 +533,19 @@ impl<'a, 'b> ClaimWinningsCpiBuilder<'a, 'b> {
                   
           claimer: self.instruction.claimer.expect("claimer is not set"),
                   
+          mint: self.instruction.mint.expect("mint is not set"),
+                  
           state: self.instruction.state.expect("state is not set"),
                   
           vault: self.instruction.vault.expect("vault is not set"),
                   
           user_bet: self.instruction.user_bet.expect("user_bet is not set"),
+                  
+          user_ata: self.instruction.user_ata.expect("user_ata is not set"),
+                  
+          token_program: self.instruction.token_program.expect("token_program is not set"),
+                  
+          associated_token_program: self.instruction.associated_token_program.expect("associated_token_program is not set"),
                   
           system_program: self.instruction.system_program.expect("system_program is not set"),
                           __args: args,
@@ -413,9 +558,13 @@ impl<'a, 'b> ClaimWinningsCpiBuilder<'a, 'b> {
 struct ClaimWinningsCpiBuilderInstruction<'a, 'b> {
   __program: &'b solana_program::account_info::AccountInfo<'a>,
             claimer: Option<&'b solana_program::account_info::AccountInfo<'a>>,
+                mint: Option<&'b solana_program::account_info::AccountInfo<'a>>,
                 state: Option<&'b solana_program::account_info::AccountInfo<'a>>,
                 vault: Option<&'b solana_program::account_info::AccountInfo<'a>>,
                 user_bet: Option<&'b solana_program::account_info::AccountInfo<'a>>,
+                user_ata: Option<&'b solana_program::account_info::AccountInfo<'a>>,
+                token_program: Option<&'b solana_program::account_info::AccountInfo<'a>>,
+                associated_token_program: Option<&'b solana_program::account_info::AccountInfo<'a>>,
                 system_program: Option<&'b solana_program::account_info::AccountInfo<'a>>,
                         bet_tag: Option<String>,
         /// Additional instruction accounts `(AccountInfo, is_writable, is_signer)`.

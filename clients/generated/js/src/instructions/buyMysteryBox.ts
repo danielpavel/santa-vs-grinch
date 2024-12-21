@@ -59,9 +59,14 @@ export function getBuyMysteryBoxDiscriminatorBytes() {
 export type BuyMysteryBoxInstruction<
   TProgram extends string = typeof SANTA_VS_GRINCH_PROGRAM_ADDRESS,
   TAccountUser extends string | IAccountMeta<string> = string,
+  TAccountMint extends string | IAccountMeta<string> = string,
   TAccountState extends string | IAccountMeta<string> = string,
-  TAccountFeesVault extends string | IAccountMeta<string> = string,
   TAccountUserBet extends string | IAccountMeta<string> = string,
+  TAccountUserAta extends string | IAccountMeta<string> = string,
+  TAccountTokenProgram extends string | IAccountMeta<string> = string,
+  TAccountAssociatedTokenProgram extends
+    | string
+    | IAccountMeta<string> = 'ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL',
   TAccountSystemProgram extends
     | string
     | IAccountMeta<string> = '11111111111111111111111111111111',
@@ -73,15 +78,24 @@ export type BuyMysteryBoxInstruction<
       TAccountUser extends string
         ? WritableSignerAccount<TAccountUser> & IAccountSignerMeta<TAccountUser>
         : TAccountUser,
+      TAccountMint extends string
+        ? ReadonlyAccount<TAccountMint>
+        : TAccountMint,
       TAccountState extends string
         ? WritableAccount<TAccountState>
         : TAccountState,
-      TAccountFeesVault extends string
-        ? WritableAccount<TAccountFeesVault>
-        : TAccountFeesVault,
       TAccountUserBet extends string
         ? WritableAccount<TAccountUserBet>
         : TAccountUserBet,
+      TAccountUserAta extends string
+        ? WritableAccount<TAccountUserAta>
+        : TAccountUserAta,
+      TAccountTokenProgram extends string
+        ? ReadonlyAccount<TAccountTokenProgram>
+        : TAccountTokenProgram,
+      TAccountAssociatedTokenProgram extends string
+        ? ReadonlyAccount<TAccountAssociatedTokenProgram>
+        : TAccountAssociatedTokenProgram,
       TAccountSystemProgram extends string
         ? ReadonlyAccount<TAccountSystemProgram>
         : TAccountSystemProgram,
@@ -125,32 +139,44 @@ export function getBuyMysteryBoxInstructionDataCodec(): Codec<
 
 export type BuyMysteryBoxAsyncInput<
   TAccountUser extends string = string,
+  TAccountMint extends string = string,
   TAccountState extends string = string,
-  TAccountFeesVault extends string = string,
   TAccountUserBet extends string = string,
+  TAccountUserAta extends string = string,
+  TAccountTokenProgram extends string = string,
+  TAccountAssociatedTokenProgram extends string = string,
   TAccountSystemProgram extends string = string,
 > = {
   user: TransactionSigner<TAccountUser>;
+  mint: Address<TAccountMint>;
   state: Address<TAccountState>;
-  feesVault?: Address<TAccountFeesVault>;
   userBet?: Address<TAccountUserBet>;
+  userAta: Address<TAccountUserAta>;
+  tokenProgram: Address<TAccountTokenProgram>;
+  associatedTokenProgram?: Address<TAccountAssociatedTokenProgram>;
   systemProgram?: Address<TAccountSystemProgram>;
   betTag: BuyMysteryBoxInstructionDataArgs['betTag'];
 };
 
 export async function getBuyMysteryBoxInstructionAsync<
   TAccountUser extends string,
+  TAccountMint extends string,
   TAccountState extends string,
-  TAccountFeesVault extends string,
   TAccountUserBet extends string,
+  TAccountUserAta extends string,
+  TAccountTokenProgram extends string,
+  TAccountAssociatedTokenProgram extends string,
   TAccountSystemProgram extends string,
   TProgramAddress extends Address = typeof SANTA_VS_GRINCH_PROGRAM_ADDRESS,
 >(
   input: BuyMysteryBoxAsyncInput<
     TAccountUser,
+    TAccountMint,
     TAccountState,
-    TAccountFeesVault,
     TAccountUserBet,
+    TAccountUserAta,
+    TAccountTokenProgram,
+    TAccountAssociatedTokenProgram,
     TAccountSystemProgram
   >,
   config?: { programAddress?: TProgramAddress }
@@ -158,9 +184,12 @@ export async function getBuyMysteryBoxInstructionAsync<
   BuyMysteryBoxInstruction<
     TProgramAddress,
     TAccountUser,
+    TAccountMint,
     TAccountState,
-    TAccountFeesVault,
     TAccountUserBet,
+    TAccountUserAta,
+    TAccountTokenProgram,
+    TAccountAssociatedTokenProgram,
     TAccountSystemProgram
   >
 > {
@@ -171,9 +200,15 @@ export async function getBuyMysteryBoxInstructionAsync<
   // Original accounts.
   const originalAccounts = {
     user: { value: input.user ?? null, isWritable: true },
+    mint: { value: input.mint ?? null, isWritable: false },
     state: { value: input.state ?? null, isWritable: true },
-    feesVault: { value: input.feesVault ?? null, isWritable: true },
     userBet: { value: input.userBet ?? null, isWritable: true },
+    userAta: { value: input.userAta ?? null, isWritable: true },
+    tokenProgram: { value: input.tokenProgram ?? null, isWritable: false },
+    associatedTokenProgram: {
+      value: input.associatedTokenProgram ?? null,
+      isWritable: false,
+    },
     systemProgram: { value: input.systemProgram ?? null, isWritable: false },
   };
   const accounts = originalAccounts as Record<
@@ -185,16 +220,6 @@ export async function getBuyMysteryBoxInstructionAsync<
   const args = { ...input };
 
   // Resolve default values.
-  if (!accounts.feesVault.value) {
-    accounts.feesVault.value = await getProgramDerivedAddress({
-      programAddress,
-      seeds: [
-        getBytesEncoder().encode(new Uint8Array([118, 97, 117, 108, 116])),
-        getAddressEncoder().encode(expectAddress(accounts.state.value)),
-        getBytesEncoder().encode(new Uint8Array([102, 101, 101, 115])),
-      ],
-    });
-  }
   if (!accounts.userBet.value) {
     accounts.userBet.value = await getProgramDerivedAddress({
       programAddress,
@@ -207,6 +232,10 @@ export async function getBuyMysteryBoxInstructionAsync<
       ],
     });
   }
+  if (!accounts.associatedTokenProgram.value) {
+    accounts.associatedTokenProgram.value =
+      'ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL' as Address<'ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL'>;
+  }
   if (!accounts.systemProgram.value) {
     accounts.systemProgram.value =
       '11111111111111111111111111111111' as Address<'11111111111111111111111111111111'>;
@@ -216,9 +245,12 @@ export async function getBuyMysteryBoxInstructionAsync<
   const instruction = {
     accounts: [
       getAccountMeta(accounts.user),
+      getAccountMeta(accounts.mint),
       getAccountMeta(accounts.state),
-      getAccountMeta(accounts.feesVault),
       getAccountMeta(accounts.userBet),
+      getAccountMeta(accounts.userAta),
+      getAccountMeta(accounts.tokenProgram),
+      getAccountMeta(accounts.associatedTokenProgram),
       getAccountMeta(accounts.systemProgram),
     ],
     programAddress,
@@ -228,9 +260,12 @@ export async function getBuyMysteryBoxInstructionAsync<
   } as BuyMysteryBoxInstruction<
     TProgramAddress,
     TAccountUser,
+    TAccountMint,
     TAccountState,
-    TAccountFeesVault,
     TAccountUserBet,
+    TAccountUserAta,
+    TAccountTokenProgram,
+    TAccountAssociatedTokenProgram,
     TAccountSystemProgram
   >;
 
@@ -239,41 +274,56 @@ export async function getBuyMysteryBoxInstructionAsync<
 
 export type BuyMysteryBoxInput<
   TAccountUser extends string = string,
+  TAccountMint extends string = string,
   TAccountState extends string = string,
-  TAccountFeesVault extends string = string,
   TAccountUserBet extends string = string,
+  TAccountUserAta extends string = string,
+  TAccountTokenProgram extends string = string,
+  TAccountAssociatedTokenProgram extends string = string,
   TAccountSystemProgram extends string = string,
 > = {
   user: TransactionSigner<TAccountUser>;
+  mint: Address<TAccountMint>;
   state: Address<TAccountState>;
-  feesVault: Address<TAccountFeesVault>;
   userBet: Address<TAccountUserBet>;
+  userAta: Address<TAccountUserAta>;
+  tokenProgram: Address<TAccountTokenProgram>;
+  associatedTokenProgram?: Address<TAccountAssociatedTokenProgram>;
   systemProgram?: Address<TAccountSystemProgram>;
   betTag: BuyMysteryBoxInstructionDataArgs['betTag'];
 };
 
 export function getBuyMysteryBoxInstruction<
   TAccountUser extends string,
+  TAccountMint extends string,
   TAccountState extends string,
-  TAccountFeesVault extends string,
   TAccountUserBet extends string,
+  TAccountUserAta extends string,
+  TAccountTokenProgram extends string,
+  TAccountAssociatedTokenProgram extends string,
   TAccountSystemProgram extends string,
   TProgramAddress extends Address = typeof SANTA_VS_GRINCH_PROGRAM_ADDRESS,
 >(
   input: BuyMysteryBoxInput<
     TAccountUser,
+    TAccountMint,
     TAccountState,
-    TAccountFeesVault,
     TAccountUserBet,
+    TAccountUserAta,
+    TAccountTokenProgram,
+    TAccountAssociatedTokenProgram,
     TAccountSystemProgram
   >,
   config?: { programAddress?: TProgramAddress }
 ): BuyMysteryBoxInstruction<
   TProgramAddress,
   TAccountUser,
+  TAccountMint,
   TAccountState,
-  TAccountFeesVault,
   TAccountUserBet,
+  TAccountUserAta,
+  TAccountTokenProgram,
+  TAccountAssociatedTokenProgram,
   TAccountSystemProgram
 > {
   // Program address.
@@ -283,9 +333,15 @@ export function getBuyMysteryBoxInstruction<
   // Original accounts.
   const originalAccounts = {
     user: { value: input.user ?? null, isWritable: true },
+    mint: { value: input.mint ?? null, isWritable: false },
     state: { value: input.state ?? null, isWritable: true },
-    feesVault: { value: input.feesVault ?? null, isWritable: true },
     userBet: { value: input.userBet ?? null, isWritable: true },
+    userAta: { value: input.userAta ?? null, isWritable: true },
+    tokenProgram: { value: input.tokenProgram ?? null, isWritable: false },
+    associatedTokenProgram: {
+      value: input.associatedTokenProgram ?? null,
+      isWritable: false,
+    },
     systemProgram: { value: input.systemProgram ?? null, isWritable: false },
   };
   const accounts = originalAccounts as Record<
@@ -297,6 +353,10 @@ export function getBuyMysteryBoxInstruction<
   const args = { ...input };
 
   // Resolve default values.
+  if (!accounts.associatedTokenProgram.value) {
+    accounts.associatedTokenProgram.value =
+      'ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL' as Address<'ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL'>;
+  }
   if (!accounts.systemProgram.value) {
     accounts.systemProgram.value =
       '11111111111111111111111111111111' as Address<'11111111111111111111111111111111'>;
@@ -306,9 +366,12 @@ export function getBuyMysteryBoxInstruction<
   const instruction = {
     accounts: [
       getAccountMeta(accounts.user),
+      getAccountMeta(accounts.mint),
       getAccountMeta(accounts.state),
-      getAccountMeta(accounts.feesVault),
       getAccountMeta(accounts.userBet),
+      getAccountMeta(accounts.userAta),
+      getAccountMeta(accounts.tokenProgram),
+      getAccountMeta(accounts.associatedTokenProgram),
       getAccountMeta(accounts.systemProgram),
     ],
     programAddress,
@@ -318,9 +381,12 @@ export function getBuyMysteryBoxInstruction<
   } as BuyMysteryBoxInstruction<
     TProgramAddress,
     TAccountUser,
+    TAccountMint,
     TAccountState,
-    TAccountFeesVault,
     TAccountUserBet,
+    TAccountUserAta,
+    TAccountTokenProgram,
+    TAccountAssociatedTokenProgram,
     TAccountSystemProgram
   >;
 
@@ -334,10 +400,13 @@ export type ParsedBuyMysteryBoxInstruction<
   programAddress: Address<TProgram>;
   accounts: {
     user: TAccountMetas[0];
-    state: TAccountMetas[1];
-    feesVault: TAccountMetas[2];
+    mint: TAccountMetas[1];
+    state: TAccountMetas[2];
     userBet: TAccountMetas[3];
-    systemProgram: TAccountMetas[4];
+    userAta: TAccountMetas[4];
+    tokenProgram: TAccountMetas[5];
+    associatedTokenProgram: TAccountMetas[6];
+    systemProgram: TAccountMetas[7];
   };
   data: BuyMysteryBoxInstructionData;
 };
@@ -350,7 +419,7 @@ export function parseBuyMysteryBoxInstruction<
     IInstructionWithAccounts<TAccountMetas> &
     IInstructionWithData<Uint8Array>
 ): ParsedBuyMysteryBoxInstruction<TProgram, TAccountMetas> {
-  if (instruction.accounts.length < 5) {
+  if (instruction.accounts.length < 8) {
     // TODO: Coded error.
     throw new Error('Not enough accounts');
   }
@@ -364,9 +433,12 @@ export function parseBuyMysteryBoxInstruction<
     programAddress: instruction.programAddress,
     accounts: {
       user: getNextAccount(),
+      mint: getNextAccount(),
       state: getNextAccount(),
-      feesVault: getNextAccount(),
       userBet: getNextAccount(),
+      userAta: getNextAccount(),
+      tokenProgram: getNextAccount(),
+      associatedTokenProgram: getNextAccount(),
       systemProgram: getNextAccount(),
     },
     data: getBuyMysteryBoxInstructionDataDecoder().decode(instruction.data),

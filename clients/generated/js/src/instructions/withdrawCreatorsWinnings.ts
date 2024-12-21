@@ -52,11 +52,13 @@ export function getWithdrawCreatorsWinningsDiscriminatorBytes() {
 export type WithdrawCreatorsWinningsInstruction<
   TProgram extends string = typeof SANTA_VS_GRINCH_PROGRAM_ADDRESS,
   TAccountAdmin extends string | IAccountMeta<string> = string,
+  TAccountMint extends string | IAccountMeta<string> = string,
   TAccountState extends string | IAccountMeta<string> = string,
   TAccountVault extends string | IAccountMeta<string> = string,
   TAccountSystemProgram extends
     | string
     | IAccountMeta<string> = '11111111111111111111111111111111',
+  TAccountTokenProgram extends string | IAccountMeta<string> = string,
   TRemainingAccounts extends readonly IAccountMeta<string>[] = [],
 > = IInstruction<TProgram> &
   IInstructionWithData<Uint8Array> &
@@ -66,6 +68,9 @@ export type WithdrawCreatorsWinningsInstruction<
         ? WritableSignerAccount<TAccountAdmin> &
             IAccountSignerMeta<TAccountAdmin>
         : TAccountAdmin,
+      TAccountMint extends string
+        ? ReadonlyAccount<TAccountMint>
+        : TAccountMint,
       TAccountState extends string
         ? WritableAccount<TAccountState>
         : TAccountState,
@@ -75,6 +80,9 @@ export type WithdrawCreatorsWinningsInstruction<
       TAccountSystemProgram extends string
         ? ReadonlyAccount<TAccountSystemProgram>
         : TAccountSystemProgram,
+      TAccountTokenProgram extends string
+        ? ReadonlyAccount<TAccountTokenProgram>
+        : TAccountTokenProgram,
       ...TRemainingAccounts,
     ]
   >;
@@ -113,37 +121,47 @@ export function getWithdrawCreatorsWinningsInstructionDataCodec(): Codec<
 
 export type WithdrawCreatorsWinningsAsyncInput<
   TAccountAdmin extends string = string,
+  TAccountMint extends string = string,
   TAccountState extends string = string,
   TAccountVault extends string = string,
   TAccountSystemProgram extends string = string,
+  TAccountTokenProgram extends string = string,
 > = {
   admin: TransactionSigner<TAccountAdmin>;
+  mint: Address<TAccountMint>;
   state: Address<TAccountState>;
   vault?: Address<TAccountVault>;
   systemProgram?: Address<TAccountSystemProgram>;
+  tokenProgram: Address<TAccountTokenProgram>;
 };
 
 export async function getWithdrawCreatorsWinningsInstructionAsync<
   TAccountAdmin extends string,
+  TAccountMint extends string,
   TAccountState extends string,
   TAccountVault extends string,
   TAccountSystemProgram extends string,
+  TAccountTokenProgram extends string,
   TProgramAddress extends Address = typeof SANTA_VS_GRINCH_PROGRAM_ADDRESS,
 >(
   input: WithdrawCreatorsWinningsAsyncInput<
     TAccountAdmin,
+    TAccountMint,
     TAccountState,
     TAccountVault,
-    TAccountSystemProgram
+    TAccountSystemProgram,
+    TAccountTokenProgram
   >,
   config?: { programAddress?: TProgramAddress }
 ): Promise<
   WithdrawCreatorsWinningsInstruction<
     TProgramAddress,
     TAccountAdmin,
+    TAccountMint,
     TAccountState,
     TAccountVault,
-    TAccountSystemProgram
+    TAccountSystemProgram,
+    TAccountTokenProgram
   >
 > {
   // Program address.
@@ -153,9 +171,11 @@ export async function getWithdrawCreatorsWinningsInstructionAsync<
   // Original accounts.
   const originalAccounts = {
     admin: { value: input.admin ?? null, isWritable: true },
+    mint: { value: input.mint ?? null, isWritable: false },
     state: { value: input.state ?? null, isWritable: true },
     vault: { value: input.vault ?? null, isWritable: true },
     systemProgram: { value: input.systemProgram ?? null, isWritable: false },
+    tokenProgram: { value: input.tokenProgram ?? null, isWritable: false },
   };
   const accounts = originalAccounts as Record<
     keyof typeof originalAccounts,
@@ -187,18 +207,22 @@ export async function getWithdrawCreatorsWinningsInstructionAsync<
   const instruction = {
     accounts: [
       getAccountMeta(accounts.admin),
+      getAccountMeta(accounts.mint),
       getAccountMeta(accounts.state),
       getAccountMeta(accounts.vault),
       getAccountMeta(accounts.systemProgram),
+      getAccountMeta(accounts.tokenProgram),
     ],
     programAddress,
     data: getWithdrawCreatorsWinningsInstructionDataEncoder().encode({}),
   } as WithdrawCreatorsWinningsInstruction<
     TProgramAddress,
     TAccountAdmin,
+    TAccountMint,
     TAccountState,
     TAccountVault,
-    TAccountSystemProgram
+    TAccountSystemProgram,
+    TAccountTokenProgram
   >;
 
   return instruction;
@@ -206,36 +230,46 @@ export async function getWithdrawCreatorsWinningsInstructionAsync<
 
 export type WithdrawCreatorsWinningsInput<
   TAccountAdmin extends string = string,
+  TAccountMint extends string = string,
   TAccountState extends string = string,
   TAccountVault extends string = string,
   TAccountSystemProgram extends string = string,
+  TAccountTokenProgram extends string = string,
 > = {
   admin: TransactionSigner<TAccountAdmin>;
+  mint: Address<TAccountMint>;
   state: Address<TAccountState>;
   vault: Address<TAccountVault>;
   systemProgram?: Address<TAccountSystemProgram>;
+  tokenProgram: Address<TAccountTokenProgram>;
 };
 
 export function getWithdrawCreatorsWinningsInstruction<
   TAccountAdmin extends string,
+  TAccountMint extends string,
   TAccountState extends string,
   TAccountVault extends string,
   TAccountSystemProgram extends string,
+  TAccountTokenProgram extends string,
   TProgramAddress extends Address = typeof SANTA_VS_GRINCH_PROGRAM_ADDRESS,
 >(
   input: WithdrawCreatorsWinningsInput<
     TAccountAdmin,
+    TAccountMint,
     TAccountState,
     TAccountVault,
-    TAccountSystemProgram
+    TAccountSystemProgram,
+    TAccountTokenProgram
   >,
   config?: { programAddress?: TProgramAddress }
 ): WithdrawCreatorsWinningsInstruction<
   TProgramAddress,
   TAccountAdmin,
+  TAccountMint,
   TAccountState,
   TAccountVault,
-  TAccountSystemProgram
+  TAccountSystemProgram,
+  TAccountTokenProgram
 > {
   // Program address.
   const programAddress =
@@ -244,9 +278,11 @@ export function getWithdrawCreatorsWinningsInstruction<
   // Original accounts.
   const originalAccounts = {
     admin: { value: input.admin ?? null, isWritable: true },
+    mint: { value: input.mint ?? null, isWritable: false },
     state: { value: input.state ?? null, isWritable: true },
     vault: { value: input.vault ?? null, isWritable: true },
     systemProgram: { value: input.systemProgram ?? null, isWritable: false },
+    tokenProgram: { value: input.tokenProgram ?? null, isWritable: false },
   };
   const accounts = originalAccounts as Record<
     keyof typeof originalAccounts,
@@ -263,18 +299,22 @@ export function getWithdrawCreatorsWinningsInstruction<
   const instruction = {
     accounts: [
       getAccountMeta(accounts.admin),
+      getAccountMeta(accounts.mint),
       getAccountMeta(accounts.state),
       getAccountMeta(accounts.vault),
       getAccountMeta(accounts.systemProgram),
+      getAccountMeta(accounts.tokenProgram),
     ],
     programAddress,
     data: getWithdrawCreatorsWinningsInstructionDataEncoder().encode({}),
   } as WithdrawCreatorsWinningsInstruction<
     TProgramAddress,
     TAccountAdmin,
+    TAccountMint,
     TAccountState,
     TAccountVault,
-    TAccountSystemProgram
+    TAccountSystemProgram,
+    TAccountTokenProgram
   >;
 
   return instruction;
@@ -287,9 +327,11 @@ export type ParsedWithdrawCreatorsWinningsInstruction<
   programAddress: Address<TProgram>;
   accounts: {
     admin: TAccountMetas[0];
-    state: TAccountMetas[1];
-    vault: TAccountMetas[2];
-    systemProgram: TAccountMetas[3];
+    mint: TAccountMetas[1];
+    state: TAccountMetas[2];
+    vault: TAccountMetas[3];
+    systemProgram: TAccountMetas[4];
+    tokenProgram: TAccountMetas[5];
   };
   data: WithdrawCreatorsWinningsInstructionData;
 };
@@ -302,7 +344,7 @@ export function parseWithdrawCreatorsWinningsInstruction<
     IInstructionWithAccounts<TAccountMetas> &
     IInstructionWithData<Uint8Array>
 ): ParsedWithdrawCreatorsWinningsInstruction<TProgram, TAccountMetas> {
-  if (instruction.accounts.length < 4) {
+  if (instruction.accounts.length < 6) {
     // TODO: Coded error.
     throw new Error('Not enough accounts');
   }
@@ -316,9 +358,11 @@ export function parseWithdrawCreatorsWinningsInstruction<
     programAddress: instruction.programAddress,
     accounts: {
       admin: getNextAccount(),
+      mint: getNextAccount(),
       state: getNextAccount(),
       vault: getNextAccount(),
       systemProgram: getNextAccount(),
+      tokenProgram: getNextAccount(),
     },
     data: getWithdrawCreatorsWinningsInstructionDataDecoder().decode(
       instruction.data

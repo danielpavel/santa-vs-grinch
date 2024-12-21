@@ -74,9 +74,14 @@ export function getConfigDiscriminatorBytes() {
 export type Config = {
   discriminator: ReadonlyUint8Array;
   admin: Address;
+  mint: Address;
   adminFeePercentageBp: number;
+  betBurnPercentageBp: number;
+  mysteryBoxBurnPercentageBp: number;
+  mysteryBoxPrice: bigint;
   vault: Address;
   feesVault: Address;
+  totalBurned: bigint;
   santaPot: bigint;
   grinchPot: bigint;
   santaBoxes: bigint;
@@ -84,20 +89,26 @@ export type Config = {
   santaMultiplier: number;
   grinchMultiplier: number;
   gameEnded: boolean;
-  initializedAt: bigint;
+  isActiveAt: bigint;
   withdrawUnclaimedAt: bigint;
   winningSide: Option<BettingSide>;
   creators: Array<Creator>;
   vaultBump: number;
   feesVaultBump: number;
   bump: number;
+  seed: bigint;
 };
 
 export type ConfigArgs = {
   admin: Address;
+  mint: Address;
   adminFeePercentageBp: number;
+  betBurnPercentageBp: number;
+  mysteryBoxBurnPercentageBp: number;
+  mysteryBoxPrice: number | bigint;
   vault: Address;
   feesVault: Address;
+  totalBurned: number | bigint;
   santaPot: number | bigint;
   grinchPot: number | bigint;
   santaBoxes: number | bigint;
@@ -105,13 +116,14 @@ export type ConfigArgs = {
   santaMultiplier: number;
   grinchMultiplier: number;
   gameEnded: boolean;
-  initializedAt: number | bigint;
+  isActiveAt: number | bigint;
   withdrawUnclaimedAt: number | bigint;
   winningSide: OptionOrNullable<BettingSideArgs>;
   creators: Array<CreatorArgs>;
   vaultBump: number;
   feesVaultBump: number;
   bump: number;
+  seed: number | bigint;
 };
 
 export function getConfigEncoder(): Encoder<ConfigArgs> {
@@ -119,9 +131,14 @@ export function getConfigEncoder(): Encoder<ConfigArgs> {
     getStructEncoder([
       ['discriminator', fixEncoderSize(getBytesEncoder(), 8)],
       ['admin', getAddressEncoder()],
+      ['mint', getAddressEncoder()],
       ['adminFeePercentageBp', getU16Encoder()],
+      ['betBurnPercentageBp', getU16Encoder()],
+      ['mysteryBoxBurnPercentageBp', getU16Encoder()],
+      ['mysteryBoxPrice', getU64Encoder()],
       ['vault', getAddressEncoder()],
       ['feesVault', getAddressEncoder()],
+      ['totalBurned', getU64Encoder()],
       ['santaPot', getU64Encoder()],
       ['grinchPot', getU64Encoder()],
       ['santaBoxes', getU64Encoder()],
@@ -129,13 +146,14 @@ export function getConfigEncoder(): Encoder<ConfigArgs> {
       ['santaMultiplier', getU32Encoder()],
       ['grinchMultiplier', getU32Encoder()],
       ['gameEnded', getBooleanEncoder()],
-      ['initializedAt', getI64Encoder()],
+      ['isActiveAt', getI64Encoder()],
       ['withdrawUnclaimedAt', getI64Encoder()],
       ['winningSide', getOptionEncoder(getBettingSideEncoder())],
       ['creators', getArrayEncoder(getCreatorEncoder(), { size: 3 })],
       ['vaultBump', getU8Encoder()],
       ['feesVaultBump', getU8Encoder()],
       ['bump', getU8Encoder()],
+      ['seed', getU64Encoder()],
     ]),
     (value) => ({ ...value, discriminator: CONFIG_DISCRIMINATOR })
   );
@@ -145,9 +163,14 @@ export function getConfigDecoder(): Decoder<Config> {
   return getStructDecoder([
     ['discriminator', fixDecoderSize(getBytesDecoder(), 8)],
     ['admin', getAddressDecoder()],
+    ['mint', getAddressDecoder()],
     ['adminFeePercentageBp', getU16Decoder()],
+    ['betBurnPercentageBp', getU16Decoder()],
+    ['mysteryBoxBurnPercentageBp', getU16Decoder()],
+    ['mysteryBoxPrice', getU64Decoder()],
     ['vault', getAddressDecoder()],
     ['feesVault', getAddressDecoder()],
+    ['totalBurned', getU64Decoder()],
     ['santaPot', getU64Decoder()],
     ['grinchPot', getU64Decoder()],
     ['santaBoxes', getU64Decoder()],
@@ -155,13 +178,14 @@ export function getConfigDecoder(): Decoder<Config> {
     ['santaMultiplier', getU32Decoder()],
     ['grinchMultiplier', getU32Decoder()],
     ['gameEnded', getBooleanDecoder()],
-    ['initializedAt', getI64Decoder()],
+    ['isActiveAt', getI64Decoder()],
     ['withdrawUnclaimedAt', getI64Decoder()],
     ['winningSide', getOptionDecoder(getBettingSideDecoder())],
     ['creators', getArrayDecoder(getCreatorDecoder(), { size: 3 })],
     ['vaultBump', getU8Decoder()],
     ['feesVaultBump', getU8Decoder()],
     ['bump', getU8Decoder()],
+    ['seed', getU64Decoder()],
   ]);
 }
 

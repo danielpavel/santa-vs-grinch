@@ -9,7 +9,7 @@ use borsh::BorshDeserialize;
 use borsh::BorshSerialize;
 
 /// Accounts.
-pub struct WithdrawUnclaimedCreatorsWinnings {
+pub struct UpdateMysteryBoxBurnPercentageBp {
       
               
           pub admin: solana_program::pubkey::Pubkey,
@@ -18,19 +18,16 @@ pub struct WithdrawUnclaimedCreatorsWinnings {
           pub state: solana_program::pubkey::Pubkey,
           
               
-          pub vault: solana_program::pubkey::Pubkey,
-          
-              
           pub system_program: solana_program::pubkey::Pubkey,
       }
 
-impl WithdrawUnclaimedCreatorsWinnings {
-  pub fn instruction(&self) -> solana_program::instruction::Instruction {
-    self.instruction_with_remaining_accounts(&[])
+impl UpdateMysteryBoxBurnPercentageBp {
+  pub fn instruction(&self, args: UpdateMysteryBoxBurnPercentageBpInstructionArgs) -> solana_program::instruction::Instruction {
+    self.instruction_with_remaining_accounts(args, &[])
   }
   #[allow(clippy::vec_init_then_push)]
-  pub fn instruction_with_remaining_accounts(&self, remaining_accounts: &[solana_program::instruction::AccountMeta]) -> solana_program::instruction::Instruction {
-    let mut accounts = Vec::with_capacity(4 + remaining_accounts.len());
+  pub fn instruction_with_remaining_accounts(&self, args: UpdateMysteryBoxBurnPercentageBpInstructionArgs, remaining_accounts: &[solana_program::instruction::AccountMeta]) -> solana_program::instruction::Instruction {
+    let mut accounts = Vec::with_capacity(3 + remaining_accounts.len());
                             accounts.push(solana_program::instruction::AccountMeta::new(
             self.admin,
             true
@@ -39,16 +36,14 @@ impl WithdrawUnclaimedCreatorsWinnings {
             self.state,
             false
           ));
-                                          accounts.push(solana_program::instruction::AccountMeta::new(
-            self.vault,
-            false
-          ));
                                           accounts.push(solana_program::instruction::AccountMeta::new_readonly(
             self.system_program,
             false
           ));
                       accounts.extend_from_slice(remaining_accounts);
-    let data = WithdrawUnclaimedCreatorsWinningsInstructionData::new().try_to_vec().unwrap();
+    let mut data = UpdateMysteryBoxBurnPercentageBpInstructionData::new().try_to_vec().unwrap();
+          let mut args = args.try_to_vec().unwrap();
+      data.append(&mut args);
     
     solana_program::instruction::Instruction {
       program_id: crate::SANTA_VS_GRINCH_ID,
@@ -59,44 +54,48 @@ impl WithdrawUnclaimedCreatorsWinnings {
 }
 
 #[derive(BorshDeserialize, BorshSerialize)]
-pub struct WithdrawUnclaimedCreatorsWinningsInstructionData {
+pub struct UpdateMysteryBoxBurnPercentageBpInstructionData {
             discriminator: [u8; 8],
-      }
+            }
 
-impl WithdrawUnclaimedCreatorsWinningsInstructionData {
+impl UpdateMysteryBoxBurnPercentageBpInstructionData {
   pub fn new() -> Self {
     Self {
-                        discriminator: [223, 124, 225, 226, 237, 254, 93, 105],
-                  }
+                        discriminator: [64, 140, 239, 163, 43, 68, 59, 219],
+                                }
   }
 }
 
-impl Default for WithdrawUnclaimedCreatorsWinningsInstructionData {
+impl Default for UpdateMysteryBoxBurnPercentageBpInstructionData {
   fn default() -> Self {
     Self::new()
   }
 }
 
+#[derive(BorshSerialize, BorshDeserialize, Clone, Debug, Eq, PartialEq)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+pub struct UpdateMysteryBoxBurnPercentageBpInstructionArgs {
+                  pub percentage_in_bp: u16,
+      }
 
 
-/// Instruction builder for `WithdrawUnclaimedCreatorsWinnings`.
+/// Instruction builder for `UpdateMysteryBoxBurnPercentageBp`.
 ///
 /// ### Accounts:
 ///
                       ///   0. `[writable, signer]` admin
                 ///   1. `[writable]` state
-                ///   2. `[writable]` vault
-                ///   3. `[optional]` system_program (default to `11111111111111111111111111111111`)
+                ///   2. `[optional]` system_program (default to `11111111111111111111111111111111`)
 #[derive(Clone, Debug, Default)]
-pub struct WithdrawUnclaimedCreatorsWinningsBuilder {
+pub struct UpdateMysteryBoxBurnPercentageBpBuilder {
             admin: Option<solana_program::pubkey::Pubkey>,
                 state: Option<solana_program::pubkey::Pubkey>,
-                vault: Option<solana_program::pubkey::Pubkey>,
                 system_program: Option<solana_program::pubkey::Pubkey>,
-                __remaining_accounts: Vec<solana_program::instruction::AccountMeta>,
+                        percentage_in_bp: Option<u16>,
+        __remaining_accounts: Vec<solana_program::instruction::AccountMeta>,
 }
 
-impl WithdrawUnclaimedCreatorsWinningsBuilder {
+impl UpdateMysteryBoxBurnPercentageBpBuilder {
   pub fn new() -> Self {
     Self::default()
   }
@@ -110,18 +109,18 @@ impl WithdrawUnclaimedCreatorsWinningsBuilder {
                         self.state = Some(state);
                     self
     }
-            #[inline(always)]
-    pub fn vault(&mut self, vault: solana_program::pubkey::Pubkey) -> &mut Self {
-                        self.vault = Some(vault);
-                    self
-    }
             /// `[optional account, default to '11111111111111111111111111111111']`
 #[inline(always)]
     pub fn system_program(&mut self, system_program: solana_program::pubkey::Pubkey) -> &mut Self {
                         self.system_program = Some(system_program);
                     self
     }
-            /// Add an additional account to the instruction.
+                    #[inline(always)]
+      pub fn percentage_in_bp(&mut self, percentage_in_bp: u16) -> &mut Self {
+        self.percentage_in_bp = Some(percentage_in_bp);
+        self
+      }
+        /// Add an additional account to the instruction.
   #[inline(always)]
   pub fn add_remaining_account(&mut self, account: solana_program::instruction::AccountMeta) -> &mut Self {
     self.__remaining_accounts.push(account);
@@ -135,19 +134,21 @@ impl WithdrawUnclaimedCreatorsWinningsBuilder {
   }
   #[allow(clippy::clone_on_copy)]
   pub fn instruction(&self) -> solana_program::instruction::Instruction {
-    let accounts = WithdrawUnclaimedCreatorsWinnings {
+    let accounts = UpdateMysteryBoxBurnPercentageBp {
                               admin: self.admin.expect("admin is not set"),
                                         state: self.state.expect("state is not set"),
-                                        vault: self.vault.expect("vault is not set"),
                                         system_program: self.system_program.unwrap_or(solana_program::pubkey!("11111111111111111111111111111111")),
                       };
+          let args = UpdateMysteryBoxBurnPercentageBpInstructionArgs {
+                                                              percentage_in_bp: self.percentage_in_bp.clone().expect("percentage_in_bp is not set"),
+                                    };
     
-    accounts.instruction_with_remaining_accounts(&self.__remaining_accounts)
+    accounts.instruction_with_remaining_accounts(args, &self.__remaining_accounts)
   }
 }
 
-  /// `withdraw_unclaimed_creators_winnings` CPI accounts.
-  pub struct WithdrawUnclaimedCreatorsWinningsCpiAccounts<'a, 'b> {
+  /// `update_mystery_box_burn_percentage_bp` CPI accounts.
+  pub struct UpdateMysteryBoxBurnPercentageBpCpiAccounts<'a, 'b> {
           
                     
               pub admin: &'b solana_program::account_info::AccountInfo<'a>,
@@ -156,14 +157,11 @@ impl WithdrawUnclaimedCreatorsWinningsBuilder {
               pub state: &'b solana_program::account_info::AccountInfo<'a>,
                 
                     
-              pub vault: &'b solana_program::account_info::AccountInfo<'a>,
-                
-                    
               pub system_program: &'b solana_program::account_info::AccountInfo<'a>,
             }
 
-/// `withdraw_unclaimed_creators_winnings` CPI instruction.
-pub struct WithdrawUnclaimedCreatorsWinningsCpi<'a, 'b> {
+/// `update_mystery_box_burn_percentage_bp` CPI instruction.
+pub struct UpdateMysteryBoxBurnPercentageBpCpi<'a, 'b> {
   /// The program to invoke.
   pub __program: &'b solana_program::account_info::AccountInfo<'a>,
       
@@ -174,24 +172,24 @@ pub struct WithdrawUnclaimedCreatorsWinningsCpi<'a, 'b> {
           pub state: &'b solana_program::account_info::AccountInfo<'a>,
           
               
-          pub vault: &'b solana_program::account_info::AccountInfo<'a>,
-          
-              
           pub system_program: &'b solana_program::account_info::AccountInfo<'a>,
-        }
+            /// The arguments for the instruction.
+    pub __args: UpdateMysteryBoxBurnPercentageBpInstructionArgs,
+  }
 
-impl<'a, 'b> WithdrawUnclaimedCreatorsWinningsCpi<'a, 'b> {
+impl<'a, 'b> UpdateMysteryBoxBurnPercentageBpCpi<'a, 'b> {
   pub fn new(
     program: &'b solana_program::account_info::AccountInfo<'a>,
-          accounts: WithdrawUnclaimedCreatorsWinningsCpiAccounts<'a, 'b>,
-          ) -> Self {
+          accounts: UpdateMysteryBoxBurnPercentageBpCpiAccounts<'a, 'b>,
+              args: UpdateMysteryBoxBurnPercentageBpInstructionArgs,
+      ) -> Self {
     Self {
       __program: program,
               admin: accounts.admin,
               state: accounts.state,
-              vault: accounts.vault,
               system_program: accounts.system_program,
-                }
+                    __args: args,
+          }
   }
   #[inline(always)]
   pub fn invoke(&self) -> solana_program::entrypoint::ProgramResult {
@@ -212,17 +210,13 @@ impl<'a, 'b> WithdrawUnclaimedCreatorsWinningsCpi<'a, 'b> {
     signers_seeds: &[&[&[u8]]],
     remaining_accounts: &[(&'b solana_program::account_info::AccountInfo<'a>, bool, bool)]
   ) -> solana_program::entrypoint::ProgramResult {
-    let mut accounts = Vec::with_capacity(4 + remaining_accounts.len());
+    let mut accounts = Vec::with_capacity(3 + remaining_accounts.len());
                             accounts.push(solana_program::instruction::AccountMeta::new(
             *self.admin.key,
             true
           ));
                                           accounts.push(solana_program::instruction::AccountMeta::new(
             *self.state.key,
-            false
-          ));
-                                          accounts.push(solana_program::instruction::AccountMeta::new(
-            *self.vault.key,
             false
           ));
                                           accounts.push(solana_program::instruction::AccountMeta::new_readonly(
@@ -236,18 +230,19 @@ impl<'a, 'b> WithdrawUnclaimedCreatorsWinningsCpi<'a, 'b> {
           is_writable: remaining_account.2,
       })
     });
-    let data = WithdrawUnclaimedCreatorsWinningsInstructionData::new().try_to_vec().unwrap();
+    let mut data = UpdateMysteryBoxBurnPercentageBpInstructionData::new().try_to_vec().unwrap();
+          let mut args = self.__args.try_to_vec().unwrap();
+      data.append(&mut args);
     
     let instruction = solana_program::instruction::Instruction {
       program_id: crate::SANTA_VS_GRINCH_ID,
       accounts,
       data,
     };
-    let mut account_infos = Vec::with_capacity(4 + 1 + remaining_accounts.len());
+    let mut account_infos = Vec::with_capacity(3 + 1 + remaining_accounts.len());
     account_infos.push(self.__program.clone());
                   account_infos.push(self.admin.clone());
                         account_infos.push(self.state.clone());
-                        account_infos.push(self.vault.clone());
                         account_infos.push(self.system_program.clone());
               remaining_accounts.iter().for_each(|remaining_account| account_infos.push(remaining_account.0.clone()));
 
@@ -259,28 +254,27 @@ impl<'a, 'b> WithdrawUnclaimedCreatorsWinningsCpi<'a, 'b> {
   }
 }
 
-/// Instruction builder for `WithdrawUnclaimedCreatorsWinnings` via CPI.
+/// Instruction builder for `UpdateMysteryBoxBurnPercentageBp` via CPI.
 ///
 /// ### Accounts:
 ///
                       ///   0. `[writable, signer]` admin
                 ///   1. `[writable]` state
-                ///   2. `[writable]` vault
-          ///   3. `[]` system_program
+          ///   2. `[]` system_program
 #[derive(Clone, Debug)]
-pub struct WithdrawUnclaimedCreatorsWinningsCpiBuilder<'a, 'b> {
-  instruction: Box<WithdrawUnclaimedCreatorsWinningsCpiBuilderInstruction<'a, 'b>>,
+pub struct UpdateMysteryBoxBurnPercentageBpCpiBuilder<'a, 'b> {
+  instruction: Box<UpdateMysteryBoxBurnPercentageBpCpiBuilderInstruction<'a, 'b>>,
 }
 
-impl<'a, 'b> WithdrawUnclaimedCreatorsWinningsCpiBuilder<'a, 'b> {
+impl<'a, 'b> UpdateMysteryBoxBurnPercentageBpCpiBuilder<'a, 'b> {
   pub fn new(program: &'b solana_program::account_info::AccountInfo<'a>) -> Self {
-    let instruction = Box::new(WithdrawUnclaimedCreatorsWinningsCpiBuilderInstruction {
+    let instruction = Box::new(UpdateMysteryBoxBurnPercentageBpCpiBuilderInstruction {
       __program: program,
               admin: None,
               state: None,
-              vault: None,
               system_program: None,
-                                __remaining_accounts: Vec::new(),
+                                            percentage_in_bp: None,
+                    __remaining_accounts: Vec::new(),
     });
     Self { instruction }
   }
@@ -295,16 +289,16 @@ impl<'a, 'b> WithdrawUnclaimedCreatorsWinningsCpiBuilder<'a, 'b> {
                     self
     }
       #[inline(always)]
-    pub fn vault(&mut self, vault: &'b solana_program::account_info::AccountInfo<'a>) -> &mut Self {
-                        self.instruction.vault = Some(vault);
-                    self
-    }
-      #[inline(always)]
     pub fn system_program(&mut self, system_program: &'b solana_program::account_info::AccountInfo<'a>) -> &mut Self {
                         self.instruction.system_program = Some(system_program);
                     self
     }
-            /// Add an additional account to the instruction.
+                    #[inline(always)]
+      pub fn percentage_in_bp(&mut self, percentage_in_bp: u16) -> &mut Self {
+        self.instruction.percentage_in_bp = Some(percentage_in_bp);
+        self
+      }
+        /// Add an additional account to the instruction.
   #[inline(always)]
   pub fn add_remaining_account(&mut self, account: &'b solana_program::account_info::AccountInfo<'a>, is_writable: bool, is_signer: bool) -> &mut Self {
     self.instruction.__remaining_accounts.push((account, is_writable, is_signer));
@@ -326,29 +320,31 @@ impl<'a, 'b> WithdrawUnclaimedCreatorsWinningsCpiBuilder<'a, 'b> {
   #[allow(clippy::clone_on_copy)]
   #[allow(clippy::vec_init_then_push)]
   pub fn invoke_signed(&self, signers_seeds: &[&[&[u8]]]) -> solana_program::entrypoint::ProgramResult {
-        let instruction = WithdrawUnclaimedCreatorsWinningsCpi {
+          let args = UpdateMysteryBoxBurnPercentageBpInstructionArgs {
+                                                              percentage_in_bp: self.instruction.percentage_in_bp.clone().expect("percentage_in_bp is not set"),
+                                    };
+        let instruction = UpdateMysteryBoxBurnPercentageBpCpi {
         __program: self.instruction.__program,
                   
           admin: self.instruction.admin.expect("admin is not set"),
                   
           state: self.instruction.state.expect("state is not set"),
                   
-          vault: self.instruction.vault.expect("vault is not set"),
-                  
           system_program: self.instruction.system_program.expect("system_program is not set"),
-                    };
+                          __args: args,
+            };
     instruction.invoke_signed_with_remaining_accounts(signers_seeds, &self.instruction.__remaining_accounts)
   }
 }
 
 #[derive(Clone, Debug)]
-struct WithdrawUnclaimedCreatorsWinningsCpiBuilderInstruction<'a, 'b> {
+struct UpdateMysteryBoxBurnPercentageBpCpiBuilderInstruction<'a, 'b> {
   __program: &'b solana_program::account_info::AccountInfo<'a>,
             admin: Option<&'b solana_program::account_info::AccountInfo<'a>>,
                 state: Option<&'b solana_program::account_info::AccountInfo<'a>>,
-                vault: Option<&'b solana_program::account_info::AccountInfo<'a>>,
                 system_program: Option<&'b solana_program::account_info::AccountInfo<'a>>,
-                /// Additional instruction accounts `(AccountInfo, is_writable, is_signer)`.
+                        percentage_in_bp: Option<u16>,
+        /// Additional instruction accounts `(AccountInfo, is_writable, is_signer)`.
   __remaining_accounts: Vec<(&'b solana_program::account_info::AccountInfo<'a>, bool, bool)>,
 }
 

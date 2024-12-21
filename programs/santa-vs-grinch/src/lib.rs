@@ -16,8 +16,8 @@ pub mod santa_vs_grinch {
 
     use super::*;
 
-    pub fn initialize(ctx: Context<Initialize>, args: InitializeArgs) -> Result<()> {
-        ctx.accounts.initialize(&args, &ctx.bumps)
+    pub fn initialize(ctx: Context<Initialize>, args: InitializeArgs, seed: u64) -> Result<()> {
+        ctx.accounts.initialize(&args, seed, &ctx.bumps)
     }
 
     pub fn bet(ctx: Context<Bet>, amount: u64, bet_tag: String) -> Result<()> {

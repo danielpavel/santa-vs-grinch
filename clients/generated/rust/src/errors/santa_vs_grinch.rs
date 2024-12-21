@@ -58,6 +58,12 @@ pub enum SantaVsGrinchError {
     /// 6015 - Witdrawal unclaimed period not ended
     #[error("Witdrawal unclaimed period not ended")]
     WitdrawalUnclaimedPeriodNotEnded = 0x177F,
+    /// 6016 - Invalid Mint
+    #[error("Invalid Mint")]
+    InvalidMint = 0x1780,
+    /// 6017 - Amount to burn should be 100% of box price
+    #[error("Amount to burn should be 100% of box price")]
+    InvalidAmountToBurn = 0x1781,
 }
 
 impl solana_program::program_error::PrintProgramError for SantaVsGrinchError {

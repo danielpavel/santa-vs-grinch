@@ -9,7 +9,7 @@ use borsh::BorshDeserialize;
 use borsh::BorshSerialize;
 
 /// Accounts.
-pub struct WithdrawFees {
+pub struct UpdateMysteryBoxPrice {
       
               
           pub admin: solana_program::pubkey::Pubkey,
@@ -18,19 +18,16 @@ pub struct WithdrawFees {
           pub state: solana_program::pubkey::Pubkey,
           
               
-          pub fees_vault: solana_program::pubkey::Pubkey,
-          
-              
           pub system_program: solana_program::pubkey::Pubkey,
       }
 
-impl WithdrawFees {
-  pub fn instruction(&self) -> solana_program::instruction::Instruction {
-    self.instruction_with_remaining_accounts(&[])
+impl UpdateMysteryBoxPrice {
+  pub fn instruction(&self, args: UpdateMysteryBoxPriceInstructionArgs) -> solana_program::instruction::Instruction {
+    self.instruction_with_remaining_accounts(args, &[])
   }
   #[allow(clippy::vec_init_then_push)]
-  pub fn instruction_with_remaining_accounts(&self, remaining_accounts: &[solana_program::instruction::AccountMeta]) -> solana_program::instruction::Instruction {
-    let mut accounts = Vec::with_capacity(4 + remaining_accounts.len());
+  pub fn instruction_with_remaining_accounts(&self, args: UpdateMysteryBoxPriceInstructionArgs, remaining_accounts: &[solana_program::instruction::AccountMeta]) -> solana_program::instruction::Instruction {
+    let mut accounts = Vec::with_capacity(3 + remaining_accounts.len());
                             accounts.push(solana_program::instruction::AccountMeta::new(
             self.admin,
             true
@@ -39,16 +36,14 @@ impl WithdrawFees {
             self.state,
             false
           ));
-                                          accounts.push(solana_program::instruction::AccountMeta::new(
-            self.fees_vault,
-            false
-          ));
                                           accounts.push(solana_program::instruction::AccountMeta::new_readonly(
             self.system_program,
             false
           ));
                       accounts.extend_from_slice(remaining_accounts);
-    let data = WithdrawFeesInstructionData::new().try_to_vec().unwrap();
+    let mut data = UpdateMysteryBoxPriceInstructionData::new().try_to_vec().unwrap();
+          let mut args = args.try_to_vec().unwrap();
+      data.append(&mut args);
     
     solana_program::instruction::Instruction {
       program_id: crate::SANTA_VS_GRINCH_ID,
@@ -59,44 +54,48 @@ impl WithdrawFees {
 }
 
 #[derive(BorshDeserialize, BorshSerialize)]
-pub struct WithdrawFeesInstructionData {
+pub struct UpdateMysteryBoxPriceInstructionData {
             discriminator: [u8; 8],
-      }
+            }
 
-impl WithdrawFeesInstructionData {
+impl UpdateMysteryBoxPriceInstructionData {
   pub fn new() -> Self {
     Self {
-                        discriminator: [198, 212, 171, 109, 144, 215, 174, 89],
-                  }
+                        discriminator: [122, 152, 143, 112, 173, 18, 192, 165],
+                                }
   }
 }
 
-impl Default for WithdrawFeesInstructionData {
+impl Default for UpdateMysteryBoxPriceInstructionData {
   fn default() -> Self {
     Self::new()
   }
 }
 
+#[derive(BorshSerialize, BorshDeserialize, Clone, Debug, Eq, PartialEq)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+pub struct UpdateMysteryBoxPriceInstructionArgs {
+                  pub price: u64,
+      }
 
 
-/// Instruction builder for `WithdrawFees`.
+/// Instruction builder for `UpdateMysteryBoxPrice`.
 ///
 /// ### Accounts:
 ///
                       ///   0. `[writable, signer]` admin
                 ///   1. `[writable]` state
-                ///   2. `[writable]` fees_vault
-                ///   3. `[optional]` system_program (default to `11111111111111111111111111111111`)
+                ///   2. `[optional]` system_program (default to `11111111111111111111111111111111`)
 #[derive(Clone, Debug, Default)]
-pub struct WithdrawFeesBuilder {
+pub struct UpdateMysteryBoxPriceBuilder {
             admin: Option<solana_program::pubkey::Pubkey>,
                 state: Option<solana_program::pubkey::Pubkey>,
-                fees_vault: Option<solana_program::pubkey::Pubkey>,
                 system_program: Option<solana_program::pubkey::Pubkey>,
-                __remaining_accounts: Vec<solana_program::instruction::AccountMeta>,
+                        price: Option<u64>,
+        __remaining_accounts: Vec<solana_program::instruction::AccountMeta>,
 }
 
-impl WithdrawFeesBuilder {
+impl UpdateMysteryBoxPriceBuilder {
   pub fn new() -> Self {
     Self::default()
   }
@@ -110,18 +109,18 @@ impl WithdrawFeesBuilder {
                         self.state = Some(state);
                     self
     }
-            #[inline(always)]
-    pub fn fees_vault(&mut self, fees_vault: solana_program::pubkey::Pubkey) -> &mut Self {
-                        self.fees_vault = Some(fees_vault);
-                    self
-    }
             /// `[optional account, default to '11111111111111111111111111111111']`
 #[inline(always)]
     pub fn system_program(&mut self, system_program: solana_program::pubkey::Pubkey) -> &mut Self {
                         self.system_program = Some(system_program);
                     self
     }
-            /// Add an additional account to the instruction.
+                    #[inline(always)]
+      pub fn price(&mut self, price: u64) -> &mut Self {
+        self.price = Some(price);
+        self
+      }
+        /// Add an additional account to the instruction.
   #[inline(always)]
   pub fn add_remaining_account(&mut self, account: solana_program::instruction::AccountMeta) -> &mut Self {
     self.__remaining_accounts.push(account);
@@ -135,19 +134,21 @@ impl WithdrawFeesBuilder {
   }
   #[allow(clippy::clone_on_copy)]
   pub fn instruction(&self) -> solana_program::instruction::Instruction {
-    let accounts = WithdrawFees {
+    let accounts = UpdateMysteryBoxPrice {
                               admin: self.admin.expect("admin is not set"),
                                         state: self.state.expect("state is not set"),
-                                        fees_vault: self.fees_vault.expect("fees_vault is not set"),
                                         system_program: self.system_program.unwrap_or(solana_program::pubkey!("11111111111111111111111111111111")),
                       };
+          let args = UpdateMysteryBoxPriceInstructionArgs {
+                                                              price: self.price.clone().expect("price is not set"),
+                                    };
     
-    accounts.instruction_with_remaining_accounts(&self.__remaining_accounts)
+    accounts.instruction_with_remaining_accounts(args, &self.__remaining_accounts)
   }
 }
 
-  /// `withdraw_fees` CPI accounts.
-  pub struct WithdrawFeesCpiAccounts<'a, 'b> {
+  /// `update_mystery_box_price` CPI accounts.
+  pub struct UpdateMysteryBoxPriceCpiAccounts<'a, 'b> {
           
                     
               pub admin: &'b solana_program::account_info::AccountInfo<'a>,
@@ -156,14 +157,11 @@ impl WithdrawFeesBuilder {
               pub state: &'b solana_program::account_info::AccountInfo<'a>,
                 
                     
-              pub fees_vault: &'b solana_program::account_info::AccountInfo<'a>,
-                
-                    
               pub system_program: &'b solana_program::account_info::AccountInfo<'a>,
             }
 
-/// `withdraw_fees` CPI instruction.
-pub struct WithdrawFeesCpi<'a, 'b> {
+/// `update_mystery_box_price` CPI instruction.
+pub struct UpdateMysteryBoxPriceCpi<'a, 'b> {
   /// The program to invoke.
   pub __program: &'b solana_program::account_info::AccountInfo<'a>,
       
@@ -174,24 +172,24 @@ pub struct WithdrawFeesCpi<'a, 'b> {
           pub state: &'b solana_program::account_info::AccountInfo<'a>,
           
               
-          pub fees_vault: &'b solana_program::account_info::AccountInfo<'a>,
-          
-              
           pub system_program: &'b solana_program::account_info::AccountInfo<'a>,
-        }
+            /// The arguments for the instruction.
+    pub __args: UpdateMysteryBoxPriceInstructionArgs,
+  }
 
-impl<'a, 'b> WithdrawFeesCpi<'a, 'b> {
+impl<'a, 'b> UpdateMysteryBoxPriceCpi<'a, 'b> {
   pub fn new(
     program: &'b solana_program::account_info::AccountInfo<'a>,
-          accounts: WithdrawFeesCpiAccounts<'a, 'b>,
-          ) -> Self {
+          accounts: UpdateMysteryBoxPriceCpiAccounts<'a, 'b>,
+              args: UpdateMysteryBoxPriceInstructionArgs,
+      ) -> Self {
     Self {
       __program: program,
               admin: accounts.admin,
               state: accounts.state,
-              fees_vault: accounts.fees_vault,
               system_program: accounts.system_program,
-                }
+                    __args: args,
+          }
   }
   #[inline(always)]
   pub fn invoke(&self) -> solana_program::entrypoint::ProgramResult {
@@ -212,17 +210,13 @@ impl<'a, 'b> WithdrawFeesCpi<'a, 'b> {
     signers_seeds: &[&[&[u8]]],
     remaining_accounts: &[(&'b solana_program::account_info::AccountInfo<'a>, bool, bool)]
   ) -> solana_program::entrypoint::ProgramResult {
-    let mut accounts = Vec::with_capacity(4 + remaining_accounts.len());
+    let mut accounts = Vec::with_capacity(3 + remaining_accounts.len());
                             accounts.push(solana_program::instruction::AccountMeta::new(
             *self.admin.key,
             true
           ));
                                           accounts.push(solana_program::instruction::AccountMeta::new(
             *self.state.key,
-            false
-          ));
-                                          accounts.push(solana_program::instruction::AccountMeta::new(
-            *self.fees_vault.key,
             false
           ));
                                           accounts.push(solana_program::instruction::AccountMeta::new_readonly(
@@ -236,18 +230,19 @@ impl<'a, 'b> WithdrawFeesCpi<'a, 'b> {
           is_writable: remaining_account.2,
       })
     });
-    let data = WithdrawFeesInstructionData::new().try_to_vec().unwrap();
+    let mut data = UpdateMysteryBoxPriceInstructionData::new().try_to_vec().unwrap();
+          let mut args = self.__args.try_to_vec().unwrap();
+      data.append(&mut args);
     
     let instruction = solana_program::instruction::Instruction {
       program_id: crate::SANTA_VS_GRINCH_ID,
       accounts,
       data,
     };
-    let mut account_infos = Vec::with_capacity(4 + 1 + remaining_accounts.len());
+    let mut account_infos = Vec::with_capacity(3 + 1 + remaining_accounts.len());
     account_infos.push(self.__program.clone());
                   account_infos.push(self.admin.clone());
                         account_infos.push(self.state.clone());
-                        account_infos.push(self.fees_vault.clone());
                         account_infos.push(self.system_program.clone());
               remaining_accounts.iter().for_each(|remaining_account| account_infos.push(remaining_account.0.clone()));
 
@@ -259,28 +254,27 @@ impl<'a, 'b> WithdrawFeesCpi<'a, 'b> {
   }
 }
 
-/// Instruction builder for `WithdrawFees` via CPI.
+/// Instruction builder for `UpdateMysteryBoxPrice` via CPI.
 ///
 /// ### Accounts:
 ///
                       ///   0. `[writable, signer]` admin
                 ///   1. `[writable]` state
-                ///   2. `[writable]` fees_vault
-          ///   3. `[]` system_program
+          ///   2. `[]` system_program
 #[derive(Clone, Debug)]
-pub struct WithdrawFeesCpiBuilder<'a, 'b> {
-  instruction: Box<WithdrawFeesCpiBuilderInstruction<'a, 'b>>,
+pub struct UpdateMysteryBoxPriceCpiBuilder<'a, 'b> {
+  instruction: Box<UpdateMysteryBoxPriceCpiBuilderInstruction<'a, 'b>>,
 }
 
-impl<'a, 'b> WithdrawFeesCpiBuilder<'a, 'b> {
+impl<'a, 'b> UpdateMysteryBoxPriceCpiBuilder<'a, 'b> {
   pub fn new(program: &'b solana_program::account_info::AccountInfo<'a>) -> Self {
-    let instruction = Box::new(WithdrawFeesCpiBuilderInstruction {
+    let instruction = Box::new(UpdateMysteryBoxPriceCpiBuilderInstruction {
       __program: program,
               admin: None,
               state: None,
-              fees_vault: None,
               system_program: None,
-                                __remaining_accounts: Vec::new(),
+                                            price: None,
+                    __remaining_accounts: Vec::new(),
     });
     Self { instruction }
   }
@@ -295,16 +289,16 @@ impl<'a, 'b> WithdrawFeesCpiBuilder<'a, 'b> {
                     self
     }
       #[inline(always)]
-    pub fn fees_vault(&mut self, fees_vault: &'b solana_program::account_info::AccountInfo<'a>) -> &mut Self {
-                        self.instruction.fees_vault = Some(fees_vault);
-                    self
-    }
-      #[inline(always)]
     pub fn system_program(&mut self, system_program: &'b solana_program::account_info::AccountInfo<'a>) -> &mut Self {
                         self.instruction.system_program = Some(system_program);
                     self
     }
-            /// Add an additional account to the instruction.
+                    #[inline(always)]
+      pub fn price(&mut self, price: u64) -> &mut Self {
+        self.instruction.price = Some(price);
+        self
+      }
+        /// Add an additional account to the instruction.
   #[inline(always)]
   pub fn add_remaining_account(&mut self, account: &'b solana_program::account_info::AccountInfo<'a>, is_writable: bool, is_signer: bool) -> &mut Self {
     self.instruction.__remaining_accounts.push((account, is_writable, is_signer));
@@ -326,29 +320,31 @@ impl<'a, 'b> WithdrawFeesCpiBuilder<'a, 'b> {
   #[allow(clippy::clone_on_copy)]
   #[allow(clippy::vec_init_then_push)]
   pub fn invoke_signed(&self, signers_seeds: &[&[&[u8]]]) -> solana_program::entrypoint::ProgramResult {
-        let instruction = WithdrawFeesCpi {
+          let args = UpdateMysteryBoxPriceInstructionArgs {
+                                                              price: self.instruction.price.clone().expect("price is not set"),
+                                    };
+        let instruction = UpdateMysteryBoxPriceCpi {
         __program: self.instruction.__program,
                   
           admin: self.instruction.admin.expect("admin is not set"),
                   
           state: self.instruction.state.expect("state is not set"),
                   
-          fees_vault: self.instruction.fees_vault.expect("fees_vault is not set"),
-                  
           system_program: self.instruction.system_program.expect("system_program is not set"),
-                    };
+                          __args: args,
+            };
     instruction.invoke_signed_with_remaining_accounts(signers_seeds, &self.instruction.__remaining_accounts)
   }
 }
 
 #[derive(Clone, Debug)]
-struct WithdrawFeesCpiBuilderInstruction<'a, 'b> {
+struct UpdateMysteryBoxPriceCpiBuilderInstruction<'a, 'b> {
   __program: &'b solana_program::account_info::AccountInfo<'a>,
             admin: Option<&'b solana_program::account_info::AccountInfo<'a>>,
                 state: Option<&'b solana_program::account_info::AccountInfo<'a>>,
-                fees_vault: Option<&'b solana_program::account_info::AccountInfo<'a>>,
                 system_program: Option<&'b solana_program::account_info::AccountInfo<'a>>,
-                /// Additional instruction accounts `(AccountInfo, is_writable, is_signer)`.
+                        price: Option<u64>,
+        /// Additional instruction accounts `(AccountInfo, is_writable, is_signer)`.
   __remaining_accounts: Vec<(&'b solana_program::account_info::AccountInfo<'a>, bool, bool)>,
 }
 
