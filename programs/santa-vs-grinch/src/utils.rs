@@ -8,7 +8,7 @@ use crate::state::{BettingSide, Config};
 pub fn assert_game_is_active(config: &Account<Config>) -> Result<()> {
     require!(!config.game_ended, SantaVsGrinchErrorCode::GameEnded);
     require!(
-        Clock::get()?.unix_timestamp <= config.is_active_at,
+        Clock::get()?.unix_timestamp >= config.is_active_at,
         SantaVsGrinchErrorCode::GameEnded
     );
 

@@ -62,7 +62,6 @@ export type BetInstruction<
   TAccountMint extends string | IAccountMeta<string> = string,
   TAccountState extends string | IAccountMeta<string> = string,
   TAccountVault extends string | IAccountMeta<string> = string,
-  TAccountFeesVault extends string | IAccountMeta<string> = string,
   TAccountUserBet extends string | IAccountMeta<string> = string,
   TAccountUserAta extends string | IAccountMeta<string> = string,
   TAccountTokenProgram extends string | IAccountMeta<string> = string,
@@ -81,7 +80,7 @@ export type BetInstruction<
         ? WritableSignerAccount<TAccountUser> & IAccountSignerMeta<TAccountUser>
         : TAccountUser,
       TAccountMint extends string
-        ? ReadonlyAccount<TAccountMint>
+        ? WritableAccount<TAccountMint>
         : TAccountMint,
       TAccountState extends string
         ? WritableAccount<TAccountState>
@@ -89,9 +88,6 @@ export type BetInstruction<
       TAccountVault extends string
         ? WritableAccount<TAccountVault>
         : TAccountVault,
-      TAccountFeesVault extends string
-        ? WritableAccount<TAccountFeesVault>
-        : TAccountFeesVault,
       TAccountUserBet extends string
         ? WritableAccount<TAccountUserBet>
         : TAccountUserBet,
@@ -156,7 +152,6 @@ export type BetAsyncInput<
   TAccountMint extends string = string,
   TAccountState extends string = string,
   TAccountVault extends string = string,
-  TAccountFeesVault extends string = string,
   TAccountUserBet extends string = string,
   TAccountUserAta extends string = string,
   TAccountTokenProgram extends string = string,
@@ -167,7 +162,6 @@ export type BetAsyncInput<
   mint: Address<TAccountMint>;
   state: Address<TAccountState>;
   vault?: Address<TAccountVault>;
-  feesVault?: Address<TAccountFeesVault>;
   userBet?: Address<TAccountUserBet>;
   userAta: Address<TAccountUserAta>;
   tokenProgram: Address<TAccountTokenProgram>;
@@ -182,7 +176,6 @@ export async function getBetInstructionAsync<
   TAccountMint extends string,
   TAccountState extends string,
   TAccountVault extends string,
-  TAccountFeesVault extends string,
   TAccountUserBet extends string,
   TAccountUserAta extends string,
   TAccountTokenProgram extends string,
@@ -195,7 +188,6 @@ export async function getBetInstructionAsync<
     TAccountMint,
     TAccountState,
     TAccountVault,
-    TAccountFeesVault,
     TAccountUserBet,
     TAccountUserAta,
     TAccountTokenProgram,
@@ -210,7 +202,6 @@ export async function getBetInstructionAsync<
     TAccountMint,
     TAccountState,
     TAccountVault,
-    TAccountFeesVault,
     TAccountUserBet,
     TAccountUserAta,
     TAccountTokenProgram,
@@ -225,10 +216,9 @@ export async function getBetInstructionAsync<
   // Original accounts.
   const originalAccounts = {
     user: { value: input.user ?? null, isWritable: true },
-    mint: { value: input.mint ?? null, isWritable: false },
+    mint: { value: input.mint ?? null, isWritable: true },
     state: { value: input.state ?? null, isWritable: true },
     vault: { value: input.vault ?? null, isWritable: true },
-    feesVault: { value: input.feesVault ?? null, isWritable: true },
     userBet: { value: input.userBet ?? null, isWritable: true },
     userAta: { value: input.userAta ?? null, isWritable: true },
     tokenProgram: { value: input.tokenProgram ?? null, isWritable: false },
@@ -262,16 +252,6 @@ export async function getBetInstructionAsync<
       ],
     });
   }
-  if (!accounts.feesVault.value) {
-    accounts.feesVault.value = await getProgramDerivedAddress({
-      programAddress,
-      seeds: [
-        getBytesEncoder().encode(new Uint8Array([118, 97, 117, 108, 116])),
-        getAddressEncoder().encode(expectAddress(accounts.state.value)),
-        getBytesEncoder().encode(new Uint8Array([102, 101, 101, 115])),
-      ],
-    });
-  }
   if (!accounts.userBet.value) {
     accounts.userBet.value = await getProgramDerivedAddress({
       programAddress,
@@ -300,7 +280,6 @@ export async function getBetInstructionAsync<
       getAccountMeta(accounts.mint),
       getAccountMeta(accounts.state),
       getAccountMeta(accounts.vault),
-      getAccountMeta(accounts.feesVault),
       getAccountMeta(accounts.userBet),
       getAccountMeta(accounts.userAta),
       getAccountMeta(accounts.tokenProgram),
@@ -315,7 +294,6 @@ export async function getBetInstructionAsync<
     TAccountMint,
     TAccountState,
     TAccountVault,
-    TAccountFeesVault,
     TAccountUserBet,
     TAccountUserAta,
     TAccountTokenProgram,
@@ -331,7 +309,6 @@ export type BetInput<
   TAccountMint extends string = string,
   TAccountState extends string = string,
   TAccountVault extends string = string,
-  TAccountFeesVault extends string = string,
   TAccountUserBet extends string = string,
   TAccountUserAta extends string = string,
   TAccountTokenProgram extends string = string,
@@ -342,7 +319,6 @@ export type BetInput<
   mint: Address<TAccountMint>;
   state: Address<TAccountState>;
   vault: Address<TAccountVault>;
-  feesVault: Address<TAccountFeesVault>;
   userBet: Address<TAccountUserBet>;
   userAta: Address<TAccountUserAta>;
   tokenProgram: Address<TAccountTokenProgram>;
@@ -357,7 +333,6 @@ export function getBetInstruction<
   TAccountMint extends string,
   TAccountState extends string,
   TAccountVault extends string,
-  TAccountFeesVault extends string,
   TAccountUserBet extends string,
   TAccountUserAta extends string,
   TAccountTokenProgram extends string,
@@ -370,7 +345,6 @@ export function getBetInstruction<
     TAccountMint,
     TAccountState,
     TAccountVault,
-    TAccountFeesVault,
     TAccountUserBet,
     TAccountUserAta,
     TAccountTokenProgram,
@@ -384,7 +358,6 @@ export function getBetInstruction<
   TAccountMint,
   TAccountState,
   TAccountVault,
-  TAccountFeesVault,
   TAccountUserBet,
   TAccountUserAta,
   TAccountTokenProgram,
@@ -398,10 +371,9 @@ export function getBetInstruction<
   // Original accounts.
   const originalAccounts = {
     user: { value: input.user ?? null, isWritable: true },
-    mint: { value: input.mint ?? null, isWritable: false },
+    mint: { value: input.mint ?? null, isWritable: true },
     state: { value: input.state ?? null, isWritable: true },
     vault: { value: input.vault ?? null, isWritable: true },
-    feesVault: { value: input.feesVault ?? null, isWritable: true },
     userBet: { value: input.userBet ?? null, isWritable: true },
     userAta: { value: input.userAta ?? null, isWritable: true },
     tokenProgram: { value: input.tokenProgram ?? null, isWritable: false },
@@ -436,7 +408,6 @@ export function getBetInstruction<
       getAccountMeta(accounts.mint),
       getAccountMeta(accounts.state),
       getAccountMeta(accounts.vault),
-      getAccountMeta(accounts.feesVault),
       getAccountMeta(accounts.userBet),
       getAccountMeta(accounts.userAta),
       getAccountMeta(accounts.tokenProgram),
@@ -451,7 +422,6 @@ export function getBetInstruction<
     TAccountMint,
     TAccountState,
     TAccountVault,
-    TAccountFeesVault,
     TAccountUserBet,
     TAccountUserAta,
     TAccountTokenProgram,
@@ -472,12 +442,11 @@ export type ParsedBetInstruction<
     mint: TAccountMetas[1];
     state: TAccountMetas[2];
     vault: TAccountMetas[3];
-    feesVault: TAccountMetas[4];
-    userBet: TAccountMetas[5];
-    userAta: TAccountMetas[6];
-    tokenProgram: TAccountMetas[7];
-    associatedTokenProgram: TAccountMetas[8];
-    systemProgram: TAccountMetas[9];
+    userBet: TAccountMetas[4];
+    userAta: TAccountMetas[5];
+    tokenProgram: TAccountMetas[6];
+    associatedTokenProgram: TAccountMetas[7];
+    systemProgram: TAccountMetas[8];
   };
   data: BetInstructionData;
 };
@@ -490,7 +459,7 @@ export function parseBetInstruction<
     IInstructionWithAccounts<TAccountMetas> &
     IInstructionWithData<Uint8Array>
 ): ParsedBetInstruction<TProgram, TAccountMetas> {
-  if (instruction.accounts.length < 10) {
+  if (instruction.accounts.length < 9) {
     // TODO: Coded error.
     throw new Error('Not enough accounts');
   }
@@ -507,7 +476,6 @@ export function parseBetInstruction<
       mint: getNextAccount(),
       state: getNextAccount(),
       vault: getNextAccount(),
-      feesVault: getNextAccount(),
       userBet: getNextAccount(),
       userAta: getNextAccount(),
       tokenProgram: getNextAccount(),

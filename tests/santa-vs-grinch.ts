@@ -1,6 +1,7 @@
 import * as anchor from "@coral-xyz/anchor";
 import { Program } from "@coral-xyz/anchor";
 import {
+  createSignerFromKeypair,
   PublicKey,
   TransactionBuilderSendAndConfirmOptions,
   Umi,
@@ -8,28 +9,43 @@ import {
 import { airdropIfRequired, makeKeypairs } from "@solana-developers/helpers";
 import {
   getAssociatedTokenAddressSync,
+  getOrCreateAssociatedTokenAccount,
   TOKEN_PROGRAM_ID,
 } from "@solana/spl-token";
-import { LAMPORTS_PER_SOL } from "@solana/web3.js";
+import { Keypair, LAMPORTS_PER_SOL } from "@solana/web3.js";
 import {
   Creator,
   fetchConfig,
+  fetchUserBet,
   getSantaVsGrinchProgramId,
   initialize,
   InitializeArgs,
+  updateBetBurnPercentageBp,
   updateMysteryBoxPrice,
   updateWithdrawUnclaimedAt,
+  bet,
+  updateMysteryBoxBurnPercentageBp,
 } from "../clients/generated/umi/src";
 import { SantaVsGrinch } from "../target/types/santa_vs_grinch";
 import { CREATOR_1, CREATOR_2, CREATOR_3 } from "./constants";
-import { createSplMint, generateRandomU64Seed, initializeUmi } from "./utils";
+import {
+  calculateFee,
+  createSplMint,
+  generateRandomU64Seed,
+  initializeUmi,
+  mintSplMint,
+} from "./utils";
 import {
   publicKey as publicKeySerializer,
   string,
   u64,
 } from "@metaplex-foundation/umi/serializers";
-import { fromWeb3JsPublicKey } from "@metaplex-foundation/umi-web3js-adapters";
+import {
+  fromWeb3JsPublicKey,
+  toWeb3JsPublicKey,
+} from "@metaplex-foundation/umi-web3js-adapters";
 import { assert, expect } from "chai";
+import { fetchMint, fetchToken } from "@metaplex-foundation/mpl-toolbox";
 
 describe("santa-vs-grinch", () => {
   // Configure the client to use the local cluster.
@@ -43,6 +59,8 @@ describe("santa-vs-grinch", () => {
   let umi: Umi;
 
   let seed: BigInt;
+
+  let programId: PublicKey<string>;
 
   const options: TransactionBuilderSendAndConfirmOptions = {
     confirm: { commitment: "confirmed" },
@@ -68,11 +86,11 @@ describe("santa-vs-grinch", () => {
     console.log("✅ Umi initialized!");
 
     // create mint
-    const mint = await createSplMint(umi);
+    const mint = await createSplMint(umi, options);
 
-    console.log("✅ Mint created!", mint);
+    console.log("✅ Mint created!", mint.toString());
 
-    const programId = getSantaVsGrinchProgramId(umi);
+    programId = getSantaVsGrinchProgramId(umi);
 
     const [configState, configStateBump] = umi.eddsa.findPda(programId, [
       string({ size: "variable" }).serialize("state"),
@@ -102,15 +120,37 @@ describe("santa-vs-grinch", () => {
     accounts.user1 = user1;
     accounts.user2 = user2;
 
-    const user1Ata = getAssociatedTokenAddressSync(mint, user1.publicKey);
-    const user2Ata = getAssociatedTokenAddressSync(mint, user2.publicKey);
+    // Aidrop Tokens
+    const [user1Ata, user2Ata] = await Promise.all(
+      [user1, user2].map(async (u) => {
+        return await mintSplMint(
+          umi,
+          mint,
+          u.publicKey,
+          BigInt(1_000 * 10 ** 6),
+          options
+        );
+      })
+    );
 
     accounts.user1Ata = user1Ata;
     accounts.user2Ata = user2Ata;
 
-    const creator1Ata = getAssociatedTokenAddressSync(mint, CREATOR_1, true);
-    const creator2Ata = getAssociatedTokenAddressSync(mint, CREATOR_2, true);
-    const creator3Ata = getAssociatedTokenAddressSync(mint, CREATOR_3, true);
+    const creator1Ata = getAssociatedTokenAddressSync(
+      toWeb3JsPublicKey(mint),
+      CREATOR_1,
+      true
+    );
+    const creator2Ata = getAssociatedTokenAddressSync(
+      toWeb3JsPublicKey(mint),
+      CREATOR_2,
+      true
+    );
+    const creator3Ata = getAssociatedTokenAddressSync(
+      toWeb3JsPublicKey(mint),
+      CREATOR_3,
+      true
+    );
 
     accounts.creator1 = {
       pubkey: fromWeb3JsPublicKey(creator1Ata),
@@ -162,7 +202,7 @@ describe("santa-vs-grinch", () => {
 
     await initialize(umi, {
       admin: umi.payer,
-      mint: fromWeb3JsPublicKey(accounts.mint as anchor.web3.PublicKey),
+      mint: accounts.mint as PublicKey,
       tokenProgram: fromWeb3JsPublicKey(TOKEN_PROGRAM_ID),
       args,
       seed: seed.valueOf(),
@@ -213,7 +253,7 @@ describe("santa-vs-grinch", () => {
       admin: umi.payer,
       state: accounts.configState,
       ts,
-    }).sendAndConfirm(umi);
+    }).sendAndConfirm(umi, options);
 
     const gameStateAccount = await fetchConfig(umi, accounts.configState);
 
@@ -227,70 +267,84 @@ describe("santa-vs-grinch", () => {
       admin: umi.payer,
       state: accounts.configState,
       price,
-    }).sendAndConfirm(umi);
+    }).sendAndConfirm(umi, options);
 
     const gameStateAccount = await fetchConfig(umi, accounts.configState);
 
     expect(gameStateAccount.mysteryBoxPrice).to.eq(price);
   });
 
-  // it("Bet on Santa", async () => {
-  //   const [user1UserStatePubkey, _bump] = web3.PublicKey.findProgramAddressSync(
-  //     [
-  //       Buffer.from("user"),
-  //       (accounts.user1 as Keypair).publicKey.toBuffer(),
-  //       Buffer.from("santa"),
-  //     ],
-  //     program.programId
-  //   );
-  //
-  //   let config = await program.account.config.fetch(
-  //     accounts.configState as PublicKey
-  //   );
-  //
-  //   const adminFeePercentageBp = config.adminFeePercentageBp;
-  //   const betTag = "santa";
-  //   const amount = new anchor.BN(5 * LAMPORTS_PER_SOL);
-  //   const fee = calculateFee(amount, adminFeePercentageBp);
-  //   const depositAmount = amount.sub(fee);
-  //
-  //   const tx = await program.methods
-  //     .bet(amount, betTag)
-  //     .accounts({
-  //       user: (accounts.user1 as Keypair).publicKey,
-  //       state: accounts.configState,
-  //       vault: accounts.vault,
-  //       feesVault: accounts.feesVault,
-  //       userBet: user1UserStatePubkey,
-  //     })
-  //     .signers(accounts.user1)
-  //     .rpc();
-  //
-  //   const feeVaultBalance = await provider.connection.getBalance(
-  //     accounts.feesVault
-  //   );
-  //   assert.equal(feeVaultBalance, LAMPORTS_PER_SOL + fee.toNumber());
-  //
-  //   config = await program.account.config.fetch(
-  //     accounts.configState as PublicKey
-  //   );
-  //
-  //   assert.equal(config.santaPot.toNumber(), depositAmount.toNumber());
-  //
-  //   const user1UserStateAccount = await program.account.userBet.fetch(
-  //     user1UserStatePubkey
-  //   );
-  //
-  //   assert.equal(
-  //     user1UserStateAccount.amount.toNumber(),
-  //     depositAmount.toNumber()
-  //   );
-  //   assert.deepEqual(
-  //     user1UserStateAccount.owner,
-  //     (accounts.user1 as Keypair).publicKey
-  //   );
-  // });
-  //
+  it("Update bet burn percentage bp", async () => {
+    const percentageInBp = 1100;
+
+    await updateBetBurnPercentageBp(umi, {
+      admin: umi.payer,
+      state: accounts.configState,
+      percentageInBp,
+    }).sendAndConfirm(umi, options);
+
+    const gameStateAccount = await fetchConfig(umi, accounts.configState);
+
+    expect(gameStateAccount.betBurnPercentageBp).to.eq(percentageInBp);
+  });
+
+  it("Update mystery box burn percentage bp", async () => {
+    const percentageInBp = 2200;
+
+    await updateMysteryBoxBurnPercentageBp(umi, {
+      admin: umi.payer,
+      state: accounts.configState,
+      percentageInBp,
+    }).sendAndConfirm(umi, options);
+
+    const gameStateAccount = await fetchConfig(umi, accounts.configState);
+
+    expect(gameStateAccount.mysteryBoxBurnPercentageBp).to.eq(percentageInBp);
+  });
+
+  it("Bet on Santa", async () => {
+    let userPubkey = fromWeb3JsPublicKey((accounts.user1 as Keypair).publicKey);
+    const userSigner = createSignerFromKeypair(
+      umi,
+      umi.eddsa.createKeypairFromSecretKey(
+        (accounts.user1 as Keypair).secretKey
+      )
+    );
+    let userAta = fromWeb3JsPublicKey(accounts.user1Ata);
+    let gameStateAccount = await fetchConfig(umi, accounts.configState);
+
+    const betBurnPercentageBp = gameStateAccount.betBurnPercentageBp;
+    const betTag = "santa";
+    const amount = BigInt(100 * 10 ** 6);
+    const amountToBeBurned =
+      (amount * BigInt(betBurnPercentageBp)) / BigInt(10_000);
+    const depositAmount = amount - amountToBeBurned;
+
+    const [userBetPubkey, _] = umi.eddsa.findPda(programId, [
+      string({ size: "variable" }).serialize("user"),
+      publicKeySerializer().serialize(userPubkey),
+      string({ size: "variable" }).serialize(betTag),
+    ]);
+
+    await bet(umi, {
+      user: userSigner,
+      mint: accounts.mint as PublicKey,
+      state: accounts.configState as PublicKey,
+      userBet: userBetPubkey,
+      userAta,
+      tokenProgram: fromWeb3JsPublicKey(TOKEN_PROGRAM_ID),
+      amount,
+      betTag,
+    }).sendAndConfirm(umi, options);
+
+    gameStateAccount = await fetchConfig(umi, accounts.configState);
+    assert.equal(gameStateAccount.santaPot, depositAmount);
+
+    const betAccount = await fetchUserBet(umi, userBetPubkey);
+    assert.equal(betAccount.amount, depositAmount);
+    assert.deepEqual(betAccount.owner, userPubkey);
+  });
+
   // it("Bet on Grinch", async () => {
   //   const [user2UserStatePubkey, _bump] = web3.PublicKey.findProgramAddressSync(
   //     [

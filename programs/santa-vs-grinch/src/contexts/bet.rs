@@ -20,13 +20,13 @@ pub struct Bet<'info> {
     #[account(mut)]
     user: Signer<'info>,
 
+    #[account(mut)]
     mint: InterfaceAccount<'info, Mint>,
 
     #[account(
         mut,
         has_one = mint @ SantaVsGrinchErrorCode::InvalidMint,
         has_one = vault @ SantaVsGrinchErrorCode::InvalidVaultDepositAccount,
-        has_one = fees_vault @ SantaVsGrinchErrorCode::InvalidFeesVaultDepositAccount,
         seeds = [b"state", state.admin.key().as_ref(), state.seed.to_le_bytes().as_ref(), state.mint.key().as_ref()],
         bump = state.bump
      )]
@@ -38,13 +38,6 @@ pub struct Bet<'info> {
         bump = state.vault_bump
     )]
     pub vault: InterfaceAccount<'info, TokenAccount>,
-
-    #[account(
-        mut,
-        seeds = [b"vault", state.key().as_ref(), b"fees"],
-        bump = state.fees_vault_bump
-    )]
-    pub fees_vault: InterfaceAccount<'info, TokenAccount>,
 
     #[account(
         init_if_needed,
@@ -121,8 +114,8 @@ impl<'info> Bet<'info> {
     fn transfer_to_vault(&mut self, amount: u64) -> Result<()> {
         let accounts = TransferChecked {
             from: self.user_ata.to_account_info(),
-            mint: self.mint.to_account_info(),
             to: self.vault.to_account_info(),
+            mint: self.mint.to_account_info(),
             authority: self.user.to_account_info(),
         };
 

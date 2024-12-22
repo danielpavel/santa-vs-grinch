@@ -2,18 +2,38 @@ import { web3, BN, Provider } from "@coral-xyz/anchor";
 import { ConfigType, UserBetEnumType } from "./onChain.types";
 
 import {
+  PublicKey,
   keypairIdentity,
   Umi,
   createSignerFromKeypair,
   generateSigner,
+  percentAmount,
   publicKey,
   assertAccountExists,
+  some,
 } from "@metaplex-foundation/umi";
-import { mplToolbox } from "@metaplex-foundation/mpl-toolbox";
+import {
+  createAssociatedToken,
+  mplToolbox,
+} from "@metaplex-foundation/mpl-toolbox";
 import { createUmi } from "@metaplex-foundation/umi-bundle-defaults";
 import { Connection, Keypair } from "@solana/web3.js";
-import { createMint } from "@solana/spl-token";
-import { toWeb3JsKeypair } from "@metaplex-foundation/umi-web3js-adapters";
+import {
+  createMint,
+  getAssociatedTokenAddressSync,
+  getOrCreateAssociatedTokenAccount,
+  mintTo,
+} from "@solana/spl-token";
+import {
+  mintV1,
+  TokenStandard,
+  createFungible,
+} from "@metaplex-foundation/mpl-token-metadata";
+import {
+  fromWeb3JsPublicKey,
+  toWeb3JsPublicKey,
+  toWeb3JsKeypair,
+} from "@metaplex-foundation/umi-web3js-adapters";
 
 export const confirmOpts: web3.ConfirmOptions = {
   preflightCommitment: "confirmed",
@@ -91,24 +111,46 @@ export function calculateWinnings(
   return betAmount + winnerShare;
 }
 
-export async function createSplMint(umi: Umi) {
+export async function createSplMint(umi: Umi, options) {
   try {
-    const connection = new Connection(umi.rpc.getEndpoint());
-    const keypair = Keypair.generate();
+    const mint = generateSigner(umi);
 
-    const payer = toWeb3JsKeypair(umi.payer);
+    const txResult = await createFungible(umi, {
+      mint,
+      name: "Santa-vs-Grinch Token",
+      uri: "https://arweave.net/123",
+      sellerFeeBasisPoints: percentAmount(5.5),
+      decimals: some(6),
+    }).sendAndConfirm(umi, options);
 
-    const mint = await createMint(
-      connection,
-      payer,
-      keypair.publicKey,
-      null,
-      6
-    );
-
-    return mint;
+    return mint.publicKey;
   } catch (error) {
     console.error("Error creating mint:", error);
+    throw error;
+  }
+}
+
+export async function mintSplMint(
+  umi: Umi,
+  mint: PublicKey,
+  owner: web3.PublicKey,
+  amount: bigint,
+  options
+) {
+  try {
+    const ata = getAssociatedTokenAddressSync(toWeb3JsPublicKey(mint), owner);
+
+    await mintV1(umi, {
+      mint: mint,
+      authority: umi.payer,
+      amount,
+      tokenOwner: fromWeb3JsPublicKey(owner),
+      tokenStandard: TokenStandard.Fungible,
+    }).sendAndConfirm(umi, options);
+
+    return ata;
+  } catch (error) {
+    console.error("Error minting mint:", error);
     throw error;
   }
 }

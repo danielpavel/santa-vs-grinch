@@ -37,7 +37,6 @@ export type BetInstructionAccounts = {
   mint: PublicKey | Pda;
   state: PublicKey | Pda;
   vault?: PublicKey | Pda;
-  feesVault?: PublicKey | Pda;
   userBet?: PublicKey | Pda;
   userAta: PublicKey | Pda;
   tokenProgram: PublicKey | Pda;
@@ -94,7 +93,7 @@ export function bet(
   // Accounts.
   const resolvedAccounts = {
     user: { index: 0, isWritable: true as boolean, value: input.user ?? null },
-    mint: { index: 1, isWritable: false as boolean, value: input.mint ?? null },
+    mint: { index: 1, isWritable: true as boolean, value: input.mint ?? null },
     state: {
       index: 2,
       isWritable: true as boolean,
@@ -105,33 +104,28 @@ export function bet(
       isWritable: true as boolean,
       value: input.vault ?? null,
     },
-    feesVault: {
-      index: 4,
-      isWritable: true as boolean,
-      value: input.feesVault ?? null,
-    },
     userBet: {
-      index: 5,
+      index: 4,
       isWritable: true as boolean,
       value: input.userBet ?? null,
     },
     userAta: {
-      index: 6,
+      index: 5,
       isWritable: true as boolean,
       value: input.userAta ?? null,
     },
     tokenProgram: {
-      index: 7,
+      index: 6,
       isWritable: false as boolean,
       value: input.tokenProgram ?? null,
     },
     associatedTokenProgram: {
-      index: 8,
+      index: 7,
       isWritable: false as boolean,
       value: input.associatedTokenProgram ?? null,
     },
     systemProgram: {
-      index: 9,
+      index: 8,
       isWritable: false as boolean,
       value: input.systemProgram ?? null,
     },
@@ -152,15 +146,6 @@ export function bet(
           115, 97, 110, 116, 97, 45, 118, 115, 45, 103, 114, 105, 110, 99, 104,
         ])
       ),
-    ]);
-  }
-  if (!resolvedAccounts.feesVault.value) {
-    resolvedAccounts.feesVault.value = context.eddsa.findPda(programId, [
-      bytes().serialize(new Uint8Array([118, 97, 117, 108, 116])),
-      publicKeySerializer().serialize(
-        expectPublicKey(resolvedAccounts.state.value)
-      ),
-      bytes().serialize(new Uint8Array([102, 101, 101, 115])),
     ]);
   }
   if (!resolvedAccounts.userBet.value) {

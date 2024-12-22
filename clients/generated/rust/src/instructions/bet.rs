@@ -24,9 +24,6 @@ pub struct Bet {
           pub vault: solana_program::pubkey::Pubkey,
           
               
-          pub fees_vault: solana_program::pubkey::Pubkey,
-          
-              
           pub user_bet: solana_program::pubkey::Pubkey,
           
               
@@ -48,12 +45,12 @@ impl Bet {
   }
   #[allow(clippy::vec_init_then_push)]
   pub fn instruction_with_remaining_accounts(&self, args: BetInstructionArgs, remaining_accounts: &[solana_program::instruction::AccountMeta]) -> solana_program::instruction::Instruction {
-    let mut accounts = Vec::with_capacity(10 + remaining_accounts.len());
+    let mut accounts = Vec::with_capacity(9 + remaining_accounts.len());
                             accounts.push(solana_program::instruction::AccountMeta::new(
             self.user,
             true
           ));
-                                          accounts.push(solana_program::instruction::AccountMeta::new_readonly(
+                                          accounts.push(solana_program::instruction::AccountMeta::new(
             self.mint,
             false
           ));
@@ -63,10 +60,6 @@ impl Bet {
           ));
                                           accounts.push(solana_program::instruction::AccountMeta::new(
             self.vault,
-            false
-          ));
-                                          accounts.push(solana_program::instruction::AccountMeta::new(
-            self.fees_vault,
             false
           ));
                                           accounts.push(solana_program::instruction::AccountMeta::new(
@@ -134,22 +127,20 @@ pub struct BetInstructionArgs {
 /// ### Accounts:
 ///
                       ///   0. `[writable, signer]` user
-          ///   1. `[]` mint
+                ///   1. `[writable]` mint
                 ///   2. `[writable]` state
                 ///   3. `[writable]` vault
-                ///   4. `[writable]` fees_vault
-                ///   5. `[writable]` user_bet
-                ///   6. `[writable]` user_ata
-          ///   7. `[]` token_program
-                ///   8. `[optional]` associated_token_program (default to `ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL`)
-                ///   9. `[optional]` system_program (default to `11111111111111111111111111111111`)
+                ///   4. `[writable]` user_bet
+                ///   5. `[writable]` user_ata
+          ///   6. `[]` token_program
+                ///   7. `[optional]` associated_token_program (default to `ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL`)
+                ///   8. `[optional]` system_program (default to `11111111111111111111111111111111`)
 #[derive(Clone, Debug, Default)]
 pub struct BetBuilder {
             user: Option<solana_program::pubkey::Pubkey>,
                 mint: Option<solana_program::pubkey::Pubkey>,
                 state: Option<solana_program::pubkey::Pubkey>,
                 vault: Option<solana_program::pubkey::Pubkey>,
-                fees_vault: Option<solana_program::pubkey::Pubkey>,
                 user_bet: Option<solana_program::pubkey::Pubkey>,
                 user_ata: Option<solana_program::pubkey::Pubkey>,
                 token_program: Option<solana_program::pubkey::Pubkey>,
@@ -182,11 +173,6 @@ impl BetBuilder {
             #[inline(always)]
     pub fn vault(&mut self, vault: solana_program::pubkey::Pubkey) -> &mut Self {
                         self.vault = Some(vault);
-                    self
-    }
-            #[inline(always)]
-    pub fn fees_vault(&mut self, fees_vault: solana_program::pubkey::Pubkey) -> &mut Self {
-                        self.fees_vault = Some(fees_vault);
                     self
     }
             #[inline(always)]
@@ -245,7 +231,6 @@ impl BetBuilder {
                                         mint: self.mint.expect("mint is not set"),
                                         state: self.state.expect("state is not set"),
                                         vault: self.vault.expect("vault is not set"),
-                                        fees_vault: self.fees_vault.expect("fees_vault is not set"),
                                         user_bet: self.user_bet.expect("user_bet is not set"),
                                         user_ata: self.user_ata.expect("user_ata is not set"),
                                         token_program: self.token_program.expect("token_program is not set"),
@@ -275,9 +260,6 @@ impl BetBuilder {
                 
                     
               pub vault: &'b solana_program::account_info::AccountInfo<'a>,
-                
-                    
-              pub fees_vault: &'b solana_program::account_info::AccountInfo<'a>,
                 
                     
               pub user_bet: &'b solana_program::account_info::AccountInfo<'a>,
@@ -313,9 +295,6 @@ pub struct BetCpi<'a, 'b> {
           pub vault: &'b solana_program::account_info::AccountInfo<'a>,
           
               
-          pub fees_vault: &'b solana_program::account_info::AccountInfo<'a>,
-          
-              
           pub user_bet: &'b solana_program::account_info::AccountInfo<'a>,
           
               
@@ -345,7 +324,6 @@ impl<'a, 'b> BetCpi<'a, 'b> {
               mint: accounts.mint,
               state: accounts.state,
               vault: accounts.vault,
-              fees_vault: accounts.fees_vault,
               user_bet: accounts.user_bet,
               user_ata: accounts.user_ata,
               token_program: accounts.token_program,
@@ -373,12 +351,12 @@ impl<'a, 'b> BetCpi<'a, 'b> {
     signers_seeds: &[&[&[u8]]],
     remaining_accounts: &[(&'b solana_program::account_info::AccountInfo<'a>, bool, bool)]
   ) -> solana_program::entrypoint::ProgramResult {
-    let mut accounts = Vec::with_capacity(10 + remaining_accounts.len());
+    let mut accounts = Vec::with_capacity(9 + remaining_accounts.len());
                             accounts.push(solana_program::instruction::AccountMeta::new(
             *self.user.key,
             true
           ));
-                                          accounts.push(solana_program::instruction::AccountMeta::new_readonly(
+                                          accounts.push(solana_program::instruction::AccountMeta::new(
             *self.mint.key,
             false
           ));
@@ -388,10 +366,6 @@ impl<'a, 'b> BetCpi<'a, 'b> {
           ));
                                           accounts.push(solana_program::instruction::AccountMeta::new(
             *self.vault.key,
-            false
-          ));
-                                          accounts.push(solana_program::instruction::AccountMeta::new(
-            *self.fees_vault.key,
             false
           ));
                                           accounts.push(solana_program::instruction::AccountMeta::new(
@@ -430,13 +404,12 @@ impl<'a, 'b> BetCpi<'a, 'b> {
       accounts,
       data,
     };
-    let mut account_infos = Vec::with_capacity(10 + 1 + remaining_accounts.len());
+    let mut account_infos = Vec::with_capacity(9 + 1 + remaining_accounts.len());
     account_infos.push(self.__program.clone());
                   account_infos.push(self.user.clone());
                         account_infos.push(self.mint.clone());
                         account_infos.push(self.state.clone());
                         account_infos.push(self.vault.clone());
-                        account_infos.push(self.fees_vault.clone());
                         account_infos.push(self.user_bet.clone());
                         account_infos.push(self.user_ata.clone());
                         account_infos.push(self.token_program.clone());
@@ -457,15 +430,14 @@ impl<'a, 'b> BetCpi<'a, 'b> {
 /// ### Accounts:
 ///
                       ///   0. `[writable, signer]` user
-          ///   1. `[]` mint
+                ///   1. `[writable]` mint
                 ///   2. `[writable]` state
                 ///   3. `[writable]` vault
-                ///   4. `[writable]` fees_vault
-                ///   5. `[writable]` user_bet
-                ///   6. `[writable]` user_ata
-          ///   7. `[]` token_program
-          ///   8. `[]` associated_token_program
-          ///   9. `[]` system_program
+                ///   4. `[writable]` user_bet
+                ///   5. `[writable]` user_ata
+          ///   6. `[]` token_program
+          ///   7. `[]` associated_token_program
+          ///   8. `[]` system_program
 #[derive(Clone, Debug)]
 pub struct BetCpiBuilder<'a, 'b> {
   instruction: Box<BetCpiBuilderInstruction<'a, 'b>>,
@@ -479,7 +451,6 @@ impl<'a, 'b> BetCpiBuilder<'a, 'b> {
               mint: None,
               state: None,
               vault: None,
-              fees_vault: None,
               user_bet: None,
               user_ata: None,
               token_program: None,
@@ -509,11 +480,6 @@ impl<'a, 'b> BetCpiBuilder<'a, 'b> {
       #[inline(always)]
     pub fn vault(&mut self, vault: &'b solana_program::account_info::AccountInfo<'a>) -> &mut Self {
                         self.instruction.vault = Some(vault);
-                    self
-    }
-      #[inline(always)]
-    pub fn fees_vault(&mut self, fees_vault: &'b solana_program::account_info::AccountInfo<'a>) -> &mut Self {
-                        self.instruction.fees_vault = Some(fees_vault);
                     self
     }
       #[inline(always)]
@@ -588,8 +554,6 @@ impl<'a, 'b> BetCpiBuilder<'a, 'b> {
                   
           vault: self.instruction.vault.expect("vault is not set"),
                   
-          fees_vault: self.instruction.fees_vault.expect("fees_vault is not set"),
-                  
           user_bet: self.instruction.user_bet.expect("user_bet is not set"),
                   
           user_ata: self.instruction.user_ata.expect("user_ata is not set"),
@@ -612,7 +576,6 @@ struct BetCpiBuilderInstruction<'a, 'b> {
                 mint: Option<&'b solana_program::account_info::AccountInfo<'a>>,
                 state: Option<&'b solana_program::account_info::AccountInfo<'a>>,
                 vault: Option<&'b solana_program::account_info::AccountInfo<'a>>,
-                fees_vault: Option<&'b solana_program::account_info::AccountInfo<'a>>,
                 user_bet: Option<&'b solana_program::account_info::AccountInfo<'a>>,
                 user_ata: Option<&'b solana_program::account_info::AccountInfo<'a>>,
                 token_program: Option<&'b solana_program::account_info::AccountInfo<'a>>,
