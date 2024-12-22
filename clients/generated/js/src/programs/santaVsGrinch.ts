@@ -24,7 +24,7 @@ import {
 } from '../instructions';
 
 export const SANTA_VS_GRINCH_PROGRAM_ADDRESS =
-  '5Kox1zWxgz9oGXCYw65iGKAHYmiFov6FpPCib71NZ75x' as Address<'5Kox1zWxgz9oGXCYw65iGKAHYmiFov6FpPCib71NZ75x'>;
+  'G1rm3S34YvLkGdPH994cAVHxiq2JsGrDhtwKMgQbignc' as Address<'G1rm3S34YvLkGdPH994cAVHxiq2JsGrDhtwKMgQbignc'>;
 
 export enum SantaVsGrinchAccount {
   Config,
@@ -159,7 +159,7 @@ export function identifySantaVsGrinchInstruction(
 }
 
 export type ParsedSantaVsGrinchInstruction<
-  TProgram extends string = '5Kox1zWxgz9oGXCYw65iGKAHYmiFov6FpPCib71NZ75x',
+  TProgram extends string = 'G1rm3S34YvLkGdPH994cAVHxiq2JsGrDhtwKMgQbignc',
 > =
   | ({
       instructionType: SantaVsGrinchInstruction.Bet;

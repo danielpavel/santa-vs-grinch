@@ -218,10 +218,13 @@ const main = async () => {
   umi.use(mplTokenMetadata());
 
   const mint = publicKey("5bEjR2Taido5JNM4v45yK8f93PvHNnwwWP5GvtnTD637");
+
   const seed = BigInt(12958056478283855875);
   const configStatePubkey = publicKey(
-    "FErkay7QmYnhGuQRHf3kqDmxhEvYCAtoL8u5ouTMQAQS"
+    "HngYKFTCaAdX9MxY9pMpZKyQ3WWP7EpBPzMBZaUVogb3"
   );
+
+  console.log("mint:", await fetchMint(umi, mint));
 
   // const mint = await createSplMint(umi, options);
   // console.log("✅ Mint created!", mint.toString());
@@ -245,10 +248,10 @@ const main = async () => {
   // );
   // console.log(usersAtas.map((u) => u.toString()));
 
-  //await initializeGame(umi, mint, "cli/initialize_config.json");
+  await initializeGame(umi, mint, "cli/initialize_config.json");
 
-  const c = await getConfig(umi, mint, seed);
-  console.log(c);
+  // const c = await getConfig(umi, mint, seed);
+  // console.log(c);
 };
 
 main()

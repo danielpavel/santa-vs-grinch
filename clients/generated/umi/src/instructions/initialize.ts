@@ -37,7 +37,7 @@ import {
 
 // Accounts.
 export type InitializeInstructionAccounts = {
-  admin: Signer;
+  admin?: Signer;
   mint: PublicKey | Pda;
   state?: PublicKey | Pda;
   vault?: PublicKey | Pda;
@@ -93,7 +93,7 @@ export function initialize(
   // Program ID.
   const programId = context.programs.getPublicKey(
     'santaVsGrinch',
-    '5Kox1zWxgz9oGXCYw65iGKAHYmiFov6FpPCib71NZ75x'
+    'G1rm3S34YvLkGdPH994cAVHxiq2JsGrDhtwKMgQbignc'
   );
 
   // Accounts.
@@ -135,6 +135,13 @@ export function initialize(
   const resolvedArgs: InitializeInstructionArgs = { ...input };
 
   // Default values.
+  if (!resolvedAccounts.admin.value) {
+    resolvedAccounts.admin.value = context.programs.getPublicKey(
+      'admin',
+      '5GY5g8w1x1NZYkehip6nSG3FHdBgvhGnUJVNoK9zVGKs'
+    );
+    resolvedAccounts.admin.isWritable = false;
+  }
   if (!resolvedAccounts.state.value) {
     resolvedAccounts.state.value = context.eddsa.findPda(programId, [
       bytes().serialize(new Uint8Array([115, 116, 97, 116, 101])),

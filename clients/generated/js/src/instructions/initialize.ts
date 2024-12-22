@@ -58,7 +58,9 @@ export function getInitializeDiscriminatorBytes() {
 
 export type InitializeInstruction<
   TProgram extends string = typeof SANTA_VS_GRINCH_PROGRAM_ADDRESS,
-  TAccountAdmin extends string | IAccountMeta<string> = string,
+  TAccountAdmin extends
+    | string
+    | IAccountMeta<string> = '5GY5g8w1x1NZYkehip6nSG3FHdBgvhGnUJVNoK9zVGKs',
   TAccountMint extends string | IAccountMeta<string> = string,
   TAccountState extends string | IAccountMeta<string> = string,
   TAccountVault extends string | IAccountMeta<string> = string,
@@ -147,7 +149,7 @@ export type InitializeAsyncInput<
   TAccountTokenProgram extends string = string,
   TAccountSystemProgram extends string = string,
 > = {
-  admin: TransactionSigner<TAccountAdmin>;
+  admin?: TransactionSigner<TAccountAdmin>;
   mint: Address<TAccountMint>;
   state?: Address<TAccountState>;
   vault?: Address<TAccountVault>;
@@ -213,6 +215,10 @@ export async function getInitializeInstructionAsync<
   const args = { ...input };
 
   // Resolve default values.
+  if (!accounts.admin.value) {
+    accounts.admin.value =
+      '5GY5g8w1x1NZYkehip6nSG3FHdBgvhGnUJVNoK9zVGKs' as Address<'5GY5g8w1x1NZYkehip6nSG3FHdBgvhGnUJVNoK9zVGKs'>;
+  }
   if (!accounts.state.value) {
     accounts.state.value = await getProgramDerivedAddress({
       programAddress,
@@ -292,7 +298,7 @@ export type InitializeInput<
   TAccountTokenProgram extends string = string,
   TAccountSystemProgram extends string = string,
 > = {
-  admin: TransactionSigner<TAccountAdmin>;
+  admin?: TransactionSigner<TAccountAdmin>;
   mint: Address<TAccountMint>;
   state: Address<TAccountState>;
   vault: Address<TAccountVault>;
@@ -356,6 +362,10 @@ export function getInitializeInstruction<
   const args = { ...input };
 
   // Resolve default values.
+  if (!accounts.admin.value) {
+    accounts.admin.value =
+      '5GY5g8w1x1NZYkehip6nSG3FHdBgvhGnUJVNoK9zVGKs' as Address<'5GY5g8w1x1NZYkehip6nSG3FHdBgvhGnUJVNoK9zVGKs'>;
+  }
   if (!accounts.systemProgram.value) {
     accounts.systemProgram.value =
       '11111111111111111111111111111111' as Address<'11111111111111111111111111111111'>;

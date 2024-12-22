@@ -18,7 +18,7 @@ import {
 } from '../errors';
 
 export const SANTA_VS_GRINCH_PROGRAM_ID =
-  '5Kox1zWxgz9oGXCYw65iGKAHYmiFov6FpPCib71NZ75x' as PublicKey<'5Kox1zWxgz9oGXCYw65iGKAHYmiFov6FpPCib71NZ75x'>;
+  'G1rm3S34YvLkGdPH994cAVHxiq2JsGrDhtwKMgQbignc' as PublicKey<'G1rm3S34YvLkGdPH994cAVHxiq2JsGrDhtwKMgQbignc'>;
 
 export function createSantaVsGrinchProgram(): Program {
   return {

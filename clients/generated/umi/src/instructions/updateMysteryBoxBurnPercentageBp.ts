@@ -83,7 +83,7 @@ export function updateMysteryBoxBurnPercentageBp(
   // Program ID.
   const programId = context.programs.getPublicKey(
     'santaVsGrinch',
-    '5Kox1zWxgz9oGXCYw65iGKAHYmiFov6FpPCib71NZ75x'
+    'G1rm3S34YvLkGdPH994cAVHxiq2JsGrDhtwKMgQbignc'
   );
 
   // Accounts.
