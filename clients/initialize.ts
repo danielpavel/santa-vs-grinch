@@ -114,7 +114,12 @@ export async function mintSplMint(
   }
 }
 
-async function initializeGame(umi: Umi, mint: PublicKey, configFname: string) {
+async function initializeGame(
+  umi: Umi,
+  mint: PublicKey,
+  seed: bigint,
+  configFname: string
+) {
   console.log("Initializing game...");
 
   const configPath = path.join(process.cwd(), configFname);
@@ -155,7 +160,7 @@ async function initializeGame(umi: Umi, mint: PublicKey, configFname: string) {
   console.log(args);
 
   // const seed = generateRandomU64Seed();
-  const seed = BigInt(12958056478283855875);
+  //const seed = BigInt(12958056478283855875);
 
   const [configState, configStateBump] = umi.eddsa.findPda(
     getSantaVsGrinchProgramId(umi),
@@ -207,28 +212,32 @@ async function placeBet(umi: Umi, amount: BigInt, side: "santa" | "grinch") {
   }).sendAndConfirm(umi, options);
 }
 
+const mainnetURL =
+  "https://mainnet.helius-rpc.com/?api-key=702ddf04-244d-42d9-b282-aec1d8783deb";
+
 // I don't have time to watch over the client now - I will default to vanilla js and update later if needed.
 const main = async () => {
-  const umi = createUmi(clusterApiUrl("devnet"), { commitment: "confirmed" });
-  const keypairPath = path.join(process.cwd(), "keypair.json");
+  const umi = createUmi(mainnetURL, {
+    commitment: "confirmed",
+  });
+  const keypairPath = path.join(process.cwd(), "keypair2.json");
   const kp = await getKeypairFromFile(keypairPath);
   const admin = umi.eddsa.createKeypairFromSecretKey(kp.secretKey);
 
   umi.use(keypairIdentity(admin));
   umi.use(mplTokenMetadata());
 
-  const mint = publicKey("5bEjR2Taido5JNM4v45yK8f93PvHNnwwWP5GvtnTD637");
-
   const seed = BigInt(12958056478283855875);
-  const configStatePubkey = publicKey(
-    "HngYKFTCaAdX9MxY9pMpZKyQ3WWP7EpBPzMBZaUVogb3"
-  );
-
+  const mint = publicKey("AMhgLQcYuiStFWepRqJ9t64XxA5GFkH1Nr9vVfDrpump");
   console.log("mint:", await fetchMint(umi, mint));
+
+  // const configStatePubkey = publicKey(
+  //   "HngYKFTCaAdX9MxY9pMpZKyQ3WWP7EpBPzMBZaUVogb3"
+  // );
 
   // const mint = await createSplMint(umi, options);
   // console.log("✅ Mint created!", mint.toString());
-  //
+
   // const users = [
   //   publicKey("5GY5g8w1x1NZYkehip6nSG3FHdBgvhGnUJVNoK9zVGKs"),
   //   publicKey("8FYZEp3xorQoLe3ngQuGA4B44EXF3j5oUPApJg7GWX7K"),
@@ -248,10 +257,10 @@ const main = async () => {
   // );
   // console.log(usersAtas.map((u) => u.toString()));
 
-  await initializeGame(umi, mint, "cli/initialize_config.json");
+  await initializeGame(umi, mint, seed, "cli/initialize_config.json");
 
-  // const c = await getConfig(umi, mint, seed);
-  // console.log(c);
+  const c = await getConfig(umi, mint, seed);
+  console.log(c);
 };
 
 main()

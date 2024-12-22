@@ -138,7 +138,7 @@ export function initialize(
   if (!resolvedAccounts.admin.value) {
     resolvedAccounts.admin.value = context.programs.getPublicKey(
       'admin',
-      '5GY5g8w1x1NZYkehip6nSG3FHdBgvhGnUJVNoK9zVGKs'
+      '7pLYRYibjFHtxSxMugqtJuWB1cAEsLsUfTcrZws3dRBn'
     );
     resolvedAccounts.admin.isWritable = false;
   }

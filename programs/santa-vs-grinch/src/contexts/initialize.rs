@@ -1,7 +1,7 @@
 use anchor_lang::prelude::*;
 use anchor_spl::token_interface::{Mint, TokenAccount, TokenInterface};
 
-use crate::constants::{ADMIN_PUBKEY, CREATOR_WITHDRAWAL_PERIOD};
+use crate::constants::{ADMIN_2_PUBKEY, CREATOR_WITHDRAWAL_PERIOD};
 use crate::errors::SantaVsGrinchErrorCode;
 use crate::state::{Config, InitializeArgs};
 
@@ -10,7 +10,7 @@ use crate::state::{Config, InitializeArgs};
 pub struct Initialize<'info> {
     #[account(
         mut,
-        address = ADMIN_PUBKEY
+        address = ADMIN_2_PUBKEY
     )]
     admin: Signer<'info>,
 

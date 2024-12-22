@@ -60,7 +60,7 @@ export type InitializeInstruction<
   TProgram extends string = typeof SANTA_VS_GRINCH_PROGRAM_ADDRESS,
   TAccountAdmin extends
     | string
-    | IAccountMeta<string> = '5GY5g8w1x1NZYkehip6nSG3FHdBgvhGnUJVNoK9zVGKs',
+    | IAccountMeta<string> = '7pLYRYibjFHtxSxMugqtJuWB1cAEsLsUfTcrZws3dRBn',
   TAccountMint extends string | IAccountMeta<string> = string,
   TAccountState extends string | IAccountMeta<string> = string,
   TAccountVault extends string | IAccountMeta<string> = string,
@@ -217,7 +217,7 @@ export async function getInitializeInstructionAsync<
   // Resolve default values.
   if (!accounts.admin.value) {
     accounts.admin.value =
-      '5GY5g8w1x1NZYkehip6nSG3FHdBgvhGnUJVNoK9zVGKs' as Address<'5GY5g8w1x1NZYkehip6nSG3FHdBgvhGnUJVNoK9zVGKs'>;
+      '7pLYRYibjFHtxSxMugqtJuWB1cAEsLsUfTcrZws3dRBn' as Address<'7pLYRYibjFHtxSxMugqtJuWB1cAEsLsUfTcrZws3dRBn'>;
   }
   if (!accounts.state.value) {
     accounts.state.value = await getProgramDerivedAddress({
@@ -364,7 +364,7 @@ export function getInitializeInstruction<
   // Resolve default values.
   if (!accounts.admin.value) {
     accounts.admin.value =
-      '5GY5g8w1x1NZYkehip6nSG3FHdBgvhGnUJVNoK9zVGKs' as Address<'5GY5g8w1x1NZYkehip6nSG3FHdBgvhGnUJVNoK9zVGKs'>;
+      '7pLYRYibjFHtxSxMugqtJuWB1cAEsLsUfTcrZws3dRBn' as Address<'7pLYRYibjFHtxSxMugqtJuWB1cAEsLsUfTcrZws3dRBn'>;
   }
   if (!accounts.systemProgram.value) {
     accounts.systemProgram.value =

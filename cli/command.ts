@@ -1,6 +1,6 @@
 import { Command } from "commander";
-import { web3, BN } from "@coral-xyz/anchor";
-import { clusterApiUrl, Connection, PublicKey } from "@solana/web3.js";
+import { web3 } from "@coral-xyz/anchor";
+import { clusterApiUrl } from "@solana/web3.js";
 import { createUmi } from "@metaplex-foundation/umi-bundle-defaults";
 import path from "path";
 import { getKeypairFromFile } from "@solana-developers/helpers";
@@ -15,32 +15,28 @@ import fs from "fs";
 import {
   publicKey as publicKeySerializer,
   string,
+  u64,
 } from "@metaplex-foundation/umi/serializers";
 import {
   bet,
   buyMysteryBox,
   fetchConfig,
   fetchUserBet,
-  getSantaVsGrinchProgram,
   getSantaVsGrinchProgramId,
-  initialize,
   InitializeArgs,
   Creator,
+  updateBetBuybackPercentageBp,
 } from "../clients/generated/umi/src";
-import { fromWeb3JsPublicKey } from "@metaplex-foundation/umi-web3js-adapters";
-import {
-  getAssociatedTokenAddressSync,
-  TOKEN_PROGRAM_ID,
-} from "@solana/spl-token";
 
-const options: TransactionBuilderSendAndConfirmOptions = {
+const opts: TransactionBuilderSendAndConfirmOptions = {
   confirm: { commitment: "confirmed" },
 };
 
-function generateRandomU64Seed(): BigInt {
+function generateRandomU64Seed() {
   const randomBytes = web3.Keypair.generate().secretKey.slice(0, 8);
 
-  return BigInt(new BN(randomBytes).toString());
+  let view = new DataView(randomBytes, 0);
+  return view.getBigUint64(0, true);
 }
 
 // Initialize Commander
@@ -54,9 +50,14 @@ program
 
 // Utility Functions
 const initializePrereqs = async () => {
-  const umi = createUmi(clusterApiUrl("devnet"), { commitment: "confirmed" });
+  const umi = createUmi(clusterApiUrl("mainnet-beta"), {
+    commitment: "confirmed",
+  });
 
-  const keypairPath = path.join(process.cwd(), "keypair.json");
+  const keypairPath = path.join(process.cwd(), "keypair2.json");
+
+  console.log("kp", keypairPath);
+
   const kp = await getKeypairFromFile(keypairPath);
   const admin = umi.eddsa.createKeypairFromSecretKey(kp.secretKey);
 
@@ -65,23 +66,24 @@ const initializePrereqs = async () => {
   return { umi, programId: getSantaVsGrinchProgramId(umi) };
 };
 
+const seed = BigInt(12958056478283855875);
+const mint = publicKey("AMhgLQcYuiStFWepRqJ9t64XxA5GFkH1Nr9vVfDrpump");
+
 // State Monitoring Commands
 program
   .command("get-state")
   .description("Get the current state of the game")
-  .requiredOption("-a, --admin <pubkey>", "Admin public key")
+  .requiredOption("-a, --address <pubkey>", "Public key of config account")
   .action(async (options) => {
     try {
       const { umi, programId } = await initializePrereqs();
 
-      const [configStatePubkey] = umi.eddsa.findPda(programId, [
-        string({ size: "variable" }).serialize("state"),
-        publicKeySerializer().serialize(publicKey(options.admin)),
-      ]);
+      console.log("Fetching state...", options.address);
 
-      console.log("Fetching state...");
-
-      const configStateAccount = await fetchConfig(umi, configStatePubkey);
+      const configStateAccount = await fetchConfig(
+        umi,
+        publicKey(options.address)
+      );
 
       console.log(configStateAccount);
     } catch (error) {
@@ -129,24 +131,20 @@ program
     try {
       const { umi, programId } = await initializePrereqs();
       const tag = options.tag;
-      const amount = options.amount;
+      const amount = BigInt(options.amount);
 
       if (tag != "grinch" && tag != "santa") {
         throw new Error(`Invalid ${tag} tag. Should be "santa" | "grinch"`);
       }
 
-      const [configStatePubkey] = umi.eddsa.findPda(programId, [
+      const [configState, configStateBump] = umi.eddsa.findPda(programId, [
         string({ size: "variable" }).serialize("state"),
-        publicKeySerializer().serialize(umi.payer),
+        publicKeySerializer().serialize(umi.payer.publicKey),
+        u64().serialize(seed.valueOf()),
+        publicKeySerializer().serialize(mint.toString()),
       ]);
 
-      const [feesVaultPubkey] = umi.eddsa.findPda(program, [
-        string({ size: "variable" }).serialize("vault"),
-        publicKeySerializer().serialize(configStatePubkey),
-        string({ size: "variable" }).serialize("fees"),
-      ]);
-
-      const [userBetPubkey] = umi.eddsa.findPda(program, [
+      const [userBetPubkey] = umi.eddsa.findPda(programId, [
         string({ size: "variable" }).serialize("user"),
         publicKeySerializer().serialize(umi.payer),
         string({ size: "variable" }).serialize(tag),
@@ -163,12 +161,74 @@ program
 
       await bet(umi, {
         user: userSigner,
-        state: configStatePubkey,
-        feesVault: feesVaultPubkey,
+        buybackWallet: userSigner.publicKey,
+        state: configState,
         userBet: userBetPubkey,
-        amount: parseInt(amount),
+        amount,
         betTag: tag,
       }).sendAndConfirm(umi, options);
+
+      console.log("✅ Done!");
+    } catch (error) {
+      console.error("Error:", error);
+    }
+  });
+
+program
+  .command("update-buyback-percentage")
+  .description("Update buyback percentage")
+  .requiredOption("-a, --address <pubkey>", "Public key of config account")
+  .requiredOption("-v, --value <number>", "Buyback percentage in basis points")
+  .action(async (options) => {
+    try {
+      const { umi } = await initializePrereqs();
+      const percentageInBp = Number(options.value);
+      const configState = publicKey(options.address);
+
+      if (percentageInBp < 0 || percentageInBp > 10_000) {
+        throw new Error(
+          `Invalid ${percentageInBp} percentage. Should be between 0 and 10 000`
+        );
+      }
+
+      console.log("Updateing bet buyback percentage...");
+
+      await updateBetBuybackPercentageBp(umi, {
+        admin: umi.payer,
+        state: configState,
+        percentageInBp,
+      }).sendAndConfirm(umi, opts);
+
+      console.log("✅ Done!");
+    } catch (error) {
+      console.error("Error:", error);
+    }
+  });
+
+program
+  .command("update-burn-percentage")
+  .description("Update buyback percentage")
+  .requiredOption("-a, --address <pubkey>", "Public key of config account")
+  .requiredOption("-v, --value <number>", "Buyback percentage in basis points")
+  .action(async (options) => {
+    try {
+      const { umi } = await initializePrereqs();
+      const percentageInBp = Number(options.value);
+      const configState = publicKey(options.address);
+
+      if (percentageInBp < 0 || percentageInBp > 10_000) {
+        throw new Error(
+          `Invalid ${percentageInBp} percentage. Should be between 0 and 10 000`
+        );
+      }
+
+      console.log("Updateing bet buyback percentage...");
+
+      await updateBetBuybackPercentageBp(umi, {
+        admin: umi.payer,
+        state: configState,
+        percentageInBp,
+      }).sendAndConfirm(umi, opts);
 
       console.log("✅ Done!");
     } catch (error) {
@@ -222,7 +282,7 @@ program
         feesVault: feesVaultPubkey,
         userBet: userBetPubkey,
         betTag: tag,
-      }).sendAndConfirm(umi, options);
+      }).sendAndConfirm(umi, opts);
     } catch (error) {
       console.error("Error:", error);
     }

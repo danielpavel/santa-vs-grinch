@@ -113,7 +113,7 @@ pub struct InitializeInstructionArgs {
 ///
 /// ### Accounts:
 ///
-                            ///   0. `[writable, signer, optional]` admin (default to `5GY5g8w1x1NZYkehip6nSG3FHdBgvhGnUJVNoK9zVGKs`)
+                            ///   0. `[writable, signer, optional]` admin (default to `7pLYRYibjFHtxSxMugqtJuWB1cAEsLsUfTcrZws3dRBn`)
           ///   1. `[]` mint
                 ///   2. `[writable]` state
           ///   3. `[]` vault
@@ -138,7 +138,7 @@ impl InitializeBuilder {
   pub fn new() -> Self {
     Self::default()
   }
-            /// `[optional account, default to '5GY5g8w1x1NZYkehip6nSG3FHdBgvhGnUJVNoK9zVGKs']`
+            /// `[optional account, default to '7pLYRYibjFHtxSxMugqtJuWB1cAEsLsUfTcrZws3dRBn']`
 #[inline(always)]
     pub fn admin(&mut self, admin: solana_program::pubkey::Pubkey) -> &mut Self {
                         self.admin = Some(admin);
@@ -200,7 +200,7 @@ impl InitializeBuilder {
   #[allow(clippy::clone_on_copy)]
   pub fn instruction(&self) -> solana_program::instruction::Instruction {
     let accounts = Initialize {
-                              admin: self.admin.unwrap_or(solana_program::pubkey!("5GY5g8w1x1NZYkehip6nSG3FHdBgvhGnUJVNoK9zVGKs")),
+                              admin: self.admin.unwrap_or(solana_program::pubkey!("7pLYRYibjFHtxSxMugqtJuWB1cAEsLsUfTcrZws3dRBn")),
                                         mint: self.mint.expect("mint is not set"),
                                         state: self.state.expect("state is not set"),
                                         vault: self.vault.expect("vault is not set"),

@@ -1,24 +1,24 @@
 {
   "maxNumCreators": 3,
   "adminFeePercentageBp": 100,
-  "betBurnPercentageBp": 2500,
+  "betBurnPercentageBp": 1000,
   "mysteryBoxBurnPercentageBp": 10000,
   "mysteryBoxPrice": 1000000000,
-  "buybackWallet": "5GY5g8w1x1NZYkehip6nSG3FHdBgvhGnUJVNoK9zVGKs",
-  "buybackPercentageBp": 2500,
+  "buybackWallet": "D8Jj5r6eJRjMqr59JGCtjom3qXSf9pJRFWzfLV7UGP8E",
+  "buybackPercentageBp": 1000,
   "creators": [
     {
-      "pubkey": "5GY5g8w1x1NZYkehip6nSG3FHdBgvhGnUJVNoK9zVGKs",
+      "pubkey": "7pLYRYibjFHtxSxMugqtJuWB1cAEsLsUfTcrZws3dRBn",
       "shareInBp": 3333,
       "claimed": false
     },
     {
-      "pubkey": "5GY5g8w1x1NZYkehip6nSG3FHdBgvhGnUJVNoK9zVGKs",
+      "pubkey": "7pLYRYibjFHtxSxMugqtJuWB1cAEsLsUfTcrZws3dRBn",
       "shareInBp": 3333,
       "claimed": false
     },
     {
-      "pubkey": "5GY5g8w1x1NZYkehip6nSG3FHdBgvhGnUJVNoK9zVGKs",
+      "pubkey": "7pLYRYibjFHtxSxMugqtJuWB1cAEsLsUfTcrZws3dRBn",
       "shareInBp": 3334,
       "claimed": false
     }
