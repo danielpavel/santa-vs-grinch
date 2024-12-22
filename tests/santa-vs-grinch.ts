@@ -326,7 +326,6 @@ describe("santa-vs-grinch", () => {
         (accounts.user1 as Keypair).secretKey
       )
     );
-    let userAta = fromWeb3JsPublicKey(accounts.user1Ata);
     let gameStateAccount = await fetchConfig(umi, accounts.configState);
 
     const buybackPercentageBp = gameStateAccount.buybackPercentageBp;
@@ -369,65 +368,66 @@ describe("santa-vs-grinch", () => {
     assert.equal(vaultBalance, depositAmount);
   });
 
-  // it("Bet on Grinch", async () => {
-  //   const [user2UserStatePubkey, _bump] = web3.PublicKey.findProgramAddressSync(
-  //     [
-  //       Buffer.from("user"),
-  //       (accounts.user2 as Keypair).publicKey.toBuffer(),
-  //       Buffer.from("grinch"),
-  //     ],
-  //     program.programId
-  //   );
-  //
-  //   const feeVaultBalanceOld = await provider.connection.getBalance(
-  //     accounts.feesVault
-  //   );
-  //
-  //   let config = await program.account.config.fetch(
-  //     accounts.configState as PublicKey
-  //   );
-  //
-  //   const adminFeePercentageBp = config.adminFeePercentageBp;
-  //   const betTag = "grinch";
-  //   const amount = new anchor.BN(5 * LAMPORTS_PER_SOL);
-  //   const fee = calculateFee(amount, adminFeePercentageBp);
-  //   const depositAmount = amount.sub(fee);
-  //
-  //   const tx = await program.methods
-  //     .bet(amount, betTag)
-  //     .accounts({
-  //       user: (accounts.user2 as Keypair).publicKey,
-  //       state: accounts.configState,
-  //       vault: accounts.vault,
-  //       feesVault: accounts.feesVault,
-  //       userBet: user2UserStatePubkey,
-  //     })
-  //     .signers(accounts.user2)
-  //     .rpc();
-  //
-  //   const feeVaultBalance = await provider.connection.getBalance(
-  //     accounts.feesVault
-  //   );
-  //   assert.equal(feeVaultBalance, feeVaultBalanceOld + fee.toNumber());
-  //
-  //   config = await program.account.config.fetch(
-  //     accounts.configState as PublicKey
-  //   );
-  //   assert.equal(config.grinchPot.toNumber(), depositAmount.toNumber());
-  //
-  //   const user2UserStateAccount = await program.account.userBet.fetch(
-  //     user2UserStatePubkey
-  //   );
-  //
-  //   assert.equal(
-  //     user2UserStateAccount.amount.toNumber(),
-  //     depositAmount.toNumber()
-  //   );
-  //   assert.deepEqual(
-  //     user2UserStateAccount.owner,
-  //     (accounts.user2 as Keypair).publicKey
-  //   );
-  // });
+  it("Bet on Grinch", async () => {
+    let userPubkey = fromWeb3JsPublicKey((accounts.user2 as Keypair).publicKey);
+    const userSigner = createSignerFromKeypair(
+      umi,
+      umi.eddsa.createKeypairFromSecretKey(
+        (accounts.user2 as Keypair).secretKey
+      )
+    );
+    let gameStateAccount = await fetchConfig(umi, accounts.configState);
+
+    const buybackPercentageBp = gameStateAccount.buybackPercentageBp;
+    const betTag = "grinch";
+    const amount = BigInt(2 * LAMPORTS_PER_SOL);
+    const amountToBuyback =
+      (amount * BigInt(buybackPercentageBp)) / BigInt(10_000);
+    const depositAmount = amount - amountToBuyback;
+
+    const [userBetPubkey, _] = umi.eddsa.findPda(programId, [
+      string({ size: "variable" }).serialize("user"),
+      publicKeySerializer().serialize(userPubkey),
+      string({ size: "variable" }).serialize(betTag),
+    ]);
+
+    const buybackBalanceOld = await provider.connection.getBalance(
+      toWeb3JsPublicKey(accounts.buybackPubkey)
+    );
+    const vaultBalanceOld = await provider.connection.getBalance(
+      toWeb3JsPublicKey(accounts.vault)
+    );
+
+    await bet(umi, {
+      user: userSigner,
+      buybackWallet: accounts.buybackPubkey,
+      state: accounts.configState as PublicKey,
+      userBet: userBetPubkey,
+      amount,
+      betTag,
+    }).sendAndConfirm(umi, options);
+
+    gameStateAccount = await fetchConfig(umi, accounts.configState);
+    assert.equal(gameStateAccount.grinchPot, depositAmount);
+
+    const betAccount = await fetchUserBet(umi, userBetPubkey);
+    assert.equal(betAccount.amount, depositAmount);
+    assert.deepEqual(betAccount.owner, userPubkey);
+
+    const buybackBalanceNew = await provider.connection.getBalance(
+      toWeb3JsPublicKey(accounts.buybackPubkey)
+    );
+    assert.equal(
+      buybackBalanceNew,
+      buybackBalanceOld + Number(amountToBuyback)
+    );
+
+    const vaultBalance = await provider.connection.getBalance(
+      toWeb3JsPublicKey(accounts.vault)
+    );
+    assert.equal(vaultBalance, vaultBalanceOld + Number(depositAmount));
+  });
+
   //
   // it("Bet on Invalid Side", async () => {
   //   const [user2UserStatePubkey, _bump] = web3.PublicKey.findProgramAddressSync(
