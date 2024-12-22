@@ -1,20 +1,25 @@
 {
-  "admin_fee_percentage_bp": "100",
-  "max_num_creators": 3,
+  "maxNumCreators": 3,
+  "adminFeePercentageBp": 100,
+  "betBurnPercentageBp": 2500,
+  "mysteryBoxBurnPercentageBp": 10000,
+  "mysteryBoxPrice": 1000000000,
+  "buybackWallet": "5GY5g8w1x1NZYkehip6nSG3FHdBgvhGnUJVNoK9zVGKs",
+  "buybackPercentageBp": 2500,
   "creators": [
     {
       "pubkey": "5GY5g8w1x1NZYkehip6nSG3FHdBgvhGnUJVNoK9zVGKs",
-      "share_in_bp": 3333,
+      "shareInBp": 3333,
       "claimed": false
     },
     {
       "pubkey": "5GY5g8w1x1NZYkehip6nSG3FHdBgvhGnUJVNoK9zVGKs",
-      "share_in_bp": 3333,
+      "shareInBp": 3333,
       "claimed": false
     },
     {
       "pubkey": "5GY5g8w1x1NZYkehip6nSG3FHdBgvhGnUJVNoK9zVGKs",
-      "share_in_bp": 3334,
+      "shareInBp": 3334,
       "claimed": false
     }
   ]

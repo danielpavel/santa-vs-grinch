@@ -1,4 +1,5 @@
 import { Command } from "commander";
+import { web3, BN } from "@coral-xyz/anchor";
 import { clusterApiUrl, Connection, PublicKey } from "@solana/web3.js";
 import { createUmi } from "@metaplex-foundation/umi-bundle-defaults";
 import path from "path";
@@ -23,23 +24,24 @@ import {
   getSantaVsGrinchProgram,
   getSantaVsGrinchProgramId,
   initialize,
+  InitializeArgs,
+  Creator,
 } from "../clients/generated/umi/src";
-
-interface CreatorConfig {
-  pubkey: string;
-  share_in_bp: number;
-  claimed: boolean;
-}
-
-interface InitializeConfig {
-  admin_fee_percentage_bp: number;
-  max_num_creators: number;
-  creators: CreatorConfig[];
-}
+import { fromWeb3JsPublicKey } from "@metaplex-foundation/umi-web3js-adapters";
+import {
+  getAssociatedTokenAddressSync,
+  TOKEN_PROGRAM_ID,
+} from "@solana/spl-token";
 
 const options: TransactionBuilderSendAndConfirmOptions = {
   confirm: { commitment: "confirmed" },
 };
+
+function generateRandomU64Seed(): BigInt {
+  const randomBytes = web3.Keypair.generate().secretKey.slice(0, 8);
+
+  return BigInt(new BN(randomBytes).toString());
+}
 
 // Initialize Commander
 const program = new Command();
@@ -257,64 +259,71 @@ program
   .command("initialize")
   .description("Initialize the game")
   .requiredOption("-a, --admin <pubkey>", "Admin wallet")
-  .requiredOption("-c, --creators <json>", "Creators configuration JSON")
-  .requiredOption("-m, --max-creators <number>", "Maximum number of creators")
-  .requiredOption("-f, --fee <number>", "Admin fee percentage in basis points")
+  .requiredOption("-c, --config <json>", "Initialize Configuration JSON")
+  .requiredOption("-m, --mint <pubkey>", "Mint Pubkey")
   .action(async (options) => {
     try {
       const { umi, programId } = await initializePrereqs();
 
       // Read and parse the config file
       const configFile = fs.readFileSync(options.config, "utf-8");
-      const config: InitializeConfig = JSON.parse(configFile);
+      const args: InitializeArgs = JSON.parse(configFile);
 
       // Validate the config
-      if (!config.creators || !Array.isArray(config.creators)) {
-        throw new Error("Invalid config: creators array is required");
-      }
+      // if (!config.creators || !Array.isArray(config.creators)) {
+      //   throw new Error("Invalid config: creators array is required");
+      // }
 
-      if (config.creators.length > config.max_num_creators) {
-        throw new Error(
-          `Number of creators (${config.creators.length}) exceeds max_num_creators (${config.max_num_creators})`
-        );
-      }
+      // if (config.creators.length > config.max_num_creators) {
+      //   throw new Error(
+      //     `Number of creators (${config.creators.length}) exceeds max_num_creators (${config.max_num_creators})`
+      //   );
+      // }
 
       // Validate total shares
-      const totalShares = config.creators.reduce(
-        (sum, creator) => sum + creator.share_in_bp,
-        0
-      );
-      if (totalShares !== 10000) {
-        throw new Error(
-          `Total creator shares must equal 10000 basis points (100%). Current total: ${totalShares}`
-        );
-      }
+      // const totalShares = config.creators.reduce(
+      //   (sum, creator) => sum + creator.share_in_bp,
+      //   0
+      // );
+      // if (totalShares !== 10000) {
+      //   throw new Error(
+      //     `Total creator shares must equal 10000 basis points (100%). Current total: ${totalShares}`
+      //   );
+      // }
 
-      config.creators.map((creator) => {
-        if (creator.claimed) {
-          throw new Error("All creators must have claimed: false");
-        }
-      });
+      // config.creators.map((creator) => {
+      //   if (creator.claimed) {
+      //     throw new Error("All creators must have claimed: false");
+      //   }
+      // });
 
       // Convert creator pubkeys to PublicKey objects
-      const creators = config.creators.map((creator) => ({
+      const creators = args.creators.map((creator: Creator) => ({
         pubkey: publicKey(creator.pubkey),
-        shareInBp: creator.share_in_bp,
+        shareInBp: creator.shareInBp,
         claimed: creator.claimed,
       }));
 
       console.log("Initializing game with config:");
-      console.log("Admin:", options.admin);
-      console.log("Admin Fee:", config.admin_fee_percentage_bp, "basis points");
-      console.log("Max Creators:", config.max_num_creators);
-      console.log("Creators:", creators);
+      console.log(args);
 
-      await initialize(umi, {
-        admin: umi.payer,
-        creators,
-        maxNumCreators: creators.length,
-        adminFeePercentageBp: parseInt(options.fee),
-      }).sendAndConfirm(umi, options);
+      let mint = publicKey(options.mint);
+      const seed = generateRandomU64Seed();
+
+      // await initialize(umi, {
+      //   admin: umi.payer,
+      //   mint: mint,
+      //   tokenProgram: fromWeb3JsPublicKey(TOKEN_PROGRAM_ID),
+      //   args,
+      //   seed: seed.valueOf(),
+      // }).sendAndConfirm(umi, options);
+
+      // await initialize(umi, {
+      //   admin: umi.payer,
+      //   creators,
+      //   maxNumCreators: creators.length,
+      //   adminFeePercentageBp: parseInt(options.fee),
+      // }).sendAndConfirm(umi, options);
     } catch (error) {
       console.error("Error:", error);
     }

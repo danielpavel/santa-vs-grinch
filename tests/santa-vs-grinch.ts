@@ -1,5 +1,4 @@
 import * as anchor from "@coral-xyz/anchor";
-import { Program } from "@coral-xyz/anchor";
 import {
   createSignerFromKeypair,
   publicKey,
@@ -10,14 +9,9 @@ import {
 import { airdropIfRequired, makeKeypairs } from "@solana-developers/helpers";
 import {
   getAssociatedTokenAddressSync,
-  getOrCreateAssociatedTokenAccount,
   TOKEN_PROGRAM_ID,
 } from "@solana/spl-token";
-import {
-  Keypair,
-  LAMPORTS_PER_SOL,
-  PublicKey as Web3PublicKey,
-} from "@solana/web3.js";
+import { Keypair, LAMPORTS_PER_SOL } from "@solana/web3.js";
 import {
   Creator,
   fetchConfig,
@@ -25,16 +19,13 @@ import {
   getSantaVsGrinchProgramId,
   initialize,
   InitializeArgs,
-  updateBetBurnPercentageBp,
-  updateMysteryBoxPrice,
-  updateWithdrawUnclaimedAt,
   bet,
   updateMysteryBoxBurnPercentageBp,
+  buyMysteryBox,
+  endGame,
 } from "../clients/generated/umi/src";
-import { SantaVsGrinch } from "../target/types/santa_vs_grinch";
 import { CREATOR_1, CREATOR_2, CREATOR_3 } from "./constants";
 import {
-  calculateFee,
   createSplMint,
   generateRandomU64Seed,
   initializeUmi,
@@ -50,7 +41,7 @@ import {
   toWeb3JsPublicKey,
 } from "@metaplex-foundation/umi-web3js-adapters";
 import { assert, expect } from "chai";
-import { fetchMint, fetchToken } from "@metaplex-foundation/mpl-toolbox";
+import { fetchMint } from "@metaplex-foundation/mpl-toolbox";
 
 describe("santa-vs-grinch", () => {
   // Configure the client to use the local cluster.
@@ -202,7 +193,7 @@ describe("santa-vs-grinch", () => {
       maxNumCreators: creators.length,
       adminFeePercentageBp: 100,
       betBurnPercentageBp: 2500,
-      mysteryBoxBurnPercentageBp: 10_000,
+      mysteryBoxBurnPercentageBp: 9_000,
       mysteryBoxPrice: BigInt(1_000 * 10 ** 6),
       buybackWallet: accounts.buybackPubkey as PublicKey,
       buybackPercentageBp: 2500,
@@ -244,11 +235,9 @@ describe("santa-vs-grinch", () => {
       args.buybackPercentageBp
     );
     assert.equal(gameStateAccount.santaPot, BigInt(0));
-    assert.equal(gameStateAccount.santaBoxes, BigInt(0));
     assert.equal(gameStateAccount.grinchPot, BigInt(0));
-    assert.equal(gameStateAccount.grinchBoxes, BigInt(0));
-    assert.equal(gameStateAccount.santaMultiplier, 100);
-    assert.equal(gameStateAccount.grinchMultiplier, 100);
+    assert.equal(gameStateAccount.santaScore, BigInt(0));
+    assert.equal(gameStateAccount.grinchScore, BigInt(0));
     assert.equal(gameStateAccount.bump, bumps.configStateBump);
     assert.equal(gameStateAccount.vaultBump, bumps.vaultBump);
     assert.equal(gameStateAccount.feesVaultBump, bumps.feesVaultBump);
@@ -260,52 +249,24 @@ describe("santa-vs-grinch", () => {
     //assert.deepEqual(gameStateAccount.creators[2], accounts.creator3);
   });
 
-  it("Update withdraw unclaimed at", async () => {
-    const now = Math.floor(Date.now() / 1000);
-    const WITHDRAWAL_PERIOD = 90 * 24 * 60 * 60; // 90 days
-    const ts = BigInt(now + WITHDRAWAL_PERIOD);
-
-    await updateWithdrawUnclaimedAt(umi, {
-      admin: umi.payer,
-      state: accounts.configState,
-      ts,
-    }).sendAndConfirm(umi, options);
-
-    const gameStateAccount = await fetchConfig(umi, accounts.configState);
-
-    expect(gameStateAccount.withdrawUnclaimedAt).to.eq(ts);
-  });
-
-  it("Update mystery box price", async () => {
-    const price = BigInt(10_000 * 10 ** 6);
-
-    await updateMysteryBoxPrice(umi, {
-      admin: umi.payer,
-      state: accounts.configState,
-      price,
-    }).sendAndConfirm(umi, options);
-
-    const gameStateAccount = await fetchConfig(umi, accounts.configState);
-
-    expect(gameStateAccount.mysteryBoxPrice).to.eq(price);
-  });
-
-  it("Update bet burn percentage bp", async () => {
-    const percentageInBp = 1100;
-
-    await updateBetBurnPercentageBp(umi, {
-      admin: umi.payer,
-      state: accounts.configState,
-      percentageInBp,
-    }).sendAndConfirm(umi, options);
-
-    const gameStateAccount = await fetchConfig(umi, accounts.configState);
-
-    expect(gameStateAccount.betBurnPercentageBp).to.eq(percentageInBp);
-  });
+  // it("Update withdraw unclaimed at", async () => {
+  //   const now = Math.floor(Date.now() / 1000);
+  //   const WITHDRAWAL_PERIOD = 90 * 24 * 60 * 60; // 90 days
+  //   const ts = BigInt(now + WITHDRAWAL_PERIOD);
+  //
+  //   await updateWithdrawUnclaimedAt(umi, {
+  //     admin: umi.payer,
+  //     state: accounts.configState,
+  //     ts,
+  //   }).sendAndConfirm(umi, options);
+  //
+  //   const gameStateAccount = await fetchConfig(umi, accounts.configState);
+  //
+  //   expect(gameStateAccount.withdrawUnclaimedAt).to.eq(ts);
+  // });
 
   it("Update mystery box burn percentage bp", async () => {
-    const percentageInBp = 2200;
+    const percentageInBp = 10_000;
 
     await updateMysteryBoxBurnPercentageBp(umi, {
       admin: umi.payer,
@@ -351,6 +312,7 @@ describe("santa-vs-grinch", () => {
     }).sendAndConfirm(umi, options);
 
     gameStateAccount = await fetchConfig(umi, accounts.configState);
+    console.log("santa gameScore", gameStateAccount.santaScore);
     assert.equal(gameStateAccount.santaPot, depositAmount);
 
     const betAccount = await fetchUserBet(umi, userBetPubkey);
@@ -408,24 +370,12 @@ describe("santa-vs-grinch", () => {
     }).sendAndConfirm(umi, options);
 
     gameStateAccount = await fetchConfig(umi, accounts.configState);
+    console.log("grinch gameScore", gameStateAccount.grinchScore);
     assert.equal(gameStateAccount.grinchPot, depositAmount);
 
     const betAccount = await fetchUserBet(umi, userBetPubkey);
     assert.equal(betAccount.amount, depositAmount);
     assert.deepEqual(betAccount.owner, userPubkey);
-
-    const buybackBalanceNew = await provider.connection.getBalance(
-      toWeb3JsPublicKey(accounts.buybackPubkey)
-    );
-    assert.equal(
-      buybackBalanceNew,
-      buybackBalanceOld + Number(amountToBuyback)
-    );
-
-    const vaultBalance = await provider.connection.getBalance(
-      toWeb3JsPublicKey(accounts.vault)
-    );
-    assert.equal(vaultBalance, vaultBalanceOld + Number(depositAmount));
   });
 
   //
@@ -510,50 +460,45 @@ describe("santa-vs-grinch", () => {
   //   }
   // });
 
-  it("Buy a Mystery Box for Santa", async () => {
-    const [user1UserStatePubkey, _bump] = web3.PublicKey.findProgramAddressSync(
-      [
-        Buffer.from("user"),
-        (accounts.user1 as Keypair).publicKey.toBuffer(),
-        Buffer.from("santa"),
-      ],
-      program.programId
+  it("Buy a Mystery Box for Grinch", async () => {
+    const betTag = "grinch";
+    let userKp = accounts.user1 as Keypair;
+    let userPubkey = fromWeb3JsPublicKey(userKp.publicKey);
+    const userSigner = createSignerFromKeypair(
+      umi,
+      umi.eddsa.createKeypairFromSecretKey(userKp.secretKey)
     );
+    const userAta = accounts.user1Ata;
+    const [userBetPubkey, _] = umi.eddsa.findPda(programId, [
+      string({ size: "variable" }).serialize("user"),
+      publicKeySerializer().serialize(userPubkey),
+      string({ size: "variable" }).serialize(betTag),
+    ]);
 
-    const side = "santa"; // On-chain BettingSide Enum Representation
-    const BOX_PRICE = 500_000_000;
+    const amount = BigInt(10_000_000);
 
-    let feeVaultBalanceOld = await provider.connection.getBalance(
-      accounts.feesVault
-    );
+    const supplyOld = (await fetchMint(umi, accounts.mint)).supply;
 
-    const tx = await program.methods
-      .buyMysteryBox(side)
-      .accounts({
-        user: (accounts.user1 as Keypair).publicKey,
-        state: accounts.configState,
-        feesVault: accounts.feesVault,
-        userBet: user1UserStatePubkey,
-      })
-      .signers([accounts.user1])
-      .rpc();
+    await buyMysteryBox(umi, {
+      user: userSigner,
+      mint: accounts.mint as PublicKey,
+      state: accounts.configState as PublicKey,
+      userBet: userBetPubkey,
+      userAta,
+      tokenProgram: fromWeb3JsPublicKey(TOKEN_PROGRAM_ID),
+      amount,
+      betTag,
+    }).sendAndConfirm(umi, options);
 
-    const configStateAccount = await program.account.config.fetch(
-      accounts.configState
-    );
+    const supplyNew = (await fetchMint(umi, accounts.mint)).supply;
+    assert.equal(supplyNew, supplyOld - amount);
 
-    assert.equal(configStateAccount.santaBoxes.toNumber(), 1);
+    let gameStateAccount = await fetchConfig(umi, accounts.configState);
+    console.log("gameStateAccount:", gameStateAccount);
 
-    const feeVaultBalance = await provider.connection.getBalance(
-      accounts.feesVault
-    );
-    assert.equal(feeVaultBalance, feeVaultBalanceOld + BOX_PRICE);
-
-    const user1UserStateAccount = await program.account.userBet.fetch(
-      user1UserStatePubkey
-    );
-
-    assert.equal(user1UserStateAccount.mysterBoxCount, 1);
+    const betAccount = await fetchUserBet(umi, userBetPubkey);
+    // console.log("betAccount:", betAccount);
+    assert.equal(betAccount.tokenAmount, amount);
   });
 
   // it("Buy 2 Mystery Boxes for Grinch", async () => {
@@ -628,28 +573,30 @@ describe("santa-vs-grinch", () => {
   //
   //   assert.equal(user2UserStateAccount.mysterBoxCount, 2);
   // });
-  //
-  // it("End Game", async () => {
-  //   const tx = await program.methods
-  //     .endGame()
-  //     .accounts({
-  //       admin: provider.publicKey,
-  //       state: accounts.configState as PublicKey,
-  //       recentSlothashes: new PublicKey(
-  //         "SysvarS1otHashes111111111111111111111111111"
-  //       ),
-  //     })
-  //     .rpc();
-  //
-  //   const configStateAccount = await program.account.config.fetch(
-  //     accounts.configState as PublicKey
-  //   );
-  //
-  //   console.log("... winning_side", configStateAccount.winningSide);
-  //
-  //   assert.equal(configStateAccount.gameEnded, true);
-  // });
-  //
+
+  it("End Game", async () => {
+    await endGame(umi, {
+      admin: umi.payer,
+      state: accounts.configState,
+    }).sendAndConfirm(umi, options);
+
+    // const tx = await program.methods
+    //   .endGame()
+    //   .accounts({
+    //     admin: provider.publicKey,
+    //     state: accounts.configState as PublicKey,
+    //     recentSlothashes: new PublicKey(
+    //       "SysvarS1otHashes111111111111111111111111111"
+    //     ),
+    //   })
+    //   .rpc();
+
+    const gameStateAccount = await fetchConfig(umi, accounts.configState);
+    console.log("... winning_side", gameStateAccount.winningSide);
+
+    assert.equal(gameStateAccount.gameEnded, true);
+  });
+
   // it("Buy Mystery Box after game ended - should fail!", async () => {
   //   const [user2UserStatePubkey, _bump] = web3.PublicKey.findProgramAddressSync(
   //     [

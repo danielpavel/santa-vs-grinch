@@ -16,11 +16,12 @@ use crate::{
 use crate::{state::Config, utils::assert_game_is_active};
 
 #[derive(Accounts)]
-#[instruction(bet_tag: String)]
+#[instruction(_amount: u64, bet_tag: String)]
 pub struct MysteryBox<'info> {
     #[account(mut)]
     user: Signer<'info>,
 
+    #[account(mut)]
     mint: InterfaceAccount<'info, Mint>,
 
     #[account(
@@ -29,7 +30,7 @@ pub struct MysteryBox<'info> {
         seeds = [b"state", state.admin.key().as_ref(), state.seed.to_le_bytes().as_ref(), state.mint.key().as_ref()],
         bump = state.bump
      )]
-    pub state: Account<'info, Config>,
+    pub state: Box<Account<'info, Config>>,
 
     #[account(
         init_if_needed,
@@ -42,7 +43,7 @@ pub struct MysteryBox<'info> {
 
     #[account(
         mut,
-        associated_token::mint = state.mint,
+        associated_token::mint = mint,
         associated_token::authority = user,
         associated_token::token_program = token_program
     )]
@@ -71,7 +72,9 @@ impl<'info> MysteryBox<'info> {
         let amount_to_burn =
             calculate_percentage_amount(amount, self.state.mystery_box_burn_percentage_bp);
 
-        self.burn_to_hell(amount)?;
+        msg!("a_t_b {:?}", amount);
+
+        self.burn_to_hell(amount_to_burn)?;
 
         let rand = generate_random_seed(&self.recent_slothashes, true)?;
         let mul = calculate_perk_multiplier(rand, amount, self.mint.decimals);
@@ -81,6 +84,8 @@ impl<'info> MysteryBox<'info> {
             .ok_or(ProgramError::ArithmeticOverflow)?
             .checked_div(100)
             .ok_or(ProgramError::ArithmeticOverflow)?;
+
+        msg!("rand {:?} | mul {:?} | sc: {:?}", rand, mul, score);
 
         match bet_tag.as_str() {
             SANTA_BET_TAG => {
@@ -104,15 +109,16 @@ impl<'info> MysteryBox<'info> {
         user_bet.owner = self.user.key();
         user_bet.bump = user_bet_bump;
         user_bet.claimed = false;
-        // user_bet.myster_box_count = user_bet
-        //     .myster_box_count
-        //     .checked_add(1)
-        //     .ok_or(ProgramError::ArithmeticOverflow)?;
 
+        self.user_bet.token_amount = self
+            .user_bet
+            .token_amount
+            .checked_add(amount)
+            .ok_or(ProgramError::ArithmeticOverflow)?;
         self.state.total_burned = self
             .state
             .total_burned
-            .checked_add(amount_to_burn)
+            .checked_add(amount)
             .ok_or(ProgramError::ArithmeticOverflow)?;
 
         Ok(())

@@ -123,7 +123,7 @@ export async function createSplMint(umi: Umi, options) {
       decimals: some(6),
     }).sendAndConfirm(umi, options);
 
-    return mint.publicKey;
+    return publicKey(mint.publicKey);
   } catch (error) {
     console.error("Error creating mint:", error);
     throw error;

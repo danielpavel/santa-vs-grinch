@@ -16,7 +16,7 @@ pub struct EndGame<'info> {
 
     #[account(
         mut,
-        seeds = [b"state", state.admin.key().as_ref()],
+        seeds = [b"state", state.admin.key().as_ref(), state.seed.to_le_bytes().as_ref(), state.mint.key().as_ref()],
         bump = state.bump
      )]
     pub state: Account<'info, Config>,

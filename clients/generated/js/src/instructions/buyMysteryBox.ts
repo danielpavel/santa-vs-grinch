@@ -84,7 +84,7 @@ export type BuyMysteryBoxInstruction<
         ? WritableSignerAccount<TAccountUser> & IAccountSignerMeta<TAccountUser>
         : TAccountUser,
       TAccountMint extends string
-        ? ReadonlyAccount<TAccountMint>
+        ? WritableAccount<TAccountMint>
         : TAccountMint,
       TAccountState extends string
         ? WritableAccount<TAccountState>
@@ -166,7 +166,7 @@ export type BuyMysteryBoxAsyncInput<
   mint: Address<TAccountMint>;
   state: Address<TAccountState>;
   userBet?: Address<TAccountUserBet>;
-  userAta: Address<TAccountUserAta>;
+  userAta?: Address<TAccountUserAta>;
   tokenProgram: Address<TAccountTokenProgram>;
   associatedTokenProgram?: Address<TAccountAssociatedTokenProgram>;
   recentSlothashes?: Address<TAccountRecentSlothashes>;
@@ -220,7 +220,7 @@ export async function getBuyMysteryBoxInstructionAsync<
   // Original accounts.
   const originalAccounts = {
     user: { value: input.user ?? null, isWritable: true },
-    mint: { value: input.mint ?? null, isWritable: false },
+    mint: { value: input.mint ?? null, isWritable: true },
     state: { value: input.state ?? null, isWritable: true },
     userBet: { value: input.userBet ?? null, isWritable: true },
     userAta: { value: input.userAta ?? null, isWritable: true },
@@ -253,6 +253,16 @@ export async function getBuyMysteryBoxInstructionAsync<
         addEncoderSizePrefix(getUtf8Encoder(), getU32Encoder()).encode(
           expectSome(args.betTag)
         ),
+      ],
+    });
+  }
+  if (!accounts.userAta.value) {
+    accounts.userAta.value = await getProgramDerivedAddress({
+      programAddress,
+      seeds: [
+        getAddressEncoder().encode(expectAddress(accounts.user.value)),
+        getAddressEncoder().encode(expectAddress(accounts.tokenProgram.value)),
+        getAddressEncoder().encode(expectAddress(accounts.mint.value)),
       ],
     });
   }
@@ -369,7 +379,7 @@ export function getBuyMysteryBoxInstruction<
   // Original accounts.
   const originalAccounts = {
     user: { value: input.user ?? null, isWritable: true },
-    mint: { value: input.mint ?? null, isWritable: false },
+    mint: { value: input.mint ?? null, isWritable: true },
     state: { value: input.state ?? null, isWritable: true },
     userBet: { value: input.userBet ?? null, isWritable: true },
     userAta: { value: input.userAta ?? null, isWritable: true },

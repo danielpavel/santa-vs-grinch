@@ -50,7 +50,7 @@ impl BuyMysteryBox {
             self.user,
             true
           ));
-                                          accounts.push(solana_program::instruction::AccountMeta::new_readonly(
+                                          accounts.push(solana_program::instruction::AccountMeta::new(
             self.mint,
             false
           ));
@@ -127,7 +127,7 @@ pub struct BuyMysteryBoxInstructionArgs {
 /// ### Accounts:
 ///
                       ///   0. `[writable, signer]` user
-          ///   1. `[]` mint
+                ///   1. `[writable]` mint
                 ///   2. `[writable]` state
                 ///   3. `[writable]` user_bet
                 ///   4. `[writable]` user_ata
@@ -357,7 +357,7 @@ impl<'a, 'b> BuyMysteryBoxCpi<'a, 'b> {
             *self.user.key,
             true
           ));
-                                          accounts.push(solana_program::instruction::AccountMeta::new_readonly(
+                                          accounts.push(solana_program::instruction::AccountMeta::new(
             *self.mint.key,
             false
           ));
@@ -431,7 +431,7 @@ impl<'a, 'b> BuyMysteryBoxCpi<'a, 'b> {
 /// ### Accounts:
 ///
                       ///   0. `[writable, signer]` user
-          ///   1. `[]` mint
+                ///   1. `[writable]` mint
                 ///   2. `[writable]` state
                 ///   3. `[writable]` user_bet
                 ///   4. `[writable]` user_ata

@@ -86,6 +86,8 @@ impl<'info> Bet<'info> {
             .checked_mul(mul as u64)
             .ok_or(ProgramError::ArithmeticOverflow)?;
 
+        msg!("mul {:?} | sc: {:?}", mul, score);
+
         let user_bet = &mut self.user_bet;
         user_bet.owner = self.user.key();
         user_bet.bump = user_bet_bump;

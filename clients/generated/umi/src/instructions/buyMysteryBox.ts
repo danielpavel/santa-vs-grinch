@@ -37,7 +37,7 @@ export type BuyMysteryBoxInstructionAccounts = {
   mint: PublicKey | Pda;
   state: PublicKey | Pda;
   userBet?: PublicKey | Pda;
-  userAta: PublicKey | Pda;
+  userAta?: PublicKey | Pda;
   tokenProgram: PublicKey | Pda;
   associatedTokenProgram?: PublicKey | Pda;
   recentSlothashes?: PublicKey | Pda;
@@ -100,7 +100,7 @@ export function buyMysteryBox(
   // Accounts.
   const resolvedAccounts = {
     user: { index: 0, isWritable: true as boolean, value: input.user ?? null },
-    mint: { index: 1, isWritable: false as boolean, value: input.mint ?? null },
+    mint: { index: 1, isWritable: true as boolean, value: input.mint ?? null },
     state: {
       index: 2,
       isWritable: true as boolean,
@@ -149,6 +149,19 @@ export function buyMysteryBox(
         expectPublicKey(resolvedAccounts.user.value)
       ),
       string().serialize(expectSome(resolvedArgs.betTag)),
+    ]);
+  }
+  if (!resolvedAccounts.userAta.value) {
+    resolvedAccounts.userAta.value = context.eddsa.findPda(programId, [
+      publicKeySerializer().serialize(
+        expectPublicKey(resolvedAccounts.user.value)
+      ),
+      publicKeySerializer().serialize(
+        expectPublicKey(resolvedAccounts.tokenProgram.value)
+      ),
+      publicKeySerializer().serialize(
+        expectPublicKey(resolvedAccounts.mint.value)
+      ),
     ]);
   }
   if (!resolvedAccounts.associatedTokenProgram.value) {
