@@ -111,7 +111,7 @@ export function initialize(
     },
     vault: {
       index: 3,
-      isWritable: true as boolean,
+      isWritable: false as boolean,
       value: input.vault ?? null,
     },
     feesVault: {

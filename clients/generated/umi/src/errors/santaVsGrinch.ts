@@ -264,6 +264,19 @@ export class InvalidAmountToBurnError extends ProgramError {
 codeToErrorMap.set(0x1781, InvalidAmountToBurnError);
 nameToErrorMap.set('InvalidAmountToBurn', InvalidAmountToBurnError);
 
+/** InvalidBuybackwallet: Invalid buyback wallet */
+export class InvalidBuybackwalletError extends ProgramError {
+  override readonly name: string = 'InvalidBuybackwallet';
+
+  readonly code: number = 0x1782; // 6018
+
+  constructor(program: Program, cause?: Error) {
+    super('Invalid buyback wallet', program, cause);
+  }
+}
+codeToErrorMap.set(0x1782, InvalidBuybackwalletError);
+nameToErrorMap.set('InvalidBuybackwallet', InvalidBuybackwalletError);
+
 /**
  * Attempts to resolve a custom program error from the provided error code.
  * @category Errors

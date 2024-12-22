@@ -39,6 +39,7 @@ export type InitializeArgs = {
   mysteryBoxBurnPercentageBp: number;
   mysteryBoxPrice: bigint;
   buybackWallet: Address;
+  buybackPercentageBp: number;
   creators: Array<Creator>;
 };
 
@@ -49,6 +50,7 @@ export type InitializeArgsArgs = {
   mysteryBoxBurnPercentageBp: number;
   mysteryBoxPrice: number | bigint;
   buybackWallet: Address;
+  buybackPercentageBp: number;
   creators: Array<CreatorArgs>;
 };
 
@@ -60,6 +62,7 @@ export function getInitializeArgsEncoder(): Encoder<InitializeArgsArgs> {
     ['mysteryBoxBurnPercentageBp', getU16Encoder()],
     ['mysteryBoxPrice', getU64Encoder()],
     ['buybackWallet', getAddressEncoder()],
+    ['buybackPercentageBp', getU16Encoder()],
     ['creators', getArrayEncoder(getCreatorEncoder(), { size: 3 })],
   ]);
 }
@@ -72,6 +75,7 @@ export function getInitializeArgsDecoder(): Decoder<InitializeArgs> {
     ['mysteryBoxBurnPercentageBp', getU16Decoder()],
     ['mysteryBoxPrice', getU64Decoder()],
     ['buybackWallet', getAddressDecoder()],
+    ['buybackPercentageBp', getU16Decoder()],
     ['creators', getArrayDecoder(getCreatorDecoder(), { size: 3 })],
   ]);
 }

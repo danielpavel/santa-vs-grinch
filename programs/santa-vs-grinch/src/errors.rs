@@ -55,4 +55,7 @@ pub enum SantaVsGrinchErrorCode {
 
     #[msg("Amount to burn should be 100% of box price")]
     InvalidAmountToBurn,
+
+    #[msg("Invalid buyback wallet")]
+    InvalidBuybackwallet,
 }

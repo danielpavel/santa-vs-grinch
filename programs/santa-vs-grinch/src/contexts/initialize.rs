@@ -26,14 +26,10 @@ pub struct Initialize<'info> {
     state: Account<'info, Config>,
 
     #[account(
-        init,
-        payer = admin,
-        token::mint = mint,
-        token::authority = admin,
         seeds = [b"vault", state.key().as_ref(), b"santa-vs-grinch"],
         bump,
     )]
-    vault: InterfaceAccount<'info, TokenAccount>,
+    pub vault: SystemAccount<'info>,
 
     #[account(
         init,
@@ -56,8 +52,6 @@ impl<'info> Initialize<'info> {
         seed: u64,
         bumps: &InitializeBumps,
     ) -> Result<()> {
-        msg!("... {:?}", args);
-
         require!(
             args.admin_fee_percentage_bp <= 10_000,
             SantaVsGrinchErrorCode::InvalidPercentage
@@ -92,6 +86,7 @@ impl<'info> Initialize<'info> {
             buyback_wallet: args.buyback_wallet,
 
             admin_fee_percentage_bp: args.admin_fee_percentage_bp,
+            buyback_percentage_bp: args.buyback_percentage_bp,
             bet_burn_percentage_bp: args.bet_burn_percentage_bp,
             mystery_box_burn_percentage_bp: args.mystery_box_burn_percentage_bp,
 
@@ -101,6 +96,7 @@ impl<'info> Initialize<'info> {
             vault: self.vault.key(),
 
             total_burned: 0,
+            total_sent_to_buyback: 0,
 
             santa_pot: 0,
             grinch_pot: 0,

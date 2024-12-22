@@ -59,15 +59,10 @@ export function getBetDiscriminatorBytes() {
 export type BetInstruction<
   TProgram extends string = typeof SANTA_VS_GRINCH_PROGRAM_ADDRESS,
   TAccountUser extends string | IAccountMeta<string> = string,
-  TAccountMint extends string | IAccountMeta<string> = string,
+  TAccountBuybackWallet extends string | IAccountMeta<string> = string,
   TAccountState extends string | IAccountMeta<string> = string,
   TAccountVault extends string | IAccountMeta<string> = string,
   TAccountUserBet extends string | IAccountMeta<string> = string,
-  TAccountUserAta extends string | IAccountMeta<string> = string,
-  TAccountTokenProgram extends string | IAccountMeta<string> = string,
-  TAccountAssociatedTokenProgram extends
-    | string
-    | IAccountMeta<string> = 'ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL',
   TAccountSystemProgram extends
     | string
     | IAccountMeta<string> = '11111111111111111111111111111111',
@@ -79,9 +74,9 @@ export type BetInstruction<
       TAccountUser extends string
         ? WritableSignerAccount<TAccountUser> & IAccountSignerMeta<TAccountUser>
         : TAccountUser,
-      TAccountMint extends string
-        ? WritableAccount<TAccountMint>
-        : TAccountMint,
+      TAccountBuybackWallet extends string
+        ? WritableAccount<TAccountBuybackWallet>
+        : TAccountBuybackWallet,
       TAccountState extends string
         ? WritableAccount<TAccountState>
         : TAccountState,
@@ -91,15 +86,6 @@ export type BetInstruction<
       TAccountUserBet extends string
         ? WritableAccount<TAccountUserBet>
         : TAccountUserBet,
-      TAccountUserAta extends string
-        ? WritableAccount<TAccountUserAta>
-        : TAccountUserAta,
-      TAccountTokenProgram extends string
-        ? ReadonlyAccount<TAccountTokenProgram>
-        : TAccountTokenProgram,
-      TAccountAssociatedTokenProgram extends string
-        ? ReadonlyAccount<TAccountAssociatedTokenProgram>
-        : TAccountAssociatedTokenProgram,
       TAccountSystemProgram extends string
         ? ReadonlyAccount<TAccountSystemProgram>
         : TAccountSystemProgram,
@@ -149,23 +135,17 @@ export function getBetInstructionDataCodec(): Codec<
 
 export type BetAsyncInput<
   TAccountUser extends string = string,
-  TAccountMint extends string = string,
+  TAccountBuybackWallet extends string = string,
   TAccountState extends string = string,
   TAccountVault extends string = string,
   TAccountUserBet extends string = string,
-  TAccountUserAta extends string = string,
-  TAccountTokenProgram extends string = string,
-  TAccountAssociatedTokenProgram extends string = string,
   TAccountSystemProgram extends string = string,
 > = {
   user: TransactionSigner<TAccountUser>;
-  mint: Address<TAccountMint>;
+  buybackWallet: Address<TAccountBuybackWallet>;
   state: Address<TAccountState>;
   vault?: Address<TAccountVault>;
   userBet?: Address<TAccountUserBet>;
-  userAta: Address<TAccountUserAta>;
-  tokenProgram: Address<TAccountTokenProgram>;
-  associatedTokenProgram?: Address<TAccountAssociatedTokenProgram>;
   systemProgram?: Address<TAccountSystemProgram>;
   amount: BetInstructionDataArgs['amount'];
   betTag: BetInstructionDataArgs['betTag'];
@@ -173,25 +153,19 @@ export type BetAsyncInput<
 
 export async function getBetInstructionAsync<
   TAccountUser extends string,
-  TAccountMint extends string,
+  TAccountBuybackWallet extends string,
   TAccountState extends string,
   TAccountVault extends string,
   TAccountUserBet extends string,
-  TAccountUserAta extends string,
-  TAccountTokenProgram extends string,
-  TAccountAssociatedTokenProgram extends string,
   TAccountSystemProgram extends string,
   TProgramAddress extends Address = typeof SANTA_VS_GRINCH_PROGRAM_ADDRESS,
 >(
   input: BetAsyncInput<
     TAccountUser,
-    TAccountMint,
+    TAccountBuybackWallet,
     TAccountState,
     TAccountVault,
     TAccountUserBet,
-    TAccountUserAta,
-    TAccountTokenProgram,
-    TAccountAssociatedTokenProgram,
     TAccountSystemProgram
   >,
   config?: { programAddress?: TProgramAddress }
@@ -199,13 +173,10 @@ export async function getBetInstructionAsync<
   BetInstruction<
     TProgramAddress,
     TAccountUser,
-    TAccountMint,
+    TAccountBuybackWallet,
     TAccountState,
     TAccountVault,
     TAccountUserBet,
-    TAccountUserAta,
-    TAccountTokenProgram,
-    TAccountAssociatedTokenProgram,
     TAccountSystemProgram
   >
 > {
@@ -216,16 +187,10 @@ export async function getBetInstructionAsync<
   // Original accounts.
   const originalAccounts = {
     user: { value: input.user ?? null, isWritable: true },
-    mint: { value: input.mint ?? null, isWritable: true },
+    buybackWallet: { value: input.buybackWallet ?? null, isWritable: true },
     state: { value: input.state ?? null, isWritable: true },
     vault: { value: input.vault ?? null, isWritable: true },
     userBet: { value: input.userBet ?? null, isWritable: true },
-    userAta: { value: input.userAta ?? null, isWritable: true },
-    tokenProgram: { value: input.tokenProgram ?? null, isWritable: false },
-    associatedTokenProgram: {
-      value: input.associatedTokenProgram ?? null,
-      isWritable: false,
-    },
     systemProgram: { value: input.systemProgram ?? null, isWritable: false },
   };
   const accounts = originalAccounts as Record<
@@ -264,10 +229,6 @@ export async function getBetInstructionAsync<
       ],
     });
   }
-  if (!accounts.associatedTokenProgram.value) {
-    accounts.associatedTokenProgram.value =
-      'ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL' as Address<'ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL'>;
-  }
   if (!accounts.systemProgram.value) {
     accounts.systemProgram.value =
       '11111111111111111111111111111111' as Address<'11111111111111111111111111111111'>;
@@ -277,13 +238,10 @@ export async function getBetInstructionAsync<
   const instruction = {
     accounts: [
       getAccountMeta(accounts.user),
-      getAccountMeta(accounts.mint),
+      getAccountMeta(accounts.buybackWallet),
       getAccountMeta(accounts.state),
       getAccountMeta(accounts.vault),
       getAccountMeta(accounts.userBet),
-      getAccountMeta(accounts.userAta),
-      getAccountMeta(accounts.tokenProgram),
-      getAccountMeta(accounts.associatedTokenProgram),
       getAccountMeta(accounts.systemProgram),
     ],
     programAddress,
@@ -291,13 +249,10 @@ export async function getBetInstructionAsync<
   } as BetInstruction<
     TProgramAddress,
     TAccountUser,
-    TAccountMint,
+    TAccountBuybackWallet,
     TAccountState,
     TAccountVault,
     TAccountUserBet,
-    TAccountUserAta,
-    TAccountTokenProgram,
-    TAccountAssociatedTokenProgram,
     TAccountSystemProgram
   >;
 
@@ -306,23 +261,17 @@ export async function getBetInstructionAsync<
 
 export type BetInput<
   TAccountUser extends string = string,
-  TAccountMint extends string = string,
+  TAccountBuybackWallet extends string = string,
   TAccountState extends string = string,
   TAccountVault extends string = string,
   TAccountUserBet extends string = string,
-  TAccountUserAta extends string = string,
-  TAccountTokenProgram extends string = string,
-  TAccountAssociatedTokenProgram extends string = string,
   TAccountSystemProgram extends string = string,
 > = {
   user: TransactionSigner<TAccountUser>;
-  mint: Address<TAccountMint>;
+  buybackWallet: Address<TAccountBuybackWallet>;
   state: Address<TAccountState>;
   vault: Address<TAccountVault>;
   userBet: Address<TAccountUserBet>;
-  userAta: Address<TAccountUserAta>;
-  tokenProgram: Address<TAccountTokenProgram>;
-  associatedTokenProgram?: Address<TAccountAssociatedTokenProgram>;
   systemProgram?: Address<TAccountSystemProgram>;
   amount: BetInstructionDataArgs['amount'];
   betTag: BetInstructionDataArgs['betTag'];
@@ -330,38 +279,29 @@ export type BetInput<
 
 export function getBetInstruction<
   TAccountUser extends string,
-  TAccountMint extends string,
+  TAccountBuybackWallet extends string,
   TAccountState extends string,
   TAccountVault extends string,
   TAccountUserBet extends string,
-  TAccountUserAta extends string,
-  TAccountTokenProgram extends string,
-  TAccountAssociatedTokenProgram extends string,
   TAccountSystemProgram extends string,
   TProgramAddress extends Address = typeof SANTA_VS_GRINCH_PROGRAM_ADDRESS,
 >(
   input: BetInput<
     TAccountUser,
-    TAccountMint,
+    TAccountBuybackWallet,
     TAccountState,
     TAccountVault,
     TAccountUserBet,
-    TAccountUserAta,
-    TAccountTokenProgram,
-    TAccountAssociatedTokenProgram,
     TAccountSystemProgram
   >,
   config?: { programAddress?: TProgramAddress }
 ): BetInstruction<
   TProgramAddress,
   TAccountUser,
-  TAccountMint,
+  TAccountBuybackWallet,
   TAccountState,
   TAccountVault,
   TAccountUserBet,
-  TAccountUserAta,
-  TAccountTokenProgram,
-  TAccountAssociatedTokenProgram,
   TAccountSystemProgram
 > {
   // Program address.
@@ -371,16 +311,10 @@ export function getBetInstruction<
   // Original accounts.
   const originalAccounts = {
     user: { value: input.user ?? null, isWritable: true },
-    mint: { value: input.mint ?? null, isWritable: true },
+    buybackWallet: { value: input.buybackWallet ?? null, isWritable: true },
     state: { value: input.state ?? null, isWritable: true },
     vault: { value: input.vault ?? null, isWritable: true },
     userBet: { value: input.userBet ?? null, isWritable: true },
-    userAta: { value: input.userAta ?? null, isWritable: true },
-    tokenProgram: { value: input.tokenProgram ?? null, isWritable: false },
-    associatedTokenProgram: {
-      value: input.associatedTokenProgram ?? null,
-      isWritable: false,
-    },
     systemProgram: { value: input.systemProgram ?? null, isWritable: false },
   };
   const accounts = originalAccounts as Record<
@@ -392,10 +326,6 @@ export function getBetInstruction<
   const args = { ...input };
 
   // Resolve default values.
-  if (!accounts.associatedTokenProgram.value) {
-    accounts.associatedTokenProgram.value =
-      'ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL' as Address<'ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL'>;
-  }
   if (!accounts.systemProgram.value) {
     accounts.systemProgram.value =
       '11111111111111111111111111111111' as Address<'11111111111111111111111111111111'>;
@@ -405,13 +335,10 @@ export function getBetInstruction<
   const instruction = {
     accounts: [
       getAccountMeta(accounts.user),
-      getAccountMeta(accounts.mint),
+      getAccountMeta(accounts.buybackWallet),
       getAccountMeta(accounts.state),
       getAccountMeta(accounts.vault),
       getAccountMeta(accounts.userBet),
-      getAccountMeta(accounts.userAta),
-      getAccountMeta(accounts.tokenProgram),
-      getAccountMeta(accounts.associatedTokenProgram),
       getAccountMeta(accounts.systemProgram),
     ],
     programAddress,
@@ -419,13 +346,10 @@ export function getBetInstruction<
   } as BetInstruction<
     TProgramAddress,
     TAccountUser,
-    TAccountMint,
+    TAccountBuybackWallet,
     TAccountState,
     TAccountVault,
     TAccountUserBet,
-    TAccountUserAta,
-    TAccountTokenProgram,
-    TAccountAssociatedTokenProgram,
     TAccountSystemProgram
   >;
 
@@ -439,14 +363,11 @@ export type ParsedBetInstruction<
   programAddress: Address<TProgram>;
   accounts: {
     user: TAccountMetas[0];
-    mint: TAccountMetas[1];
+    buybackWallet: TAccountMetas[1];
     state: TAccountMetas[2];
     vault: TAccountMetas[3];
     userBet: TAccountMetas[4];
-    userAta: TAccountMetas[5];
-    tokenProgram: TAccountMetas[6];
-    associatedTokenProgram: TAccountMetas[7];
-    systemProgram: TAccountMetas[8];
+    systemProgram: TAccountMetas[5];
   };
   data: BetInstructionData;
 };
@@ -459,7 +380,7 @@ export function parseBetInstruction<
     IInstructionWithAccounts<TAccountMetas> &
     IInstructionWithData<Uint8Array>
 ): ParsedBetInstruction<TProgram, TAccountMetas> {
-  if (instruction.accounts.length < 9) {
+  if (instruction.accounts.length < 6) {
     // TODO: Coded error.
     throw new Error('Not enough accounts');
   }
@@ -473,13 +394,10 @@ export function parseBetInstruction<
     programAddress: instruction.programAddress,
     accounts: {
       user: getNextAccount(),
-      mint: getNextAccount(),
+      buybackWallet: getNextAccount(),
       state: getNextAccount(),
       vault: getNextAccount(),
       userBet: getNextAccount(),
-      userAta: getNextAccount(),
-      tokenProgram: getNextAccount(),
-      associatedTokenProgram: getNextAccount(),
       systemProgram: getNextAccount(),
     },
     data: getBetInstructionDataDecoder().decode(instruction.data),

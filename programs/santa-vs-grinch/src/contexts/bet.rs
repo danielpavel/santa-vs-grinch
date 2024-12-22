@@ -1,17 +1,18 @@
-use anchor_lang::prelude::*;
-
-use anchor_spl::{
-    associated_token::AssociatedToken,
-    token_interface::{
-        burn, transfer_checked, Burn, Mint, TokenAccount, TokenInterface, TransferChecked,
-    },
+use anchor_lang::{
+    prelude::*,
+    system_program::{transfer, Transfer},
 };
+
+// use anchor_spl::{
+//     associated_token::AssociatedToken,
+//     token_interface::{Mint, TokenInterface},
+// };
 
 use crate::{
     constants::{GRINCH_BET_TAG, SANTA_BET_TAG},
     errors::SantaVsGrinchErrorCode,
     state::{Config, UserBet},
-    utils::{assert_bet_tag, assert_game_is_active, calculate_amount_to_burn},
+    utils::{assert_bet_tag, assert_game_is_active, calculate_percentage_amount},
 };
 
 #[derive(Accounts)]
@@ -20,12 +21,19 @@ pub struct Bet<'info> {
     #[account(mut)]
     user: Signer<'info>,
 
-    #[account(mut)]
-    mint: InterfaceAccount<'info, Mint>,
-
     #[account(
         mut,
-        has_one = mint @ SantaVsGrinchErrorCode::InvalidMint,
+        address = state.buyback_wallet @ SantaVsGrinchErrorCode::InvalidBuybackwallet
+    )]
+    /// CHECK: we check it against `buyback_wallet` field state
+    buyback_wallet: UncheckedAccount<'info>,
+
+    // #[account(mut)]
+    // mint: InterfaceAccount<'info, Mint>,
+    #[account(
+        mut,
+        has_one = buyback_wallet @ SantaVsGrinchErrorCode::InvalidBuybackwallet,
+        // has_one = mint @ SantaVsGrinchErrorCode::InvalidMint,
         has_one = vault @ SantaVsGrinchErrorCode::InvalidVaultDepositAccount,
         seeds = [b"state", state.admin.key().as_ref(), state.seed.to_le_bytes().as_ref(), state.mint.key().as_ref()],
         bump = state.bump
@@ -34,10 +42,11 @@ pub struct Bet<'info> {
 
     #[account(
         mut,
+        address = state.vault @ SantaVsGrinchErrorCode::InvalidVaultDepositAccount,
         seeds = [b"vault", state.key().as_ref(), b"santa-vs-grinch"],
         bump = state.vault_bump
     )]
-    pub vault: InterfaceAccount<'info, TokenAccount>,
+    pub vault: SystemAccount<'info>,
 
     #[account(
         init_if_needed,
@@ -48,17 +57,6 @@ pub struct Bet<'info> {
     )]
     user_bet: Account<'info, UserBet>,
 
-    #[account(
-        mut,
-        associated_token::mint = state.mint,
-        associated_token::authority = user,
-        associated_token::token_program = token_program
-    )]
-    user_ata: InterfaceAccount<'info, TokenAccount>,
-
-    token_program: Interface<'info, TokenInterface>,
-    associated_token_program: Program<'info, AssociatedToken>,
-
     system_program: Program<'info, System>,
 }
 
@@ -67,13 +65,15 @@ impl<'info> Bet<'info> {
         assert_game_is_active(&self.state)?;
         assert_bet_tag(&bet_tag)?;
 
-        let amount_to_burn = calculate_amount_to_burn(amount, self.state.bet_burn_percentage_bp);
+        let amount_to_buyback =
+            calculate_percentage_amount(amount, self.state.buyback_percentage_bp);
         let amount_to_deposit = amount
-            .checked_sub(amount_to_burn)
+            .checked_sub(amount_to_buyback)
             .ok_or(ProgramError::ArithmeticOverflow)?;
 
         self.transfer_to_vault(amount_to_deposit)?;
-        self.burn_to_hell(amount_to_burn)?;
+        self.transfer_to_buyback(amount_to_buyback)?;
+        //self.burn_to_hell(amount_to_burn)?;
 
         let user_bet = &mut self.user_bet;
         user_bet.owner = self.user.key();
@@ -102,37 +102,46 @@ impl<'info> Bet<'info> {
             _ => {}
         }
 
-        self.state.total_burned = self
+        self.state.total_sent_to_buyback = self
             .state
-            .total_burned
-            .checked_add(amount_to_burn)
+            .total_sent_to_buyback
+            .checked_add(amount_to_buyback)
             .ok_or(ProgramError::ArithmeticOverflow)?;
 
         Ok(())
     }
 
     fn transfer_to_vault(&mut self, amount: u64) -> Result<()> {
-        let accounts = TransferChecked {
-            from: self.user_ata.to_account_info(),
+        let accounts = Transfer {
+            from: self.user.to_account_info(),
             to: self.vault.to_account_info(),
-            mint: self.mint.to_account_info(),
-            authority: self.user.to_account_info(),
         };
 
-        let cpi_context = CpiContext::new(self.token_program.to_account_info(), accounts);
+        let cpi_context = CpiContext::new(self.system_program.to_account_info(), accounts);
 
-        transfer_checked(cpi_context, amount, self.mint.decimals)
+        transfer(cpi_context, amount)
     }
 
-    fn burn_to_hell(&mut self, amount: u64) -> Result<()> {
-        let accounts = Burn {
-            mint: self.mint.to_account_info(),
-            from: self.user_ata.to_account_info(),
-            authority: self.user.to_account_info(),
+    fn transfer_to_buyback(&mut self, amount: u64) -> Result<()> {
+        let accounts = Transfer {
+            from: self.user.to_account_info(),
+            to: self.buyback_wallet.to_account_info(),
         };
 
-        let cpi_ctx = CpiContext::new(self.token_program.to_account_info(), accounts);
+        let cpi_context = CpiContext::new(self.system_program.to_account_info(), accounts);
 
-        burn(cpi_ctx, amount)
+        transfer(cpi_context, amount)
     }
+
+    // fn burn_to_hell(&mut self, amount: u64) -> Result<()> {
+    //     let accounts = Burn {
+    //         mint: self.mint.to_account_info(),
+    //         from: self.user_ata.to_account_info(),
+    //         authority: self.user.to_account_info(),
+    //     };
+    //
+    //     let cpi_ctx = CpiContext::new(self.token_program.to_account_info(), accounts);
+    //
+    //     burn(cpi_ctx, amount)
+    // }
 }

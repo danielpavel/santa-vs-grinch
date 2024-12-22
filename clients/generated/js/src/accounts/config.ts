@@ -77,12 +77,14 @@ export type Config = {
   mint: Address;
   buybackWallet: Address;
   adminFeePercentageBp: number;
+  buybackPercentageBp: number;
   betBurnPercentageBp: number;
   mysteryBoxBurnPercentageBp: number;
   mysteryBoxPrice: bigint;
   vault: Address;
   feesVault: Address;
   totalBurned: bigint;
+  totalSentToBuyback: bigint;
   santaPot: bigint;
   grinchPot: bigint;
   santaBoxes: bigint;
@@ -105,12 +107,14 @@ export type ConfigArgs = {
   mint: Address;
   buybackWallet: Address;
   adminFeePercentageBp: number;
+  buybackPercentageBp: number;
   betBurnPercentageBp: number;
   mysteryBoxBurnPercentageBp: number;
   mysteryBoxPrice: number | bigint;
   vault: Address;
   feesVault: Address;
   totalBurned: number | bigint;
+  totalSentToBuyback: number | bigint;
   santaPot: number | bigint;
   grinchPot: number | bigint;
   santaBoxes: number | bigint;
@@ -136,12 +140,14 @@ export function getConfigEncoder(): Encoder<ConfigArgs> {
       ['mint', getAddressEncoder()],
       ['buybackWallet', getAddressEncoder()],
       ['adminFeePercentageBp', getU16Encoder()],
+      ['buybackPercentageBp', getU16Encoder()],
       ['betBurnPercentageBp', getU16Encoder()],
       ['mysteryBoxBurnPercentageBp', getU16Encoder()],
       ['mysteryBoxPrice', getU64Encoder()],
       ['vault', getAddressEncoder()],
       ['feesVault', getAddressEncoder()],
       ['totalBurned', getU64Encoder()],
+      ['totalSentToBuyback', getU64Encoder()],
       ['santaPot', getU64Encoder()],
       ['grinchPot', getU64Encoder()],
       ['santaBoxes', getU64Encoder()],
@@ -169,12 +175,14 @@ export function getConfigDecoder(): Decoder<Config> {
     ['mint', getAddressDecoder()],
     ['buybackWallet', getAddressDecoder()],
     ['adminFeePercentageBp', getU16Decoder()],
+    ['buybackPercentageBp', getU16Decoder()],
     ['betBurnPercentageBp', getU16Decoder()],
     ['mysteryBoxBurnPercentageBp', getU16Decoder()],
     ['mysteryBoxPrice', getU64Decoder()],
     ['vault', getAddressDecoder()],
     ['feesVault', getAddressDecoder()],
     ['totalBurned', getU64Decoder()],
+    ['totalSentToBuyback', getU64Decoder()],
     ['santaPot', getU64Decoder()],
     ['grinchPot', getU64Decoder()],
     ['santaBoxes', getU64Decoder()],

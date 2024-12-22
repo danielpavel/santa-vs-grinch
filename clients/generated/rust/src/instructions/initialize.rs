@@ -53,7 +53,7 @@ impl Initialize {
             self.state,
             false
           ));
-                                          accounts.push(solana_program::instruction::AccountMeta::new(
+                                          accounts.push(solana_program::instruction::AccountMeta::new_readonly(
             self.vault,
             false
           ));
@@ -116,7 +116,7 @@ pub struct InitializeInstructionArgs {
                       ///   0. `[writable, signer]` admin
           ///   1. `[]` mint
                 ///   2. `[writable]` state
-                ///   3. `[writable]` vault
+          ///   3. `[]` vault
                 ///   4. `[writable]` fees_vault
           ///   5. `[]` token_program
                 ///   6. `[optional]` system_program (default to `11111111111111111111111111111111`)
@@ -320,7 +320,7 @@ impl<'a, 'b> InitializeCpi<'a, 'b> {
             *self.state.key,
             false
           ));
-                                          accounts.push(solana_program::instruction::AccountMeta::new(
+                                          accounts.push(solana_program::instruction::AccountMeta::new_readonly(
             *self.vault.key,
             false
           ));
@@ -378,7 +378,7 @@ impl<'a, 'b> InitializeCpi<'a, 'b> {
                       ///   0. `[writable, signer]` admin
           ///   1. `[]` mint
                 ///   2. `[writable]` state
-                ///   3. `[writable]` vault
+          ///   3. `[]` vault
                 ///   4. `[writable]` fees_vault
           ///   5. `[]` token_program
           ///   6. `[]` system_program

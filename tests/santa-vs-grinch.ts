@@ -205,6 +205,7 @@ describe("santa-vs-grinch", () => {
       mysteryBoxBurnPercentageBp: 10_000,
       mysteryBoxPrice: BigInt(1_000 * 10 ** 6),
       buybackWallet: accounts.buybackPubkey as PublicKey,
+      buybackPercentageBp: 2500,
       creators,
     };
 
@@ -237,6 +238,10 @@ describe("santa-vs-grinch", () => {
     assert.equal(
       gameStateAccount.adminFeePercentageBp,
       args.adminFeePercentageBp
+    );
+    assert.equal(
+      gameStateAccount.buybackPercentageBp,
+      args.buybackPercentageBp
     );
     assert.equal(gameStateAccount.santaPot, BigInt(0));
     assert.equal(gameStateAccount.santaBoxes, BigInt(0));
@@ -324,12 +329,12 @@ describe("santa-vs-grinch", () => {
     let userAta = fromWeb3JsPublicKey(accounts.user1Ata);
     let gameStateAccount = await fetchConfig(umi, accounts.configState);
 
-    const betBurnPercentageBp = gameStateAccount.betBurnPercentageBp;
+    const buybackPercentageBp = gameStateAccount.buybackPercentageBp;
     const betTag = "santa";
-    const amount = BigInt(100 * 10 ** 6);
-    const amountToBeBurned =
-      (amount * BigInt(betBurnPercentageBp)) / BigInt(10_000);
-    const depositAmount = amount - amountToBeBurned;
+    const amount = BigInt(1 * LAMPORTS_PER_SOL);
+    const amountToBuyback =
+      (amount * BigInt(buybackPercentageBp)) / BigInt(10_000);
+    const depositAmount = amount - amountToBuyback;
 
     const [userBetPubkey, _] = umi.eddsa.findPda(programId, [
       string({ size: "variable" }).serialize("user"),
@@ -339,11 +344,9 @@ describe("santa-vs-grinch", () => {
 
     await bet(umi, {
       user: userSigner,
-      mint: accounts.mint as PublicKey,
+      buybackWallet: accounts.buybackPubkey,
       state: accounts.configState as PublicKey,
       userBet: userBetPubkey,
-      userAta,
-      tokenProgram: fromWeb3JsPublicKey(TOKEN_PROGRAM_ID),
       amount,
       betTag,
     }).sendAndConfirm(umi, options);
@@ -354,6 +357,16 @@ describe("santa-vs-grinch", () => {
     const betAccount = await fetchUserBet(umi, userBetPubkey);
     assert.equal(betAccount.amount, depositAmount);
     assert.deepEqual(betAccount.owner, userPubkey);
+
+    const buybackBalance = await provider.connection.getBalance(
+      toWeb3JsPublicKey(accounts.buybackPubkey)
+    );
+    assert.equal(buybackBalance, amountToBuyback);
+
+    const vaultBalance = await provider.connection.getBalance(
+      toWeb3JsPublicKey(accounts.vault)
+    );
+    assert.equal(vaultBalance, depositAmount);
   });
 
   // it("Bet on Grinch", async () => {

@@ -50,6 +50,8 @@ export const SANTA_VS_GRINCH_ERROR__WITDRAWAL_UNCLAIMED_PERIOD_NOT_ENDED = 0x177
 export const SANTA_VS_GRINCH_ERROR__INVALID_MINT = 0x1780; // 6016
 /** InvalidAmountToBurn: Amount to burn should be 100% of box price */
 export const SANTA_VS_GRINCH_ERROR__INVALID_AMOUNT_TO_BURN = 0x1781; // 6017
+/** InvalidBuybackwallet: Invalid buyback wallet */
+export const SANTA_VS_GRINCH_ERROR__INVALID_BUYBACKWALLET = 0x1782; // 6018
 
 export type SantaVsGrinchError =
   | typeof SANTA_VS_GRINCH_ERROR__ALREADY_CLAIMED
@@ -60,6 +62,7 @@ export type SantaVsGrinchError =
   | typeof SANTA_VS_GRINCH_ERROR__INVALID_AMOUNT_TO_BURN
   | typeof SANTA_VS_GRINCH_ERROR__INVALID_BET_SIDE
   | typeof SANTA_VS_GRINCH_ERROR__INVALID_BET_TAG
+  | typeof SANTA_VS_GRINCH_ERROR__INVALID_BUYBACKWALLET
   | typeof SANTA_VS_GRINCH_ERROR__INVALID_CREATOR_ADDRESS
   | typeof SANTA_VS_GRINCH_ERROR__INVALID_CREATOR_CONFIG
   | typeof SANTA_VS_GRINCH_ERROR__INVALID_FEES_VAULT_DEPOSIT_ACCOUNT
@@ -82,6 +85,7 @@ if (process.env.NODE_ENV !== 'production') {
     [SANTA_VS_GRINCH_ERROR__INVALID_AMOUNT_TO_BURN]: `Amount to burn should be 100% of box price`,
     [SANTA_VS_GRINCH_ERROR__INVALID_BET_SIDE]: `Invalid bet side`,
     [SANTA_VS_GRINCH_ERROR__INVALID_BET_TAG]: `InvalidBetTag`,
+    [SANTA_VS_GRINCH_ERROR__INVALID_BUYBACKWALLET]: `Invalid buyback wallet`,
     [SANTA_VS_GRINCH_ERROR__INVALID_CREATOR_ADDRESS]: `InvalidCreatorAddress`,
     [SANTA_VS_GRINCH_ERROR__INVALID_CREATOR_CONFIG]: `InvalidCreatorConfig`,
     [SANTA_VS_GRINCH_ERROR__INVALID_FEES_VAULT_DEPOSIT_ACCOUNT]: `Invalid fees vault account`,

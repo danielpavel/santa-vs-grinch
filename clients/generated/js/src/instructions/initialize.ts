@@ -83,7 +83,7 @@ export type InitializeInstruction<
         ? WritableAccount<TAccountState>
         : TAccountState,
       TAccountVault extends string
-        ? WritableAccount<TAccountVault>
+        ? ReadonlyAccount<TAccountVault>
         : TAccountVault,
       TAccountFeesVault extends string
         ? WritableAccount<TAccountFeesVault>
@@ -199,7 +199,7 @@ export async function getInitializeInstructionAsync<
     admin: { value: input.admin ?? null, isWritable: true },
     mint: { value: input.mint ?? null, isWritable: false },
     state: { value: input.state ?? null, isWritable: true },
-    vault: { value: input.vault ?? null, isWritable: true },
+    vault: { value: input.vault ?? null, isWritable: false },
     feesVault: { value: input.feesVault ?? null, isWritable: true },
     tokenProgram: { value: input.tokenProgram ?? null, isWritable: false },
     systemProgram: { value: input.systemProgram ?? null, isWritable: false },
@@ -342,7 +342,7 @@ export function getInitializeInstruction<
     admin: { value: input.admin ?? null, isWritable: true },
     mint: { value: input.mint ?? null, isWritable: false },
     state: { value: input.state ?? null, isWritable: true },
-    vault: { value: input.vault ?? null, isWritable: true },
+    vault: { value: input.vault ?? null, isWritable: false },
     feesVault: { value: input.feesVault ?? null, isWritable: true },
     tokenProgram: { value: input.tokenProgram ?? null, isWritable: false },
     systemProgram: { value: input.systemProgram ?? null, isWritable: false },

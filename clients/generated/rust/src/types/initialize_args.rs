@@ -20,6 +20,7 @@ pub mystery_box_burn_percentage_bp: u16,
 pub mystery_box_price: u64,
 #[cfg_attr(feature = "serde", serde(with = "serde_with::As::<serde_with::DisplayFromStr>"))]
 pub buyback_wallet: Pubkey,
+pub buyback_percentage_bp: u16,
 pub creators: [Creator; 3],
 }
 

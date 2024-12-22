@@ -24,11 +24,11 @@ pub fn assert_bet_tag(bet_tag: &String) -> Result<()> {
     Ok(())
 }
 
-pub fn calculate_admin_fee(amount: u64, percentage_bp: u16) -> u64 {
+pub fn calculate_amount_to_burn(amount: u64, percentage_bp: u16) -> u64 {
     ((amount as u128 * percentage_bp as u128) / 10_000u128) as u64
 }
 
-pub fn calculate_amount_to_burn(amount: u64, percentage_bp: u16) -> u64 {
+pub fn calculate_percentage_amount(amount: u64, percentage_bp: u16) -> u64 {
     ((amount as u128 * percentage_bp as u128) / 10_000u128) as u64
 }
 

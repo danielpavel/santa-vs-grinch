@@ -25,6 +25,7 @@ export type InitializeArgs = {
   mysteryBoxBurnPercentageBp: number;
   mysteryBoxPrice: bigint;
   buybackWallet: PublicKey;
+  buybackPercentageBp: number;
   creators: Array<Creator>;
 };
 
@@ -35,6 +36,7 @@ export type InitializeArgsArgs = {
   mysteryBoxBurnPercentageBp: number;
   mysteryBoxPrice: number | bigint;
   buybackWallet: PublicKey;
+  buybackPercentageBp: number;
   creators: Array<CreatorArgs>;
 };
 
@@ -50,6 +52,7 @@ export function getInitializeArgsSerializer(): Serializer<
       ['mysteryBoxBurnPercentageBp', u16()],
       ['mysteryBoxPrice', u64()],
       ['buybackWallet', publicKeySerializer()],
+      ['buybackPercentageBp', u16()],
       ['creators', array(getCreatorSerializer(), { size: 3 })],
     ],
     { description: 'InitializeArgs' }

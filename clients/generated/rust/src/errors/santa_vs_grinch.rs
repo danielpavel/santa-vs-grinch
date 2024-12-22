@@ -64,6 +64,9 @@ pub enum SantaVsGrinchError {
     /// 6017 - Amount to burn should be 100% of box price
     #[error("Amount to burn should be 100% of box price")]
     InvalidAmountToBurn = 0x1781,
+    /// 6018 - Invalid buyback wallet
+    #[error("Invalid buyback wallet")]
+    InvalidBuybackwallet = 0x1782,
 }
 
 impl solana_program::program_error::PrintProgramError for SantaVsGrinchError {

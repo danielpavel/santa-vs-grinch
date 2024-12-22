@@ -53,12 +53,14 @@ export type ConfigAccountData = {
   mint: PublicKey;
   buybackWallet: PublicKey;
   adminFeePercentageBp: number;
+  buybackPercentageBp: number;
   betBurnPercentageBp: number;
   mysteryBoxBurnPercentageBp: number;
   mysteryBoxPrice: bigint;
   vault: PublicKey;
   feesVault: PublicKey;
   totalBurned: bigint;
+  totalSentToBuyback: bigint;
   santaPot: bigint;
   grinchPot: bigint;
   santaBoxes: bigint;
@@ -81,12 +83,14 @@ export type ConfigAccountDataArgs = {
   mint: PublicKey;
   buybackWallet: PublicKey;
   adminFeePercentageBp: number;
+  buybackPercentageBp: number;
   betBurnPercentageBp: number;
   mysteryBoxBurnPercentageBp: number;
   mysteryBoxPrice: number | bigint;
   vault: PublicKey;
   feesVault: PublicKey;
   totalBurned: number | bigint;
+  totalSentToBuyback: number | bigint;
   santaPot: number | bigint;
   grinchPot: number | bigint;
   santaBoxes: number | bigint;
@@ -116,12 +120,14 @@ export function getConfigAccountDataSerializer(): Serializer<
         ['mint', publicKeySerializer()],
         ['buybackWallet', publicKeySerializer()],
         ['adminFeePercentageBp', u16()],
+        ['buybackPercentageBp', u16()],
         ['betBurnPercentageBp', u16()],
         ['mysteryBoxBurnPercentageBp', u16()],
         ['mysteryBoxPrice', u64()],
         ['vault', publicKeySerializer()],
         ['feesVault', publicKeySerializer()],
         ['totalBurned', u64()],
+        ['totalSentToBuyback', u64()],
         ['santaPot', u64()],
         ['grinchPot', u64()],
         ['santaBoxes', u64()],
@@ -219,12 +225,14 @@ export function getConfigGpaBuilder(
       mint: PublicKey;
       buybackWallet: PublicKey;
       adminFeePercentageBp: number;
+      buybackPercentageBp: number;
       betBurnPercentageBp: number;
       mysteryBoxBurnPercentageBp: number;
       mysteryBoxPrice: number | bigint;
       vault: PublicKey;
       feesVault: PublicKey;
       totalBurned: number | bigint;
+      totalSentToBuyback: number | bigint;
       santaPot: number | bigint;
       grinchPot: number | bigint;
       santaBoxes: number | bigint;
@@ -246,22 +254,24 @@ export function getConfigGpaBuilder(
       mint: [40, publicKeySerializer()],
       buybackWallet: [72, publicKeySerializer()],
       adminFeePercentageBp: [104, u16()],
-      betBurnPercentageBp: [106, u16()],
-      mysteryBoxBurnPercentageBp: [108, u16()],
-      mysteryBoxPrice: [110, u64()],
-      vault: [118, publicKeySerializer()],
-      feesVault: [150, publicKeySerializer()],
-      totalBurned: [182, u64()],
-      santaPot: [190, u64()],
-      grinchPot: [198, u64()],
-      santaBoxes: [206, u64()],
-      grinchBoxes: [214, u64()],
-      santaMultiplier: [222, u32()],
-      grinchMultiplier: [226, u32()],
-      gameEnded: [230, bool()],
-      isActiveAt: [231, i64()],
-      withdrawUnclaimedAt: [239, i64()],
-      winningSide: [247, option(getBettingSideSerializer())],
+      buybackPercentageBp: [106, u16()],
+      betBurnPercentageBp: [108, u16()],
+      mysteryBoxBurnPercentageBp: [110, u16()],
+      mysteryBoxPrice: [112, u64()],
+      vault: [120, publicKeySerializer()],
+      feesVault: [152, publicKeySerializer()],
+      totalBurned: [184, u64()],
+      totalSentToBuyback: [192, u64()],
+      santaPot: [200, u64()],
+      grinchPot: [208, u64()],
+      santaBoxes: [216, u64()],
+      grinchBoxes: [224, u64()],
+      santaMultiplier: [232, u32()],
+      grinchMultiplier: [236, u32()],
+      gameEnded: [240, bool()],
+      isActiveAt: [241, i64()],
+      withdrawUnclaimedAt: [249, i64()],
+      winningSide: [257, option(getBettingSideSerializer())],
       creators: [null, array(getCreatorSerializer(), { size: 3 })],
       vaultBump: [null, u8()],
       feesVaultBump: [null, u8()],

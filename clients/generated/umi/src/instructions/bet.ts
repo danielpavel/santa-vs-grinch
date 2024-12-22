@@ -34,13 +34,10 @@ import {
 // Accounts.
 export type BetInstructionAccounts = {
   user: Signer;
-  mint: PublicKey | Pda;
+  buybackWallet: PublicKey | Pda;
   state: PublicKey | Pda;
   vault?: PublicKey | Pda;
   userBet?: PublicKey | Pda;
-  userAta: PublicKey | Pda;
-  tokenProgram: PublicKey | Pda;
-  associatedTokenProgram?: PublicKey | Pda;
   systemProgram?: PublicKey | Pda;
 };
 
@@ -93,7 +90,11 @@ export function bet(
   // Accounts.
   const resolvedAccounts = {
     user: { index: 0, isWritable: true as boolean, value: input.user ?? null },
-    mint: { index: 1, isWritable: true as boolean, value: input.mint ?? null },
+    buybackWallet: {
+      index: 1,
+      isWritable: true as boolean,
+      value: input.buybackWallet ?? null,
+    },
     state: {
       index: 2,
       isWritable: true as boolean,
@@ -109,23 +110,8 @@ export function bet(
       isWritable: true as boolean,
       value: input.userBet ?? null,
     },
-    userAta: {
-      index: 5,
-      isWritable: true as boolean,
-      value: input.userAta ?? null,
-    },
-    tokenProgram: {
-      index: 6,
-      isWritable: false as boolean,
-      value: input.tokenProgram ?? null,
-    },
-    associatedTokenProgram: {
-      index: 7,
-      isWritable: false as boolean,
-      value: input.associatedTokenProgram ?? null,
-    },
     systemProgram: {
-      index: 8,
+      index: 5,
       isWritable: false as boolean,
       value: input.systemProgram ?? null,
     },
@@ -156,14 +142,6 @@ export function bet(
       ),
       string().serialize(expectSome(resolvedArgs.betTag)),
     ]);
-  }
-  if (!resolvedAccounts.associatedTokenProgram.value) {
-    resolvedAccounts.associatedTokenProgram.value =
-      context.programs.getPublicKey(
-        'associatedTokenProgram',
-        'ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL'
-      );
-    resolvedAccounts.associatedTokenProgram.isWritable = false;
   }
   if (!resolvedAccounts.systemProgram.value) {
     resolvedAccounts.systemProgram.value = context.programs.getPublicKey(
