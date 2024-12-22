@@ -1,9 +1,9 @@
-use anchor_lang::{prelude::*, solana_program::sysvar::slot_hashes};
+use anchor_lang::prelude::*;
 
 use crate::{
     errors::SantaVsGrinchErrorCode,
     state::{BettingSide, Config},
-    utils::{assert_game_is_active, calculate_final_pots, generate_random_seed},
+    utils::assert_game_is_active,
 };
 
 #[derive(Accounts)]
