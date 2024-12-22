@@ -45,6 +45,43 @@ fn map_to_range(seed: u64) -> u32 {
     base + 100
 }
 
+fn map_random_to_multiplier_range(random: u64, min_range: u32, max_range: u32) -> u32 {
+    let base = (random % ((max_range as u64 - min_range as u64) + 1)) as u32;
+
+    base + min_range
+}
+
+pub fn calculate_perk_multiplier(random: u64, amount: u64, decimals: u8) -> u32 {
+    let base = 10_u64.pow(decimals as u32);
+    let tier_1_max = 10_000 * base;
+    let tier_2_max = 100_000 * base;
+
+    let mul_range = if amount <= tier_1_max {
+        (105, 120)
+    } else if amount <= tier_2_max {
+        (121, 170)
+    } else {
+        (171, 220)
+    };
+
+    map_random_to_multiplier_range(random, mul_range.0, mul_range.1)
+}
+
+// fn calculate_perk_score(amount: u64, decimals: u8) -> u64 {
+//     let min_range: u32;
+//     let max_range: u32;
+//
+//     let (min_range, max_range) = if (amount >= 0 && amount <= (10_000 * 10_u64.pow(decimals))) {
+//         (105, 120)
+//     } else if (amount > (10_000 * 10_u64.pow(decimals))
+//         && amount <= (100_000 * 10_u64.pow(decimals)))
+//     {
+//         (121, 170)
+//     } else {
+//         (171, 220)
+//     };
+// }
+
 pub fn calculate_final_pots(
     config_state: &mut Config,
     santa_seed: u64,
@@ -60,11 +97,11 @@ pub fn calculate_final_pots(
     msg!("sm: {} | gm: {}", santa_multiplier, grinch_multiplier);
 
     let santa_pot_multiplier = config_state
-        .santa_boxes
+        .santa_score
         .checked_mul(santa_multiplier as u64)
         .ok_or(ProgramError::ArithmeticOverflow)?;
     let grinch_pot_multiplier = config_state
-        .grinch_boxes
+        .grinch_score
         .checked_mul(grinch_multiplier as u64)
         .ok_or(ProgramError::ArithmeticOverflow)?;
 

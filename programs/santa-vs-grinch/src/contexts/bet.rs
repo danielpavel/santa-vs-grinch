@@ -73,7 +73,19 @@ impl<'info> Bet<'info> {
 
         self.transfer_to_vault(amount_to_deposit)?;
         self.transfer_to_buyback(amount_to_buyback)?;
-        //self.burn_to_hell(amount_to_burn)?;
+
+        let mul = if self.state.total_burned > 0 {
+            self.state
+                .total_burned
+                .checked_div(self.state.total_sol)
+                .ok_or(ProgramError::ArithmeticOverflow)?
+        } else {
+            1500
+        };
+
+        let score = amount
+            .checked_mul(mul as u64)
+            .ok_or(ProgramError::ArithmeticOverflow)?;
 
         let user_bet = &mut self.user_bet;
         user_bet.owner = self.user.key();
@@ -86,22 +98,27 @@ impl<'info> Bet<'info> {
 
         match bet_tag.as_str() {
             SANTA_BET_TAG => {
-                self.state.santa_pot = self
+                self.state.santa_score = self
                     .state
-                    .santa_pot
-                    .checked_add(amount_to_deposit)
+                    .santa_score
+                    .checked_add(score)
                     .ok_or(ProgramError::ArithmeticOverflow)?;
             }
             GRINCH_BET_TAG => {
-                self.state.grinch_pot = self
+                self.state.grinch_score = self
                     .state
-                    .grinch_pot
-                    .checked_add(amount_to_deposit)
+                    .grinch_score
+                    .checked_add(score)
                     .ok_or(ProgramError::ArithmeticOverflow)?;
             }
             _ => {}
         }
 
+        self.state.total_sol = self
+            .state
+            .total_sol
+            .checked_add(amount)
+            .ok_or(ProgramError::ArithmeticOverflow)?;
         self.state.total_sent_to_buyback = self
             .state
             .total_sent_to_buyback

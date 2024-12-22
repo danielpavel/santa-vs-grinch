@@ -31,13 +31,18 @@ impl<'info> UpdateState<'info> {
         Ok(())
     }
 
-    pub fn update_mystery_box_price(&mut self, price: u64) -> Result<()> {
-        self.state.mystery_box_price = price;
-        Ok(())
-    }
+    // pub fn update_mystery_box_price(&mut self, price: u64) -> Result<()> {
+    //     self.state.mystery_box_price = price;
+    //     Ok(())
+    // }
 
-    pub fn update_bet_burn_percentage_bp(&mut self, percentage_in_bp: u16) -> Result<()> {
-        self.state.bet_burn_percentage_bp = percentage_in_bp;
+    // pub fn update_bet_burn_percentage_bp(&mut self, percentage_in_bp: u16) -> Result<()> {
+    //     self.state.bet_burn_percentage_bp = percentage_in_bp;
+    //     Ok(())
+    // }
+
+    pub fn update_bet_buyback_percentage_bp(&mut self, percentage_in_bp: u16) -> Result<()> {
+        self.state.buyback_percentage_bp = percentage_in_bp;
         Ok(())
     }
 

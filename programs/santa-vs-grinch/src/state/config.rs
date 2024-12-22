@@ -36,21 +36,21 @@ pub struct Config {
 
     pub admin_fee_percentage_bp: u16,
     pub buyback_percentage_bp: u16,
-    pub bet_burn_percentage_bp: u16,
     pub mystery_box_burn_percentage_bp: u16,
-
-    pub mystery_box_price: u64,
 
     pub vault: Pubkey,
     pub fees_vault: Pubkey,
 
     pub total_burned: u64,
+    pub total_sol: u64,
     pub total_sent_to_buyback: u64,
 
     pub santa_pot: u64,
     pub grinch_pot: u64,
-    pub santa_boxes: u64,
-    pub grinch_boxes: u64,
+
+    pub santa_score: u64,
+    pub grinch_score: u64,
+
     pub santa_multiplier: u32,
     pub grinch_multiplier: u32,
 

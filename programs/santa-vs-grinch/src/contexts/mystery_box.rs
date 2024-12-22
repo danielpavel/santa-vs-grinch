@@ -1,4 +1,4 @@
-use anchor_lang::prelude::*;
+use anchor_lang::{prelude::*, solana_program::sysvar::slot_hashes};
 use anchor_spl::{
     associated_token::AssociatedToken,
     token_interface::{burn, Burn, Mint, TokenAccount, TokenInterface},
@@ -8,7 +8,10 @@ use crate::{
     constants::{GRINCH_BET_TAG, SANTA_BET_TAG},
     errors::SantaVsGrinchErrorCode,
     state::UserBet,
-    utils::{assert_bet_tag, calculate_amount_to_burn},
+    utils::{
+        assert_bet_tag, calculate_percentage_amount, calculate_perk_multiplier,
+        generate_random_seed,
+    },
 };
 use crate::{state::Config, utils::assert_game_is_active};
 
@@ -48,42 +51,50 @@ pub struct MysteryBox<'info> {
     token_program: Interface<'info, TokenInterface>,
     associated_token_program: Program<'info, AssociatedToken>,
 
+    #[account(address = slot_hashes::ID)]
+    /// CHECK: it's checked
+    recent_slothashes: UncheckedAccount<'info>,
+
     system_program: Program<'info, System>,
 }
 
 impl<'info> MysteryBox<'info> {
-    pub fn buy_mystery_box(&mut self, bet_tag: String, user_bet_bump: u8) -> Result<()> {
+    pub fn buy_mystery_box(
+        &mut self,
+        amount: u64,
+        bet_tag: String,
+        user_bet_bump: u8,
+    ) -> Result<()> {
         assert_game_is_active(&self.state)?;
         assert_bet_tag(&bet_tag)?;
 
-        let amount_to_burn = calculate_amount_to_burn(
-            self.state.mystery_box_price,
-            self.state.mystery_box_burn_percentage_bp,
-        );
+        let amount_to_burn =
+            calculate_percentage_amount(amount, self.state.mystery_box_burn_percentage_bp);
 
-        let accounts = Burn {
-            mint: self.mint.to_account_info(),
-            from: self.user_ata.to_account_info(),
-            authority: self.user.to_account_info(),
-        };
+        self.burn_to_hell(amount)?;
 
-        let cpi_ctx = CpiContext::new(self.token_program.to_account_info(), accounts);
+        let rand = generate_random_seed(&self.recent_slothashes, true)?;
+        let mul = calculate_perk_multiplier(rand, amount, self.mint.decimals);
 
-        burn(cpi_ctx, amount_to_burn)?;
+        let score = amount
+            .checked_mul(mul as u64)
+            .ok_or(ProgramError::ArithmeticOverflow)?
+            .checked_div(100)
+            .ok_or(ProgramError::ArithmeticOverflow)?;
 
         match bet_tag.as_str() {
             SANTA_BET_TAG => {
-                self.state.santa_boxes = self
+                self.state.santa_score = self
                     .state
-                    .santa_boxes
-                    .checked_add(1)
+                    .santa_score
+                    .checked_add(score)
                     .ok_or(ProgramError::ArithmeticOverflow)?;
             }
             GRINCH_BET_TAG => {
-                self.state.grinch_boxes = self
+                self.state.grinch_score = self
                     .state
-                    .grinch_boxes
-                    .checked_add(1)
+                    .grinch_score
+                    .checked_add(score)
                     .ok_or(ProgramError::ArithmeticOverflow)?;
             }
             _ => {}
@@ -93,10 +104,10 @@ impl<'info> MysteryBox<'info> {
         user_bet.owner = self.user.key();
         user_bet.bump = user_bet_bump;
         user_bet.claimed = false;
-        user_bet.myster_box_count = user_bet
-            .myster_box_count
-            .checked_add(1)
-            .ok_or(ProgramError::ArithmeticOverflow)?;
+        // user_bet.myster_box_count = user_bet
+        //     .myster_box_count
+        //     .checked_add(1)
+        //     .ok_or(ProgramError::ArithmeticOverflow)?;
 
         self.state.total_burned = self
             .state
@@ -105,5 +116,17 @@ impl<'info> MysteryBox<'info> {
             .ok_or(ProgramError::ArithmeticOverflow)?;
 
         Ok(())
+    }
+
+    fn burn_to_hell(&mut self, amount: u64) -> Result<()> {
+        let accounts = Burn {
+            mint: self.mint.to_account_info(),
+            from: self.user_ata.to_account_info(),
+            authority: self.user.to_account_info(),
+        };
+
+        let cpi_ctx = CpiContext::new(self.token_program.to_account_info(), accounts);
+
+        burn(cpi_ctx, amount)
     }
 }

@@ -509,53 +509,53 @@ describe("santa-vs-grinch", () => {
   //     }
   //   }
   // });
-  //
-  // it("Buy a Mystery Box for Santa", async () => {
-  //   const [user1UserStatePubkey, _bump] = web3.PublicKey.findProgramAddressSync(
-  //     [
-  //       Buffer.from("user"),
-  //       (accounts.user1 as Keypair).publicKey.toBuffer(),
-  //       Buffer.from("santa"),
-  //     ],
-  //     program.programId
-  //   );
-  //
-  //   const side = "santa"; // On-chain BettingSide Enum Representation
-  //   const BOX_PRICE = 500_000_000;
-  //
-  //   let feeVaultBalanceOld = await provider.connection.getBalance(
-  //     accounts.feesVault
-  //   );
-  //
-  //   const tx = await program.methods
-  //     .buyMysteryBox(side)
-  //     .accounts({
-  //       user: (accounts.user1 as Keypair).publicKey,
-  //       state: accounts.configState,
-  //       feesVault: accounts.feesVault,
-  //       userBet: user1UserStatePubkey,
-  //     })
-  //     .signers([accounts.user1])
-  //     .rpc();
-  //
-  //   const configStateAccount = await program.account.config.fetch(
-  //     accounts.configState
-  //   );
-  //
-  //   assert.equal(configStateAccount.santaBoxes.toNumber(), 1);
-  //
-  //   const feeVaultBalance = await provider.connection.getBalance(
-  //     accounts.feesVault
-  //   );
-  //   assert.equal(feeVaultBalance, feeVaultBalanceOld + BOX_PRICE);
-  //
-  //   const user1UserStateAccount = await program.account.userBet.fetch(
-  //     user1UserStatePubkey
-  //   );
-  //
-  //   assert.equal(user1UserStateAccount.mysterBoxCount, 1);
-  // });
-  //
+
+  it("Buy a Mystery Box for Santa", async () => {
+    const [user1UserStatePubkey, _bump] = web3.PublicKey.findProgramAddressSync(
+      [
+        Buffer.from("user"),
+        (accounts.user1 as Keypair).publicKey.toBuffer(),
+        Buffer.from("santa"),
+      ],
+      program.programId
+    );
+
+    const side = "santa"; // On-chain BettingSide Enum Representation
+    const BOX_PRICE = 500_000_000;
+
+    let feeVaultBalanceOld = await provider.connection.getBalance(
+      accounts.feesVault
+    );
+
+    const tx = await program.methods
+      .buyMysteryBox(side)
+      .accounts({
+        user: (accounts.user1 as Keypair).publicKey,
+        state: accounts.configState,
+        feesVault: accounts.feesVault,
+        userBet: user1UserStatePubkey,
+      })
+      .signers([accounts.user1])
+      .rpc();
+
+    const configStateAccount = await program.account.config.fetch(
+      accounts.configState
+    );
+
+    assert.equal(configStateAccount.santaBoxes.toNumber(), 1);
+
+    const feeVaultBalance = await provider.connection.getBalance(
+      accounts.feesVault
+    );
+    assert.equal(feeVaultBalance, feeVaultBalanceOld + BOX_PRICE);
+
+    const user1UserStateAccount = await program.account.userBet.fetch(
+      user1UserStatePubkey
+    );
+
+    assert.equal(user1UserStateAccount.mysterBoxCount, 1);
+  });
+
   // it("Buy 2 Mystery Boxes for Grinch", async () => {
   //   const [user2UserStatePubkey, _bump] = web3.PublicKey.findProgramAddressSync(
   //     [

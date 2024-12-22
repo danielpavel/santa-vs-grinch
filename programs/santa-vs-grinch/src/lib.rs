@@ -24,8 +24,9 @@ pub mod santa_vs_grinch {
         ctx.accounts.bet(amount, bet_tag, ctx.bumps.user_bet)
     }
 
-    pub fn buy_mystery_box(ctx: Context<MysteryBox>, bet_tag: String) -> Result<()> {
-        ctx.accounts.buy_mystery_box(bet_tag, ctx.bumps.user_bet)
+    pub fn buy_mystery_box(ctx: Context<MysteryBox>, amount: u64, bet_tag: String) -> Result<()> {
+        ctx.accounts
+            .buy_mystery_box(amount, bet_tag, ctx.bumps.user_bet)
     }
 
     pub fn end_game(ctx: Context<EndGame>) -> Result<()> {
@@ -60,9 +61,9 @@ pub mod santa_vs_grinch {
         ctx.accounts.update_withdraw_unclaimed_period(ts)
     }
 
-    pub fn update_mystery_box_price(ctx: Context<UpdateState>, price: u64) -> Result<()> {
-        ctx.accounts.update_mystery_box_price(price)
-    }
+    // pub fn update_mystery_box_price(ctx: Context<UpdateState>, price: u64) -> Result<()> {
+    //     ctx.accounts.update_mystery_box_price(price)
+    // }
 
     pub fn update_bet_burn_percentage_bp(
         ctx: Context<UpdateState>,

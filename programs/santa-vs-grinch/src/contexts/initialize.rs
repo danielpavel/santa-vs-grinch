@@ -87,22 +87,21 @@ impl<'info> Initialize<'info> {
 
             admin_fee_percentage_bp: args.admin_fee_percentage_bp,
             buyback_percentage_bp: args.buyback_percentage_bp,
-            bet_burn_percentage_bp: args.bet_burn_percentage_bp,
             mystery_box_burn_percentage_bp: args.mystery_box_burn_percentage_bp,
 
-            mystery_box_price: args.mystery_box_price,
-
+            //mystery_box_price: args.mystery_box_price,
             fees_vault: self.fees_vault.key(),
             vault: self.vault.key(),
 
             total_burned: 0,
+            total_sol: 0,
             total_sent_to_buyback: 0,
 
             santa_pot: 0,
             grinch_pot: 0,
 
-            santa_boxes: 0,
-            grinch_boxes: 0,
+            santa_score: 0,
+            grinch_score: 0,
 
             santa_multiplier: 100,
             grinch_multiplier: 100,
