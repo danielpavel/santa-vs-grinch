@@ -33,6 +33,9 @@ pub struct BuyMysteryBox {
           pub associated_token_program: solana_program::pubkey::Pubkey,
           
               
+          pub recent_slothashes: solana_program::pubkey::Pubkey,
+          
+              
           pub system_program: solana_program::pubkey::Pubkey,
       }
 
@@ -42,7 +45,7 @@ impl BuyMysteryBox {
   }
   #[allow(clippy::vec_init_then_push)]
   pub fn instruction_with_remaining_accounts(&self, args: BuyMysteryBoxInstructionArgs, remaining_accounts: &[solana_program::instruction::AccountMeta]) -> solana_program::instruction::Instruction {
-    let mut accounts = Vec::with_capacity(8 + remaining_accounts.len());
+    let mut accounts = Vec::with_capacity(9 + remaining_accounts.len());
                             accounts.push(solana_program::instruction::AccountMeta::new(
             self.user,
             true
@@ -72,6 +75,10 @@ impl BuyMysteryBox {
             false
           ));
                                           accounts.push(solana_program::instruction::AccountMeta::new_readonly(
+            self.recent_slothashes,
+            false
+          ));
+                                          accounts.push(solana_program::instruction::AccountMeta::new_readonly(
             self.system_program,
             false
           ));
@@ -91,13 +98,13 @@ impl BuyMysteryBox {
 #[derive(BorshDeserialize, BorshSerialize)]
 pub struct BuyMysteryBoxInstructionData {
             discriminator: [u8; 8],
-            }
+                  }
 
 impl BuyMysteryBoxInstructionData {
   pub fn new() -> Self {
     Self {
                         discriminator: [150, 161, 180, 220, 54, 128, 128, 242],
-                                }
+                                              }
   }
 }
 
@@ -110,7 +117,8 @@ impl Default for BuyMysteryBoxInstructionData {
 #[derive(BorshSerialize, BorshDeserialize, Clone, Debug, Eq, PartialEq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct BuyMysteryBoxInstructionArgs {
-                  pub bet_tag: String,
+                  pub amount: u64,
+                pub bet_tag: String,
       }
 
 
@@ -125,7 +133,8 @@ pub struct BuyMysteryBoxInstructionArgs {
                 ///   4. `[writable]` user_ata
           ///   5. `[]` token_program
                 ///   6. `[optional]` associated_token_program (default to `ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL`)
-                ///   7. `[optional]` system_program (default to `11111111111111111111111111111111`)
+                ///   7. `[optional]` recent_slothashes (default to `SysvarS1otHashes111111111111111111111111111`)
+                ///   8. `[optional]` system_program (default to `11111111111111111111111111111111`)
 #[derive(Clone, Debug, Default)]
 pub struct BuyMysteryBoxBuilder {
             user: Option<solana_program::pubkey::Pubkey>,
@@ -135,8 +144,10 @@ pub struct BuyMysteryBoxBuilder {
                 user_ata: Option<solana_program::pubkey::Pubkey>,
                 token_program: Option<solana_program::pubkey::Pubkey>,
                 associated_token_program: Option<solana_program::pubkey::Pubkey>,
+                recent_slothashes: Option<solana_program::pubkey::Pubkey>,
                 system_program: Option<solana_program::pubkey::Pubkey>,
-                        bet_tag: Option<String>,
+                        amount: Option<u64>,
+                bet_tag: Option<String>,
         __remaining_accounts: Vec<solana_program::instruction::AccountMeta>,
 }
 
@@ -180,6 +191,12 @@ impl BuyMysteryBoxBuilder {
                         self.associated_token_program = Some(associated_token_program);
                     self
     }
+            /// `[optional account, default to 'SysvarS1otHashes111111111111111111111111111']`
+#[inline(always)]
+    pub fn recent_slothashes(&mut self, recent_slothashes: solana_program::pubkey::Pubkey) -> &mut Self {
+                        self.recent_slothashes = Some(recent_slothashes);
+                    self
+    }
             /// `[optional account, default to '11111111111111111111111111111111']`
 #[inline(always)]
     pub fn system_program(&mut self, system_program: solana_program::pubkey::Pubkey) -> &mut Self {
@@ -187,6 +204,11 @@ impl BuyMysteryBoxBuilder {
                     self
     }
                     #[inline(always)]
+      pub fn amount(&mut self, amount: u64) -> &mut Self {
+        self.amount = Some(amount);
+        self
+      }
+                #[inline(always)]
       pub fn bet_tag(&mut self, bet_tag: String) -> &mut Self {
         self.bet_tag = Some(bet_tag);
         self
@@ -213,10 +235,12 @@ impl BuyMysteryBoxBuilder {
                                         user_ata: self.user_ata.expect("user_ata is not set"),
                                         token_program: self.token_program.expect("token_program is not set"),
                                         associated_token_program: self.associated_token_program.unwrap_or(solana_program::pubkey!("ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL")),
+                                        recent_slothashes: self.recent_slothashes.unwrap_or(solana_program::pubkey!("SysvarS1otHashes111111111111111111111111111")),
                                         system_program: self.system_program.unwrap_or(solana_program::pubkey!("11111111111111111111111111111111")),
                       };
           let args = BuyMysteryBoxInstructionArgs {
-                                                              bet_tag: self.bet_tag.clone().expect("bet_tag is not set"),
+                                                              amount: self.amount.clone().expect("amount is not set"),
+                                                                  bet_tag: self.bet_tag.clone().expect("bet_tag is not set"),
                                     };
     
     accounts.instruction_with_remaining_accounts(args, &self.__remaining_accounts)
@@ -246,6 +270,9 @@ impl BuyMysteryBoxBuilder {
                 
                     
               pub associated_token_program: &'b solana_program::account_info::AccountInfo<'a>,
+                
+                    
+              pub recent_slothashes: &'b solana_program::account_info::AccountInfo<'a>,
                 
                     
               pub system_program: &'b solana_program::account_info::AccountInfo<'a>,
@@ -278,6 +305,9 @@ pub struct BuyMysteryBoxCpi<'a, 'b> {
           pub associated_token_program: &'b solana_program::account_info::AccountInfo<'a>,
           
               
+          pub recent_slothashes: &'b solana_program::account_info::AccountInfo<'a>,
+          
+              
           pub system_program: &'b solana_program::account_info::AccountInfo<'a>,
             /// The arguments for the instruction.
     pub __args: BuyMysteryBoxInstructionArgs,
@@ -298,6 +328,7 @@ impl<'a, 'b> BuyMysteryBoxCpi<'a, 'b> {
               user_ata: accounts.user_ata,
               token_program: accounts.token_program,
               associated_token_program: accounts.associated_token_program,
+              recent_slothashes: accounts.recent_slothashes,
               system_program: accounts.system_program,
                     __args: args,
           }
@@ -321,7 +352,7 @@ impl<'a, 'b> BuyMysteryBoxCpi<'a, 'b> {
     signers_seeds: &[&[&[u8]]],
     remaining_accounts: &[(&'b solana_program::account_info::AccountInfo<'a>, bool, bool)]
   ) -> solana_program::entrypoint::ProgramResult {
-    let mut accounts = Vec::with_capacity(8 + remaining_accounts.len());
+    let mut accounts = Vec::with_capacity(9 + remaining_accounts.len());
                             accounts.push(solana_program::instruction::AccountMeta::new(
             *self.user.key,
             true
@@ -351,6 +382,10 @@ impl<'a, 'b> BuyMysteryBoxCpi<'a, 'b> {
             false
           ));
                                           accounts.push(solana_program::instruction::AccountMeta::new_readonly(
+            *self.recent_slothashes.key,
+            false
+          ));
+                                          accounts.push(solana_program::instruction::AccountMeta::new_readonly(
             *self.system_program.key,
             false
           ));
@@ -370,7 +405,7 @@ impl<'a, 'b> BuyMysteryBoxCpi<'a, 'b> {
       accounts,
       data,
     };
-    let mut account_infos = Vec::with_capacity(8 + 1 + remaining_accounts.len());
+    let mut account_infos = Vec::with_capacity(9 + 1 + remaining_accounts.len());
     account_infos.push(self.__program.clone());
                   account_infos.push(self.user.clone());
                         account_infos.push(self.mint.clone());
@@ -379,6 +414,7 @@ impl<'a, 'b> BuyMysteryBoxCpi<'a, 'b> {
                         account_infos.push(self.user_ata.clone());
                         account_infos.push(self.token_program.clone());
                         account_infos.push(self.associated_token_program.clone());
+                        account_infos.push(self.recent_slothashes.clone());
                         account_infos.push(self.system_program.clone());
               remaining_accounts.iter().for_each(|remaining_account| account_infos.push(remaining_account.0.clone()));
 
@@ -401,7 +437,8 @@ impl<'a, 'b> BuyMysteryBoxCpi<'a, 'b> {
                 ///   4. `[writable]` user_ata
           ///   5. `[]` token_program
           ///   6. `[]` associated_token_program
-          ///   7. `[]` system_program
+          ///   7. `[]` recent_slothashes
+          ///   8. `[]` system_program
 #[derive(Clone, Debug)]
 pub struct BuyMysteryBoxCpiBuilder<'a, 'b> {
   instruction: Box<BuyMysteryBoxCpiBuilderInstruction<'a, 'b>>,
@@ -418,8 +455,10 @@ impl<'a, 'b> BuyMysteryBoxCpiBuilder<'a, 'b> {
               user_ata: None,
               token_program: None,
               associated_token_program: None,
+              recent_slothashes: None,
               system_program: None,
-                                            bet_tag: None,
+                                            amount: None,
+                                bet_tag: None,
                     __remaining_accounts: Vec::new(),
     });
     Self { instruction }
@@ -460,11 +499,21 @@ impl<'a, 'b> BuyMysteryBoxCpiBuilder<'a, 'b> {
                     self
     }
       #[inline(always)]
+    pub fn recent_slothashes(&mut self, recent_slothashes: &'b solana_program::account_info::AccountInfo<'a>) -> &mut Self {
+                        self.instruction.recent_slothashes = Some(recent_slothashes);
+                    self
+    }
+      #[inline(always)]
     pub fn system_program(&mut self, system_program: &'b solana_program::account_info::AccountInfo<'a>) -> &mut Self {
                         self.instruction.system_program = Some(system_program);
                     self
     }
                     #[inline(always)]
+      pub fn amount(&mut self, amount: u64) -> &mut Self {
+        self.instruction.amount = Some(amount);
+        self
+      }
+                #[inline(always)]
       pub fn bet_tag(&mut self, bet_tag: String) -> &mut Self {
         self.instruction.bet_tag = Some(bet_tag);
         self
@@ -492,7 +541,8 @@ impl<'a, 'b> BuyMysteryBoxCpiBuilder<'a, 'b> {
   #[allow(clippy::vec_init_then_push)]
   pub fn invoke_signed(&self, signers_seeds: &[&[&[u8]]]) -> solana_program::entrypoint::ProgramResult {
           let args = BuyMysteryBoxInstructionArgs {
-                                                              bet_tag: self.instruction.bet_tag.clone().expect("bet_tag is not set"),
+                                                              amount: self.instruction.amount.clone().expect("amount is not set"),
+                                                                  bet_tag: self.instruction.bet_tag.clone().expect("bet_tag is not set"),
                                     };
         let instruction = BuyMysteryBoxCpi {
         __program: self.instruction.__program,
@@ -511,6 +561,8 @@ impl<'a, 'b> BuyMysteryBoxCpiBuilder<'a, 'b> {
                   
           associated_token_program: self.instruction.associated_token_program.expect("associated_token_program is not set"),
                   
+          recent_slothashes: self.instruction.recent_slothashes.expect("recent_slothashes is not set"),
+                  
           system_program: self.instruction.system_program.expect("system_program is not set"),
                           __args: args,
             };
@@ -528,8 +580,10 @@ struct BuyMysteryBoxCpiBuilderInstruction<'a, 'b> {
                 user_ata: Option<&'b solana_program::account_info::AccountInfo<'a>>,
                 token_program: Option<&'b solana_program::account_info::AccountInfo<'a>>,
                 associated_token_program: Option<&'b solana_program::account_info::AccountInfo<'a>>,
+                recent_slothashes: Option<&'b solana_program::account_info::AccountInfo<'a>>,
                 system_program: Option<&'b solana_program::account_info::AccountInfo<'a>>,
-                        bet_tag: Option<String>,
+                        amount: Option<u64>,
+                bet_tag: Option<String>,
         /// Additional instruction accounts `(AccountInfo, is_writable, is_signer)`.
   __remaining_accounts: Vec<(&'b solana_program::account_info::AccountInfo<'a>, bool, bool)>,
 }

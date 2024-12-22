@@ -21,10 +21,9 @@ pub struct EndGame<'info> {
      )]
     pub state: Account<'info, Config>,
 
-    #[account(address = slot_hashes::ID)]
+    // #[account(address = slot_hashes::ID)]
     /// CHECK: it's checked
-    recent_slothashes: UncheckedAccount<'info>,
-
+    // recent_slothashes: UncheckedAccount<'info>,
     system_program: Program<'info, System>,
 }
 
@@ -35,15 +34,17 @@ impl<'info> EndGame<'info> {
         let config = &mut self.state;
         config.game_ended = true;
 
-        let santa_seed = generate_random_seed(&self.recent_slothashes, true)?;
-        let grinch_seed = generate_random_seed(&self.recent_slothashes, false)?;
+        // let santa_seed = generate_random_seed(&self.recent_slothashes, true)?;
+        // let grinch_seed = generate_random_seed(&self.recent_slothashes, false)?;
+        //
+        // let (santa_adjusted, grinch_adjusted) =
+        //     calculate_final_pots(config, santa_seed, grinch_seed)?;
 
-        let (santa_adjusted, grinch_adjusted) =
-            calculate_final_pots(config, santa_seed, grinch_seed)?;
-
-        self.state.winning_side = if santa_adjusted > grinch_adjusted {
+        let santa_score = self.state.santa_score;
+        let grinch_score = self.state.grinch_score;
+        self.state.winning_side = if santa_score > grinch_score {
             Some(BettingSide::Santa)
-        } else if grinch_adjusted > santa_adjusted {
+        } else if grinch_score > santa_score {
             Some(BettingSide::Grinch)
         } else {
             None // True tie

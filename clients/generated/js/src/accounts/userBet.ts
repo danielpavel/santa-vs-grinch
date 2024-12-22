@@ -23,8 +23,6 @@ import {
   getBytesEncoder,
   getStructDecoder,
   getStructEncoder,
-  getU32Decoder,
-  getU32Encoder,
   getU64Decoder,
   getU64Encoder,
   getU8Decoder,
@@ -55,16 +53,16 @@ export type UserBet = {
   discriminator: ReadonlyUint8Array;
   owner: Address;
   amount: bigint;
+  tokenAmount: bigint;
   claimed: boolean;
-  mysterBoxCount: number;
   bump: number;
 };
 
 export type UserBetArgs = {
   owner: Address;
   amount: number | bigint;
+  tokenAmount: number | bigint;
   claimed: boolean;
-  mysterBoxCount: number;
   bump: number;
 };
 
@@ -74,8 +72,8 @@ export function getUserBetEncoder(): Encoder<UserBetArgs> {
       ['discriminator', fixEncoderSize(getBytesEncoder(), 8)],
       ['owner', getAddressEncoder()],
       ['amount', getU64Encoder()],
+      ['tokenAmount', getU64Encoder()],
       ['claimed', getBooleanEncoder()],
-      ['mysterBoxCount', getU32Encoder()],
       ['bump', getU8Encoder()],
     ]),
     (value) => ({ ...value, discriminator: USER_BET_DISCRIMINATOR })
@@ -87,8 +85,8 @@ export function getUserBetDecoder(): Decoder<UserBet> {
     ['discriminator', fixDecoderSize(getBytesDecoder(), 8)],
     ['owner', getAddressDecoder()],
     ['amount', getU64Decoder()],
+    ['tokenAmount', getU64Decoder()],
     ['claimed', getBooleanDecoder()],
-    ['mysterBoxCount', getU32Decoder()],
     ['bump', getU8Decoder()],
   ]);
 }

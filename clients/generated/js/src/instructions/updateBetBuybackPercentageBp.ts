@@ -12,10 +12,10 @@ import {
   fixEncoderSize,
   getBytesDecoder,
   getBytesEncoder,
-  getI64Decoder,
-  getI64Encoder,
   getStructDecoder,
   getStructEncoder,
+  getU16Decoder,
+  getU16Encoder,
   transformEncoder,
   type Address,
   type Codec,
@@ -35,17 +35,17 @@ import {
 import { SANTA_VS_GRINCH_PROGRAM_ADDRESS } from '../programs';
 import { getAccountMetaFactory, type ResolvedAccount } from '../shared';
 
-export const UPDATE_WITHDRAW_UNCLAIMED_AT_DISCRIMINATOR = new Uint8Array([
-  201, 9, 21, 79, 188, 80, 2, 89,
+export const UPDATE_BET_BUYBACK_PERCENTAGE_BP_DISCRIMINATOR = new Uint8Array([
+  110, 86, 101, 28, 23, 234, 136, 55,
 ]);
 
-export function getUpdateWithdrawUnclaimedAtDiscriminatorBytes() {
+export function getUpdateBetBuybackPercentageBpDiscriminatorBytes() {
   return fixEncoderSize(getBytesEncoder(), 8).encode(
-    UPDATE_WITHDRAW_UNCLAIMED_AT_DISCRIMINATOR
+    UPDATE_BET_BUYBACK_PERCENTAGE_BP_DISCRIMINATOR
   );
 }
 
-export type UpdateWithdrawUnclaimedAtInstruction<
+export type UpdateBetBuybackPercentageBpInstruction<
   TProgram extends string = typeof SANTA_VS_GRINCH_PROGRAM_ADDRESS,
   TAccountAdmin extends string | IAccountMeta<string> = string,
   TAccountState extends string | IAccountMeta<string> = string,
@@ -71,46 +71,46 @@ export type UpdateWithdrawUnclaimedAtInstruction<
     ]
   >;
 
-export type UpdateWithdrawUnclaimedAtInstructionData = {
+export type UpdateBetBuybackPercentageBpInstructionData = {
   discriminator: ReadonlyUint8Array;
-  ts: bigint;
+  percentageInBp: number;
 };
 
-export type UpdateWithdrawUnclaimedAtInstructionDataArgs = {
-  ts: number | bigint;
+export type UpdateBetBuybackPercentageBpInstructionDataArgs = {
+  percentageInBp: number;
 };
 
-export function getUpdateWithdrawUnclaimedAtInstructionDataEncoder(): Encoder<UpdateWithdrawUnclaimedAtInstructionDataArgs> {
+export function getUpdateBetBuybackPercentageBpInstructionDataEncoder(): Encoder<UpdateBetBuybackPercentageBpInstructionDataArgs> {
   return transformEncoder(
     getStructEncoder([
       ['discriminator', fixEncoderSize(getBytesEncoder(), 8)],
-      ['ts', getI64Encoder()],
+      ['percentageInBp', getU16Encoder()],
     ]),
     (value) => ({
       ...value,
-      discriminator: UPDATE_WITHDRAW_UNCLAIMED_AT_DISCRIMINATOR,
+      discriminator: UPDATE_BET_BUYBACK_PERCENTAGE_BP_DISCRIMINATOR,
     })
   );
 }
 
-export function getUpdateWithdrawUnclaimedAtInstructionDataDecoder(): Decoder<UpdateWithdrawUnclaimedAtInstructionData> {
+export function getUpdateBetBuybackPercentageBpInstructionDataDecoder(): Decoder<UpdateBetBuybackPercentageBpInstructionData> {
   return getStructDecoder([
     ['discriminator', fixDecoderSize(getBytesDecoder(), 8)],
-    ['ts', getI64Decoder()],
+    ['percentageInBp', getU16Decoder()],
   ]);
 }
 
-export function getUpdateWithdrawUnclaimedAtInstructionDataCodec(): Codec<
-  UpdateWithdrawUnclaimedAtInstructionDataArgs,
-  UpdateWithdrawUnclaimedAtInstructionData
+export function getUpdateBetBuybackPercentageBpInstructionDataCodec(): Codec<
+  UpdateBetBuybackPercentageBpInstructionDataArgs,
+  UpdateBetBuybackPercentageBpInstructionData
 > {
   return combineCodec(
-    getUpdateWithdrawUnclaimedAtInstructionDataEncoder(),
-    getUpdateWithdrawUnclaimedAtInstructionDataDecoder()
+    getUpdateBetBuybackPercentageBpInstructionDataEncoder(),
+    getUpdateBetBuybackPercentageBpInstructionDataDecoder()
   );
 }
 
-export type UpdateWithdrawUnclaimedAtInput<
+export type UpdateBetBuybackPercentageBpInput<
   TAccountAdmin extends string = string,
   TAccountState extends string = string,
   TAccountSystemProgram extends string = string,
@@ -118,22 +118,22 @@ export type UpdateWithdrawUnclaimedAtInput<
   admin: TransactionSigner<TAccountAdmin>;
   state: Address<TAccountState>;
   systemProgram?: Address<TAccountSystemProgram>;
-  ts: UpdateWithdrawUnclaimedAtInstructionDataArgs['ts'];
+  percentageInBp: UpdateBetBuybackPercentageBpInstructionDataArgs['percentageInBp'];
 };
 
-export function getUpdateWithdrawUnclaimedAtInstruction<
+export function getUpdateBetBuybackPercentageBpInstruction<
   TAccountAdmin extends string,
   TAccountState extends string,
   TAccountSystemProgram extends string,
   TProgramAddress extends Address = typeof SANTA_VS_GRINCH_PROGRAM_ADDRESS,
 >(
-  input: UpdateWithdrawUnclaimedAtInput<
+  input: UpdateBetBuybackPercentageBpInput<
     TAccountAdmin,
     TAccountState,
     TAccountSystemProgram
   >,
   config?: { programAddress?: TProgramAddress }
-): UpdateWithdrawUnclaimedAtInstruction<
+): UpdateBetBuybackPercentageBpInstruction<
   TProgramAddress,
   TAccountAdmin,
   TAccountState,
@@ -171,10 +171,10 @@ export function getUpdateWithdrawUnclaimedAtInstruction<
       getAccountMeta(accounts.systemProgram),
     ],
     programAddress,
-    data: getUpdateWithdrawUnclaimedAtInstructionDataEncoder().encode(
-      args as UpdateWithdrawUnclaimedAtInstructionDataArgs
+    data: getUpdateBetBuybackPercentageBpInstructionDataEncoder().encode(
+      args as UpdateBetBuybackPercentageBpInstructionDataArgs
     ),
-  } as UpdateWithdrawUnclaimedAtInstruction<
+  } as UpdateBetBuybackPercentageBpInstruction<
     TProgramAddress,
     TAccountAdmin,
     TAccountState,
@@ -184,7 +184,7 @@ export function getUpdateWithdrawUnclaimedAtInstruction<
   return instruction;
 }
 
-export type ParsedUpdateWithdrawUnclaimedAtInstruction<
+export type ParsedUpdateBetBuybackPercentageBpInstruction<
   TProgram extends string = typeof SANTA_VS_GRINCH_PROGRAM_ADDRESS,
   TAccountMetas extends readonly IAccountMeta[] = readonly IAccountMeta[],
 > = {
@@ -194,17 +194,17 @@ export type ParsedUpdateWithdrawUnclaimedAtInstruction<
     state: TAccountMetas[1];
     systemProgram: TAccountMetas[2];
   };
-  data: UpdateWithdrawUnclaimedAtInstructionData;
+  data: UpdateBetBuybackPercentageBpInstructionData;
 };
 
-export function parseUpdateWithdrawUnclaimedAtInstruction<
+export function parseUpdateBetBuybackPercentageBpInstruction<
   TProgram extends string,
   TAccountMetas extends readonly IAccountMeta[],
 >(
   instruction: IInstruction<TProgram> &
     IInstructionWithAccounts<TAccountMetas> &
     IInstructionWithData<Uint8Array>
-): ParsedUpdateWithdrawUnclaimedAtInstruction<TProgram, TAccountMetas> {
+): ParsedUpdateBetBuybackPercentageBpInstruction<TProgram, TAccountMetas> {
   if (instruction.accounts.length < 3) {
     // TODO: Coded error.
     throw new Error('Not enough accounts');
@@ -222,7 +222,7 @@ export function parseUpdateWithdrawUnclaimedAtInstruction<
       state: getNextAccount(),
       systemProgram: getNextAccount(),
     },
-    data: getUpdateWithdrawUnclaimedAtInstructionDataDecoder().decode(
+    data: getUpdateBetBuybackPercentageBpInstructionDataDecoder().decode(
       instruction.data
     ),
   };

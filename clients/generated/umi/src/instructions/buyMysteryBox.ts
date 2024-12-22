@@ -21,6 +21,7 @@ import {
   publicKey as publicKeySerializer,
   string,
   struct,
+  u64,
 } from '@metaplex-foundation/umi/serializers';
 import {
   ResolvedAccount,
@@ -39,16 +40,21 @@ export type BuyMysteryBoxInstructionAccounts = {
   userAta: PublicKey | Pda;
   tokenProgram: PublicKey | Pda;
   associatedTokenProgram?: PublicKey | Pda;
+  recentSlothashes?: PublicKey | Pda;
   systemProgram?: PublicKey | Pda;
 };
 
 // Data.
 export type BuyMysteryBoxInstructionData = {
   discriminator: Uint8Array;
+  amount: bigint;
   betTag: string;
 };
 
-export type BuyMysteryBoxInstructionDataArgs = { betTag: string };
+export type BuyMysteryBoxInstructionDataArgs = {
+  amount: number | bigint;
+  betTag: string;
+};
 
 export function getBuyMysteryBoxInstructionDataSerializer(): Serializer<
   BuyMysteryBoxInstructionDataArgs,
@@ -62,6 +68,7 @@ export function getBuyMysteryBoxInstructionDataSerializer(): Serializer<
     struct<BuyMysteryBoxInstructionData>(
       [
         ['discriminator', bytes({ size: 8 })],
+        ['amount', u64()],
         ['betTag', string()],
       ],
       { description: 'BuyMysteryBoxInstructionData' }
@@ -119,8 +126,13 @@ export function buyMysteryBox(
       isWritable: false as boolean,
       value: input.associatedTokenProgram ?? null,
     },
-    systemProgram: {
+    recentSlothashes: {
       index: 7,
+      isWritable: false as boolean,
+      value: input.recentSlothashes ?? null,
+    },
+    systemProgram: {
+      index: 8,
       isWritable: false as boolean,
       value: input.systemProgram ?? null,
     },
@@ -146,6 +158,13 @@ export function buyMysteryBox(
         'ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL'
       );
     resolvedAccounts.associatedTokenProgram.isWritable = false;
+  }
+  if (!resolvedAccounts.recentSlothashes.value) {
+    resolvedAccounts.recentSlothashes.value = context.programs.getPublicKey(
+      'recentSlothashes',
+      'SysvarS1otHashes111111111111111111111111111'
+    );
+    resolvedAccounts.recentSlothashes.isWritable = false;
   }
   if (!resolvedAccounts.systemProgram.value) {
     resolvedAccounts.systemProgram.value = context.programs.getPublicKey(

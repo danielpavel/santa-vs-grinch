@@ -42,7 +42,6 @@ pub struct Bet<'info> {
 
     #[account(
         mut,
-        address = state.vault @ SantaVsGrinchErrorCode::InvalidVaultDepositAccount,
         seeds = [b"vault", state.key().as_ref(), b"santa-vs-grinch"],
         bump = state.vault_bump
     )]
@@ -98,6 +97,11 @@ impl<'info> Bet<'info> {
 
         match bet_tag.as_str() {
             SANTA_BET_TAG => {
+                self.state.santa_pot = self
+                    .state
+                    .santa_pot
+                    .checked_add(amount_to_deposit)
+                    .ok_or(ProgramError::ArithmeticOverflow)?;
                 self.state.santa_score = self
                     .state
                     .santa_score
@@ -105,6 +109,11 @@ impl<'info> Bet<'info> {
                     .ok_or(ProgramError::ArithmeticOverflow)?;
             }
             GRINCH_BET_TAG => {
+                self.state.grinch_pot = self
+                    .state
+                    .grinch_pot
+                    .checked_add(amount_to_deposit)
+                    .ok_or(ProgramError::ArithmeticOverflow)?;
                 self.state.grinch_score = self
                     .state
                     .grinch_score

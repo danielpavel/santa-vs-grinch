@@ -33,13 +33,9 @@ import {
 // Accounts.
 export type ClaimWinningsInstructionAccounts = {
   claimer: Signer;
-  mint: PublicKey | Pda;
   state: PublicKey | Pda;
   vault?: PublicKey | Pda;
   userBet?: PublicKey | Pda;
-  userAta?: PublicKey | Pda;
-  tokenProgram: PublicKey | Pda;
-  associatedTokenProgram?: PublicKey | Pda;
   systemProgram?: PublicKey | Pda;
 };
 
@@ -98,39 +94,23 @@ export function claimWinnings(
       isWritable: true as boolean,
       value: input.claimer ?? null,
     },
-    mint: { index: 1, isWritable: false as boolean, value: input.mint ?? null },
     state: {
-      index: 2,
+      index: 1,
       isWritable: true as boolean,
       value: input.state ?? null,
     },
     vault: {
-      index: 3,
+      index: 2,
       isWritable: true as boolean,
       value: input.vault ?? null,
     },
     userBet: {
-      index: 4,
+      index: 3,
       isWritable: true as boolean,
       value: input.userBet ?? null,
     },
-    userAta: {
-      index: 5,
-      isWritable: true as boolean,
-      value: input.userAta ?? null,
-    },
-    tokenProgram: {
-      index: 6,
-      isWritable: false as boolean,
-      value: input.tokenProgram ?? null,
-    },
-    associatedTokenProgram: {
-      index: 7,
-      isWritable: false as boolean,
-      value: input.associatedTokenProgram ?? null,
-    },
     systemProgram: {
-      index: 8,
+      index: 4,
       isWritable: false as boolean,
       value: input.systemProgram ?? null,
     },
@@ -161,27 +141,6 @@ export function claimWinnings(
       ),
       string().serialize(expectSome(resolvedArgs.betTag)),
     ]);
-  }
-  if (!resolvedAccounts.userAta.value) {
-    resolvedAccounts.userAta.value = context.eddsa.findPda(programId, [
-      publicKeySerializer().serialize(
-        expectPublicKey(resolvedAccounts.claimer.value)
-      ),
-      publicKeySerializer().serialize(
-        expectPublicKey(resolvedAccounts.tokenProgram.value)
-      ),
-      publicKeySerializer().serialize(
-        expectPublicKey(resolvedAccounts.mint.value)
-      ),
-    ]);
-  }
-  if (!resolvedAccounts.associatedTokenProgram.value) {
-    resolvedAccounts.associatedTokenProgram.value =
-      context.programs.getPublicKey(
-        'associatedTokenProgram',
-        'ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL'
-      );
-    resolvedAccounts.associatedTokenProgram.isWritable = false;
   }
   if (!resolvedAccounts.systemProgram.value) {
     resolvedAccounts.systemProgram.value = context.programs.getPublicKey(

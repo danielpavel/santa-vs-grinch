@@ -19,11 +19,8 @@ import {
   type ParsedClaimWinningsInstruction,
   type ParsedEndGameInstruction,
   type ParsedInitializeInstruction,
-  type ParsedUpdateBetBurnPercentageBpInstruction,
+  type ParsedUpdateBetBuybackPercentageBpInstruction,
   type ParsedUpdateMysteryBoxBurnPercentageBpInstruction,
-  type ParsedUpdateMysteryBoxPriceInstruction,
-  type ParsedUpdateWithdrawUnclaimedAtInstruction,
-  type ParsedWithdrawCreatorsWinningsInstruction,
 } from '../instructions';
 
 export const SANTA_VS_GRINCH_PROGRAM_ADDRESS =
@@ -71,11 +68,8 @@ export enum SantaVsGrinchInstruction {
   ClaimWinnings,
   EndGame,
   Initialize,
-  UpdateBetBurnPercentageBp,
+  UpdateBetBuybackPercentageBp,
   UpdateMysteryBoxBurnPercentageBp,
-  UpdateMysteryBoxPrice,
-  UpdateWithdrawUnclaimedAt,
-  WithdrawCreatorsWinnings,
 }
 
 export function identifySantaVsGrinchInstruction(
@@ -141,12 +135,12 @@ export function identifySantaVsGrinchInstruction(
     containsBytes(
       data,
       fixEncoderSize(getBytesEncoder(), 8).encode(
-        new Uint8Array([66, 140, 0, 157, 24, 57, 76, 30])
+        new Uint8Array([110, 86, 101, 28, 23, 234, 136, 55])
       ),
       0
     )
   ) {
-    return SantaVsGrinchInstruction.UpdateBetBurnPercentageBp;
+    return SantaVsGrinchInstruction.UpdateBetBuybackPercentageBp;
   }
   if (
     containsBytes(
@@ -158,39 +152,6 @@ export function identifySantaVsGrinchInstruction(
     )
   ) {
     return SantaVsGrinchInstruction.UpdateMysteryBoxBurnPercentageBp;
-  }
-  if (
-    containsBytes(
-      data,
-      fixEncoderSize(getBytesEncoder(), 8).encode(
-        new Uint8Array([122, 152, 143, 112, 173, 18, 192, 165])
-      ),
-      0
-    )
-  ) {
-    return SantaVsGrinchInstruction.UpdateMysteryBoxPrice;
-  }
-  if (
-    containsBytes(
-      data,
-      fixEncoderSize(getBytesEncoder(), 8).encode(
-        new Uint8Array([201, 9, 21, 79, 188, 80, 2, 89])
-      ),
-      0
-    )
-  ) {
-    return SantaVsGrinchInstruction.UpdateWithdrawUnclaimedAt;
-  }
-  if (
-    containsBytes(
-      data,
-      fixEncoderSize(getBytesEncoder(), 8).encode(
-        new Uint8Array([210, 104, 160, 53, 155, 35, 222, 249])
-      ),
-      0
-    )
-  ) {
-    return SantaVsGrinchInstruction.WithdrawCreatorsWinnings;
   }
   throw new Error(
     'The provided instruction could not be identified as a santaVsGrinch instruction.'
@@ -216,17 +177,8 @@ export type ParsedSantaVsGrinchInstruction<
       instructionType: SantaVsGrinchInstruction.Initialize;
     } & ParsedInitializeInstruction<TProgram>)
   | ({
-      instructionType: SantaVsGrinchInstruction.UpdateBetBurnPercentageBp;
-    } & ParsedUpdateBetBurnPercentageBpInstruction<TProgram>)
+      instructionType: SantaVsGrinchInstruction.UpdateBetBuybackPercentageBp;
+    } & ParsedUpdateBetBuybackPercentageBpInstruction<TProgram>)
   | ({
       instructionType: SantaVsGrinchInstruction.UpdateMysteryBoxBurnPercentageBp;
-    } & ParsedUpdateMysteryBoxBurnPercentageBpInstruction<TProgram>)
-  | ({
-      instructionType: SantaVsGrinchInstruction.UpdateMysteryBoxPrice;
-    } & ParsedUpdateMysteryBoxPriceInstruction<TProgram>)
-  | ({
-      instructionType: SantaVsGrinchInstruction.UpdateWithdrawUnclaimedAt;
-    } & ParsedUpdateWithdrawUnclaimedAtInstruction<TProgram>)
-  | ({
-      instructionType: SantaVsGrinchInstruction.WithdrawCreatorsWinnings;
-    } & ParsedWithdrawCreatorsWinningsInstruction<TProgram>);
+    } & ParsedUpdateMysteryBoxBurnPercentageBpInstruction<TProgram>);

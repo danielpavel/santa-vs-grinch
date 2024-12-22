@@ -59,15 +59,9 @@ export function getClaimWinningsDiscriminatorBytes() {
 export type ClaimWinningsInstruction<
   TProgram extends string = typeof SANTA_VS_GRINCH_PROGRAM_ADDRESS,
   TAccountClaimer extends string | IAccountMeta<string> = string,
-  TAccountMint extends string | IAccountMeta<string> = string,
   TAccountState extends string | IAccountMeta<string> = string,
   TAccountVault extends string | IAccountMeta<string> = string,
   TAccountUserBet extends string | IAccountMeta<string> = string,
-  TAccountUserAta extends string | IAccountMeta<string> = string,
-  TAccountTokenProgram extends string | IAccountMeta<string> = string,
-  TAccountAssociatedTokenProgram extends
-    | string
-    | IAccountMeta<string> = 'ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL',
   TAccountSystemProgram extends
     | string
     | IAccountMeta<string> = '11111111111111111111111111111111',
@@ -80,9 +74,6 @@ export type ClaimWinningsInstruction<
         ? WritableSignerAccount<TAccountClaimer> &
             IAccountSignerMeta<TAccountClaimer>
         : TAccountClaimer,
-      TAccountMint extends string
-        ? ReadonlyAccount<TAccountMint>
-        : TAccountMint,
       TAccountState extends string
         ? WritableAccount<TAccountState>
         : TAccountState,
@@ -92,15 +83,6 @@ export type ClaimWinningsInstruction<
       TAccountUserBet extends string
         ? WritableAccount<TAccountUserBet>
         : TAccountUserBet,
-      TAccountUserAta extends string
-        ? WritableAccount<TAccountUserAta>
-        : TAccountUserAta,
-      TAccountTokenProgram extends string
-        ? ReadonlyAccount<TAccountTokenProgram>
-        : TAccountTokenProgram,
-      TAccountAssociatedTokenProgram extends string
-        ? ReadonlyAccount<TAccountAssociatedTokenProgram>
-        : TAccountAssociatedTokenProgram,
       TAccountSystemProgram extends string
         ? ReadonlyAccount<TAccountSystemProgram>
         : TAccountSystemProgram,
@@ -144,48 +126,32 @@ export function getClaimWinningsInstructionDataCodec(): Codec<
 
 export type ClaimWinningsAsyncInput<
   TAccountClaimer extends string = string,
-  TAccountMint extends string = string,
   TAccountState extends string = string,
   TAccountVault extends string = string,
   TAccountUserBet extends string = string,
-  TAccountUserAta extends string = string,
-  TAccountTokenProgram extends string = string,
-  TAccountAssociatedTokenProgram extends string = string,
   TAccountSystemProgram extends string = string,
 > = {
   claimer: TransactionSigner<TAccountClaimer>;
-  mint: Address<TAccountMint>;
   state: Address<TAccountState>;
   vault?: Address<TAccountVault>;
   userBet?: Address<TAccountUserBet>;
-  userAta?: Address<TAccountUserAta>;
-  tokenProgram: Address<TAccountTokenProgram>;
-  associatedTokenProgram?: Address<TAccountAssociatedTokenProgram>;
   systemProgram?: Address<TAccountSystemProgram>;
   betTag: ClaimWinningsInstructionDataArgs['betTag'];
 };
 
 export async function getClaimWinningsInstructionAsync<
   TAccountClaimer extends string,
-  TAccountMint extends string,
   TAccountState extends string,
   TAccountVault extends string,
   TAccountUserBet extends string,
-  TAccountUserAta extends string,
-  TAccountTokenProgram extends string,
-  TAccountAssociatedTokenProgram extends string,
   TAccountSystemProgram extends string,
   TProgramAddress extends Address = typeof SANTA_VS_GRINCH_PROGRAM_ADDRESS,
 >(
   input: ClaimWinningsAsyncInput<
     TAccountClaimer,
-    TAccountMint,
     TAccountState,
     TAccountVault,
     TAccountUserBet,
-    TAccountUserAta,
-    TAccountTokenProgram,
-    TAccountAssociatedTokenProgram,
     TAccountSystemProgram
   >,
   config?: { programAddress?: TProgramAddress }
@@ -193,13 +159,9 @@ export async function getClaimWinningsInstructionAsync<
   ClaimWinningsInstruction<
     TProgramAddress,
     TAccountClaimer,
-    TAccountMint,
     TAccountState,
     TAccountVault,
     TAccountUserBet,
-    TAccountUserAta,
-    TAccountTokenProgram,
-    TAccountAssociatedTokenProgram,
     TAccountSystemProgram
   >
 > {
@@ -210,16 +172,9 @@ export async function getClaimWinningsInstructionAsync<
   // Original accounts.
   const originalAccounts = {
     claimer: { value: input.claimer ?? null, isWritable: true },
-    mint: { value: input.mint ?? null, isWritable: false },
     state: { value: input.state ?? null, isWritable: true },
     vault: { value: input.vault ?? null, isWritable: true },
     userBet: { value: input.userBet ?? null, isWritable: true },
-    userAta: { value: input.userAta ?? null, isWritable: true },
-    tokenProgram: { value: input.tokenProgram ?? null, isWritable: false },
-    associatedTokenProgram: {
-      value: input.associatedTokenProgram ?? null,
-      isWritable: false,
-    },
     systemProgram: { value: input.systemProgram ?? null, isWritable: false },
   };
   const accounts = originalAccounts as Record<
@@ -258,20 +213,6 @@ export async function getClaimWinningsInstructionAsync<
       ],
     });
   }
-  if (!accounts.userAta.value) {
-    accounts.userAta.value = await getProgramDerivedAddress({
-      programAddress,
-      seeds: [
-        getAddressEncoder().encode(expectAddress(accounts.claimer.value)),
-        getAddressEncoder().encode(expectAddress(accounts.tokenProgram.value)),
-        getAddressEncoder().encode(expectAddress(accounts.mint.value)),
-      ],
-    });
-  }
-  if (!accounts.associatedTokenProgram.value) {
-    accounts.associatedTokenProgram.value =
-      'ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL' as Address<'ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL'>;
-  }
   if (!accounts.systemProgram.value) {
     accounts.systemProgram.value =
       '11111111111111111111111111111111' as Address<'11111111111111111111111111111111'>;
@@ -281,13 +222,9 @@ export async function getClaimWinningsInstructionAsync<
   const instruction = {
     accounts: [
       getAccountMeta(accounts.claimer),
-      getAccountMeta(accounts.mint),
       getAccountMeta(accounts.state),
       getAccountMeta(accounts.vault),
       getAccountMeta(accounts.userBet),
-      getAccountMeta(accounts.userAta),
-      getAccountMeta(accounts.tokenProgram),
-      getAccountMeta(accounts.associatedTokenProgram),
       getAccountMeta(accounts.systemProgram),
     ],
     programAddress,
@@ -297,13 +234,9 @@ export async function getClaimWinningsInstructionAsync<
   } as ClaimWinningsInstruction<
     TProgramAddress,
     TAccountClaimer,
-    TAccountMint,
     TAccountState,
     TAccountVault,
     TAccountUserBet,
-    TAccountUserAta,
-    TAccountTokenProgram,
-    TAccountAssociatedTokenProgram,
     TAccountSystemProgram
   >;
 
@@ -312,61 +245,41 @@ export async function getClaimWinningsInstructionAsync<
 
 export type ClaimWinningsInput<
   TAccountClaimer extends string = string,
-  TAccountMint extends string = string,
   TAccountState extends string = string,
   TAccountVault extends string = string,
   TAccountUserBet extends string = string,
-  TAccountUserAta extends string = string,
-  TAccountTokenProgram extends string = string,
-  TAccountAssociatedTokenProgram extends string = string,
   TAccountSystemProgram extends string = string,
 > = {
   claimer: TransactionSigner<TAccountClaimer>;
-  mint: Address<TAccountMint>;
   state: Address<TAccountState>;
   vault: Address<TAccountVault>;
   userBet: Address<TAccountUserBet>;
-  userAta: Address<TAccountUserAta>;
-  tokenProgram: Address<TAccountTokenProgram>;
-  associatedTokenProgram?: Address<TAccountAssociatedTokenProgram>;
   systemProgram?: Address<TAccountSystemProgram>;
   betTag: ClaimWinningsInstructionDataArgs['betTag'];
 };
 
 export function getClaimWinningsInstruction<
   TAccountClaimer extends string,
-  TAccountMint extends string,
   TAccountState extends string,
   TAccountVault extends string,
   TAccountUserBet extends string,
-  TAccountUserAta extends string,
-  TAccountTokenProgram extends string,
-  TAccountAssociatedTokenProgram extends string,
   TAccountSystemProgram extends string,
   TProgramAddress extends Address = typeof SANTA_VS_GRINCH_PROGRAM_ADDRESS,
 >(
   input: ClaimWinningsInput<
     TAccountClaimer,
-    TAccountMint,
     TAccountState,
     TAccountVault,
     TAccountUserBet,
-    TAccountUserAta,
-    TAccountTokenProgram,
-    TAccountAssociatedTokenProgram,
     TAccountSystemProgram
   >,
   config?: { programAddress?: TProgramAddress }
 ): ClaimWinningsInstruction<
   TProgramAddress,
   TAccountClaimer,
-  TAccountMint,
   TAccountState,
   TAccountVault,
   TAccountUserBet,
-  TAccountUserAta,
-  TAccountTokenProgram,
-  TAccountAssociatedTokenProgram,
   TAccountSystemProgram
 > {
   // Program address.
@@ -376,16 +289,9 @@ export function getClaimWinningsInstruction<
   // Original accounts.
   const originalAccounts = {
     claimer: { value: input.claimer ?? null, isWritable: true },
-    mint: { value: input.mint ?? null, isWritable: false },
     state: { value: input.state ?? null, isWritable: true },
     vault: { value: input.vault ?? null, isWritable: true },
     userBet: { value: input.userBet ?? null, isWritable: true },
-    userAta: { value: input.userAta ?? null, isWritable: true },
-    tokenProgram: { value: input.tokenProgram ?? null, isWritable: false },
-    associatedTokenProgram: {
-      value: input.associatedTokenProgram ?? null,
-      isWritable: false,
-    },
     systemProgram: { value: input.systemProgram ?? null, isWritable: false },
   };
   const accounts = originalAccounts as Record<
@@ -397,10 +303,6 @@ export function getClaimWinningsInstruction<
   const args = { ...input };
 
   // Resolve default values.
-  if (!accounts.associatedTokenProgram.value) {
-    accounts.associatedTokenProgram.value =
-      'ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL' as Address<'ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL'>;
-  }
   if (!accounts.systemProgram.value) {
     accounts.systemProgram.value =
       '11111111111111111111111111111111' as Address<'11111111111111111111111111111111'>;
@@ -410,13 +312,9 @@ export function getClaimWinningsInstruction<
   const instruction = {
     accounts: [
       getAccountMeta(accounts.claimer),
-      getAccountMeta(accounts.mint),
       getAccountMeta(accounts.state),
       getAccountMeta(accounts.vault),
       getAccountMeta(accounts.userBet),
-      getAccountMeta(accounts.userAta),
-      getAccountMeta(accounts.tokenProgram),
-      getAccountMeta(accounts.associatedTokenProgram),
       getAccountMeta(accounts.systemProgram),
     ],
     programAddress,
@@ -426,13 +324,9 @@ export function getClaimWinningsInstruction<
   } as ClaimWinningsInstruction<
     TProgramAddress,
     TAccountClaimer,
-    TAccountMint,
     TAccountState,
     TAccountVault,
     TAccountUserBet,
-    TAccountUserAta,
-    TAccountTokenProgram,
-    TAccountAssociatedTokenProgram,
     TAccountSystemProgram
   >;
 
@@ -446,14 +340,10 @@ export type ParsedClaimWinningsInstruction<
   programAddress: Address<TProgram>;
   accounts: {
     claimer: TAccountMetas[0];
-    mint: TAccountMetas[1];
-    state: TAccountMetas[2];
-    vault: TAccountMetas[3];
-    userBet: TAccountMetas[4];
-    userAta: TAccountMetas[5];
-    tokenProgram: TAccountMetas[6];
-    associatedTokenProgram: TAccountMetas[7];
-    systemProgram: TAccountMetas[8];
+    state: TAccountMetas[1];
+    vault: TAccountMetas[2];
+    userBet: TAccountMetas[3];
+    systemProgram: TAccountMetas[4];
   };
   data: ClaimWinningsInstructionData;
 };
@@ -466,7 +356,7 @@ export function parseClaimWinningsInstruction<
     IInstructionWithAccounts<TAccountMetas> &
     IInstructionWithData<Uint8Array>
 ): ParsedClaimWinningsInstruction<TProgram, TAccountMetas> {
-  if (instruction.accounts.length < 9) {
+  if (instruction.accounts.length < 5) {
     // TODO: Coded error.
     throw new Error('Not enough accounts');
   }
@@ -480,13 +370,9 @@ export function parseClaimWinningsInstruction<
     programAddress: instruction.programAddress,
     accounts: {
       claimer: getNextAccount(),
-      mint: getNextAccount(),
       state: getNextAccount(),
       vault: getNextAccount(),
       userBet: getNextAccount(),
-      userAta: getNextAccount(),
-      tokenProgram: getNextAccount(),
-      associatedTokenProgram: getNextAccount(),
       systemProgram: getNextAccount(),
     },
     data: getClaimWinningsInstructionDataDecoder().decode(instruction.data),

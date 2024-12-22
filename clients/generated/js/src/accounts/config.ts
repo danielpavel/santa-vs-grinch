@@ -78,17 +78,16 @@ export type Config = {
   buybackWallet: Address;
   adminFeePercentageBp: number;
   buybackPercentageBp: number;
-  betBurnPercentageBp: number;
   mysteryBoxBurnPercentageBp: number;
-  mysteryBoxPrice: bigint;
   vault: Address;
   feesVault: Address;
   totalBurned: bigint;
+  totalSol: bigint;
   totalSentToBuyback: bigint;
   santaPot: bigint;
   grinchPot: bigint;
-  santaBoxes: bigint;
-  grinchBoxes: bigint;
+  santaScore: bigint;
+  grinchScore: bigint;
   santaMultiplier: number;
   grinchMultiplier: number;
   gameEnded: boolean;
@@ -108,17 +107,16 @@ export type ConfigArgs = {
   buybackWallet: Address;
   adminFeePercentageBp: number;
   buybackPercentageBp: number;
-  betBurnPercentageBp: number;
   mysteryBoxBurnPercentageBp: number;
-  mysteryBoxPrice: number | bigint;
   vault: Address;
   feesVault: Address;
   totalBurned: number | bigint;
+  totalSol: number | bigint;
   totalSentToBuyback: number | bigint;
   santaPot: number | bigint;
   grinchPot: number | bigint;
-  santaBoxes: number | bigint;
-  grinchBoxes: number | bigint;
+  santaScore: number | bigint;
+  grinchScore: number | bigint;
   santaMultiplier: number;
   grinchMultiplier: number;
   gameEnded: boolean;
@@ -141,17 +139,16 @@ export function getConfigEncoder(): Encoder<ConfigArgs> {
       ['buybackWallet', getAddressEncoder()],
       ['adminFeePercentageBp', getU16Encoder()],
       ['buybackPercentageBp', getU16Encoder()],
-      ['betBurnPercentageBp', getU16Encoder()],
       ['mysteryBoxBurnPercentageBp', getU16Encoder()],
-      ['mysteryBoxPrice', getU64Encoder()],
       ['vault', getAddressEncoder()],
       ['feesVault', getAddressEncoder()],
       ['totalBurned', getU64Encoder()],
+      ['totalSol', getU64Encoder()],
       ['totalSentToBuyback', getU64Encoder()],
       ['santaPot', getU64Encoder()],
       ['grinchPot', getU64Encoder()],
-      ['santaBoxes', getU64Encoder()],
-      ['grinchBoxes', getU64Encoder()],
+      ['santaScore', getU64Encoder()],
+      ['grinchScore', getU64Encoder()],
       ['santaMultiplier', getU32Encoder()],
       ['grinchMultiplier', getU32Encoder()],
       ['gameEnded', getBooleanEncoder()],
@@ -176,17 +173,16 @@ export function getConfigDecoder(): Decoder<Config> {
     ['buybackWallet', getAddressDecoder()],
     ['adminFeePercentageBp', getU16Decoder()],
     ['buybackPercentageBp', getU16Decoder()],
-    ['betBurnPercentageBp', getU16Decoder()],
     ['mysteryBoxBurnPercentageBp', getU16Decoder()],
-    ['mysteryBoxPrice', getU64Decoder()],
     ['vault', getAddressDecoder()],
     ['feesVault', getAddressDecoder()],
     ['totalBurned', getU64Decoder()],
+    ['totalSol', getU64Decoder()],
     ['totalSentToBuyback', getU64Decoder()],
     ['santaPot', getU64Decoder()],
     ['grinchPot', getU64Decoder()],
-    ['santaBoxes', getU64Decoder()],
-    ['grinchBoxes', getU64Decoder()],
+    ['santaScore', getU64Decoder()],
+    ['grinchScore', getU64Decoder()],
     ['santaMultiplier', getU32Decoder()],
     ['grinchMultiplier', getU32Decoder()],
     ['gameEnded', getBooleanDecoder()],

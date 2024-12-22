@@ -18,9 +18,6 @@ pub struct EndGame {
           pub state: solana_program::pubkey::Pubkey,
           
               
-          pub recent_slothashes: solana_program::pubkey::Pubkey,
-          
-              
           pub system_program: solana_program::pubkey::Pubkey,
       }
 
@@ -30,17 +27,13 @@ impl EndGame {
   }
   #[allow(clippy::vec_init_then_push)]
   pub fn instruction_with_remaining_accounts(&self, remaining_accounts: &[solana_program::instruction::AccountMeta]) -> solana_program::instruction::Instruction {
-    let mut accounts = Vec::with_capacity(4 + remaining_accounts.len());
+    let mut accounts = Vec::with_capacity(3 + remaining_accounts.len());
                             accounts.push(solana_program::instruction::AccountMeta::new(
             self.admin,
             true
           ));
                                           accounts.push(solana_program::instruction::AccountMeta::new(
             self.state,
-            false
-          ));
-                                          accounts.push(solana_program::instruction::AccountMeta::new_readonly(
-            self.recent_slothashes,
             false
           ));
                                           accounts.push(solana_program::instruction::AccountMeta::new_readonly(
@@ -85,13 +78,11 @@ impl Default for EndGameInstructionData {
 ///
                       ///   0. `[writable, signer]` admin
                 ///   1. `[writable]` state
-                ///   2. `[optional]` recent_slothashes (default to `SysvarS1otHashes111111111111111111111111111`)
-                ///   3. `[optional]` system_program (default to `11111111111111111111111111111111`)
+                ///   2. `[optional]` system_program (default to `11111111111111111111111111111111`)
 #[derive(Clone, Debug, Default)]
 pub struct EndGameBuilder {
             admin: Option<solana_program::pubkey::Pubkey>,
                 state: Option<solana_program::pubkey::Pubkey>,
-                recent_slothashes: Option<solana_program::pubkey::Pubkey>,
                 system_program: Option<solana_program::pubkey::Pubkey>,
                 __remaining_accounts: Vec<solana_program::instruction::AccountMeta>,
 }
@@ -108,12 +99,6 @@ impl EndGameBuilder {
             #[inline(always)]
     pub fn state(&mut self, state: solana_program::pubkey::Pubkey) -> &mut Self {
                         self.state = Some(state);
-                    self
-    }
-            /// `[optional account, default to 'SysvarS1otHashes111111111111111111111111111']`
-#[inline(always)]
-    pub fn recent_slothashes(&mut self, recent_slothashes: solana_program::pubkey::Pubkey) -> &mut Self {
-                        self.recent_slothashes = Some(recent_slothashes);
                     self
     }
             /// `[optional account, default to '11111111111111111111111111111111']`
@@ -139,7 +124,6 @@ impl EndGameBuilder {
     let accounts = EndGame {
                               admin: self.admin.expect("admin is not set"),
                                         state: self.state.expect("state is not set"),
-                                        recent_slothashes: self.recent_slothashes.unwrap_or(solana_program::pubkey!("SysvarS1otHashes111111111111111111111111111")),
                                         system_program: self.system_program.unwrap_or(solana_program::pubkey!("11111111111111111111111111111111")),
                       };
     
@@ -157,9 +141,6 @@ impl EndGameBuilder {
               pub state: &'b solana_program::account_info::AccountInfo<'a>,
                 
                     
-              pub recent_slothashes: &'b solana_program::account_info::AccountInfo<'a>,
-                
-                    
               pub system_program: &'b solana_program::account_info::AccountInfo<'a>,
             }
 
@@ -175,9 +156,6 @@ pub struct EndGameCpi<'a, 'b> {
           pub state: &'b solana_program::account_info::AccountInfo<'a>,
           
               
-          pub recent_slothashes: &'b solana_program::account_info::AccountInfo<'a>,
-          
-              
           pub system_program: &'b solana_program::account_info::AccountInfo<'a>,
         }
 
@@ -190,7 +168,6 @@ impl<'a, 'b> EndGameCpi<'a, 'b> {
       __program: program,
               admin: accounts.admin,
               state: accounts.state,
-              recent_slothashes: accounts.recent_slothashes,
               system_program: accounts.system_program,
                 }
   }
@@ -213,17 +190,13 @@ impl<'a, 'b> EndGameCpi<'a, 'b> {
     signers_seeds: &[&[&[u8]]],
     remaining_accounts: &[(&'b solana_program::account_info::AccountInfo<'a>, bool, bool)]
   ) -> solana_program::entrypoint::ProgramResult {
-    let mut accounts = Vec::with_capacity(4 + remaining_accounts.len());
+    let mut accounts = Vec::with_capacity(3 + remaining_accounts.len());
                             accounts.push(solana_program::instruction::AccountMeta::new(
             *self.admin.key,
             true
           ));
                                           accounts.push(solana_program::instruction::AccountMeta::new(
             *self.state.key,
-            false
-          ));
-                                          accounts.push(solana_program::instruction::AccountMeta::new_readonly(
-            *self.recent_slothashes.key,
             false
           ));
                                           accounts.push(solana_program::instruction::AccountMeta::new_readonly(
@@ -244,11 +217,10 @@ impl<'a, 'b> EndGameCpi<'a, 'b> {
       accounts,
       data,
     };
-    let mut account_infos = Vec::with_capacity(4 + 1 + remaining_accounts.len());
+    let mut account_infos = Vec::with_capacity(3 + 1 + remaining_accounts.len());
     account_infos.push(self.__program.clone());
                   account_infos.push(self.admin.clone());
                         account_infos.push(self.state.clone());
-                        account_infos.push(self.recent_slothashes.clone());
                         account_infos.push(self.system_program.clone());
               remaining_accounts.iter().for_each(|remaining_account| account_infos.push(remaining_account.0.clone()));
 
@@ -266,8 +238,7 @@ impl<'a, 'b> EndGameCpi<'a, 'b> {
 ///
                       ///   0. `[writable, signer]` admin
                 ///   1. `[writable]` state
-          ///   2. `[]` recent_slothashes
-          ///   3. `[]` system_program
+          ///   2. `[]` system_program
 #[derive(Clone, Debug)]
 pub struct EndGameCpiBuilder<'a, 'b> {
   instruction: Box<EndGameCpiBuilderInstruction<'a, 'b>>,
@@ -279,7 +250,6 @@ impl<'a, 'b> EndGameCpiBuilder<'a, 'b> {
       __program: program,
               admin: None,
               state: None,
-              recent_slothashes: None,
               system_program: None,
                                 __remaining_accounts: Vec::new(),
     });
@@ -293,11 +263,6 @@ impl<'a, 'b> EndGameCpiBuilder<'a, 'b> {
       #[inline(always)]
     pub fn state(&mut self, state: &'b solana_program::account_info::AccountInfo<'a>) -> &mut Self {
                         self.instruction.state = Some(state);
-                    self
-    }
-      #[inline(always)]
-    pub fn recent_slothashes(&mut self, recent_slothashes: &'b solana_program::account_info::AccountInfo<'a>) -> &mut Self {
-                        self.instruction.recent_slothashes = Some(recent_slothashes);
                     self
     }
       #[inline(always)]
@@ -334,8 +299,6 @@ impl<'a, 'b> EndGameCpiBuilder<'a, 'b> {
                   
           state: self.instruction.state.expect("state is not set"),
                   
-          recent_slothashes: self.instruction.recent_slothashes.expect("recent_slothashes is not set"),
-                  
           system_program: self.instruction.system_program.expect("system_program is not set"),
                     };
     instruction.invoke_signed_with_remaining_accounts(signers_seeds, &self.instruction.__remaining_accounts)
@@ -347,7 +310,6 @@ struct EndGameCpiBuilderInstruction<'a, 'b> {
   __program: &'b solana_program::account_info::AccountInfo<'a>,
             admin: Option<&'b solana_program::account_info::AccountInfo<'a>>,
                 state: Option<&'b solana_program::account_info::AccountInfo<'a>>,
-                recent_slothashes: Option<&'b solana_program::account_info::AccountInfo<'a>>,
                 system_program: Option<&'b solana_program::account_info::AccountInfo<'a>>,
                 /// Additional instruction accounts `(AccountInfo, is_writable, is_signer)`.
   __remaining_accounts: Vec<(&'b solana_program::account_info::AccountInfo<'a>, bool, bool)>,

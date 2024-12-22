@@ -19,7 +19,7 @@ import {
   bytes,
   mapSerializer,
   struct,
-  u64,
+  u16,
 } from '@metaplex-foundation/umi/serializers';
 import {
   ResolvedAccount,
@@ -28,57 +28,57 @@ import {
 } from '../shared';
 
 // Accounts.
-export type UpdateMysteryBoxPriceInstructionAccounts = {
+export type UpdateBetBuybackPercentageBpInstructionAccounts = {
   admin: Signer;
   state: PublicKey | Pda;
   systemProgram?: PublicKey | Pda;
 };
 
 // Data.
-export type UpdateMysteryBoxPriceInstructionData = {
+export type UpdateBetBuybackPercentageBpInstructionData = {
   discriminator: Uint8Array;
-  price: bigint;
+  percentageInBp: number;
 };
 
-export type UpdateMysteryBoxPriceInstructionDataArgs = {
-  price: number | bigint;
+export type UpdateBetBuybackPercentageBpInstructionDataArgs = {
+  percentageInBp: number;
 };
 
-export function getUpdateMysteryBoxPriceInstructionDataSerializer(): Serializer<
-  UpdateMysteryBoxPriceInstructionDataArgs,
-  UpdateMysteryBoxPriceInstructionData
+export function getUpdateBetBuybackPercentageBpInstructionDataSerializer(): Serializer<
+  UpdateBetBuybackPercentageBpInstructionDataArgs,
+  UpdateBetBuybackPercentageBpInstructionData
 > {
   return mapSerializer<
-    UpdateMysteryBoxPriceInstructionDataArgs,
+    UpdateBetBuybackPercentageBpInstructionDataArgs,
     any,
-    UpdateMysteryBoxPriceInstructionData
+    UpdateBetBuybackPercentageBpInstructionData
   >(
-    struct<UpdateMysteryBoxPriceInstructionData>(
+    struct<UpdateBetBuybackPercentageBpInstructionData>(
       [
         ['discriminator', bytes({ size: 8 })],
-        ['price', u64()],
+        ['percentageInBp', u16()],
       ],
-      { description: 'UpdateMysteryBoxPriceInstructionData' }
+      { description: 'UpdateBetBuybackPercentageBpInstructionData' }
     ),
     (value) => ({
       ...value,
-      discriminator: new Uint8Array([122, 152, 143, 112, 173, 18, 192, 165]),
+      discriminator: new Uint8Array([110, 86, 101, 28, 23, 234, 136, 55]),
     })
   ) as Serializer<
-    UpdateMysteryBoxPriceInstructionDataArgs,
-    UpdateMysteryBoxPriceInstructionData
+    UpdateBetBuybackPercentageBpInstructionDataArgs,
+    UpdateBetBuybackPercentageBpInstructionData
   >;
 }
 
 // Args.
-export type UpdateMysteryBoxPriceInstructionArgs =
-  UpdateMysteryBoxPriceInstructionDataArgs;
+export type UpdateBetBuybackPercentageBpInstructionArgs =
+  UpdateBetBuybackPercentageBpInstructionDataArgs;
 
 // Instruction.
-export function updateMysteryBoxPrice(
+export function updateBetBuybackPercentageBp(
   context: Pick<Context, 'programs'>,
-  input: UpdateMysteryBoxPriceInstructionAccounts &
-    UpdateMysteryBoxPriceInstructionArgs
+  input: UpdateBetBuybackPercentageBpInstructionAccounts &
+    UpdateBetBuybackPercentageBpInstructionArgs
 ): TransactionBuilder {
   // Program ID.
   const programId = context.programs.getPublicKey(
@@ -106,7 +106,9 @@ export function updateMysteryBoxPrice(
   } satisfies ResolvedAccountsWithIndices;
 
   // Arguments.
-  const resolvedArgs: UpdateMysteryBoxPriceInstructionArgs = { ...input };
+  const resolvedArgs: UpdateBetBuybackPercentageBpInstructionArgs = {
+    ...input,
+  };
 
   // Default values.
   if (!resolvedAccounts.systemProgram.value) {
@@ -130,9 +132,10 @@ export function updateMysteryBoxPrice(
   );
 
   // Data.
-  const data = getUpdateMysteryBoxPriceInstructionDataSerializer().serialize(
-    resolvedArgs as UpdateMysteryBoxPriceInstructionDataArgs
-  );
+  const data =
+    getUpdateBetBuybackPercentageBpInstructionDataSerializer().serialize(
+      resolvedArgs as UpdateBetBuybackPercentageBpInstructionDataArgs
+    );
 
   // Bytes Created On Chain.
   const bytesCreatedOnChain = 0;

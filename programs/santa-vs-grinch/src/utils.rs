@@ -140,24 +140,25 @@ pub fn calculate_winnings(bet_amount: u64, bet_side: BettingSide, config: &Confi
                 };
 
                 // Calculate the share of the losing pot (75% to winners)
-                let losing_pot_share = (losing_pot as u128 * 75) / 100;
+                // let losing_pot_share = (losing_pot as u128 * 75) / 100;
 
                 // Calculate individual winner's share based on their contribution to winning pot
-                let winner_share = (bet_amount as u128 * losing_pot_share) / winning_pot as u128;
+                let winner_share = bet_amount
+                    .checked_mul(losing_pot)
+                    .ok_or(ProgramError::ArithmeticOverflow)?
+                    .checked_div(winning_pot)
+                    .ok_or(ProgramError::ArithmeticOverflow)?;
 
                 // Return original bet plus winnings
                 Ok(bet_amount
-                    .checked_add(winner_share as u64)
+                    .checked_add(winner_share)
                     .ok_or(ProgramError::ArithmeticOverflow)?)
             } else {
                 // Losing side gets nothing
                 Ok(0)
             }
         }
-        None => {
-            // In case of a true tie, return 87.5% of original bet (12.5% penalty)
-            Ok((bet_amount as u128 * 875 / 1000) as u64)
-        }
+        None => Ok(bet_amount),
     }
 }
 

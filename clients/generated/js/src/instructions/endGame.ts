@@ -45,9 +45,6 @@ export type EndGameInstruction<
   TProgram extends string = typeof SANTA_VS_GRINCH_PROGRAM_ADDRESS,
   TAccountAdmin extends string | IAccountMeta<string> = string,
   TAccountState extends string | IAccountMeta<string> = string,
-  TAccountRecentSlothashes extends
-    | string
-    | IAccountMeta<string> = 'SysvarS1otHashes111111111111111111111111111',
   TAccountSystemProgram extends
     | string
     | IAccountMeta<string> = '11111111111111111111111111111111',
@@ -63,9 +60,6 @@ export type EndGameInstruction<
       TAccountState extends string
         ? WritableAccount<TAccountState>
         : TAccountState,
-      TAccountRecentSlothashes extends string
-        ? ReadonlyAccount<TAccountRecentSlothashes>
-        : TAccountRecentSlothashes,
       TAccountSystemProgram extends string
         ? ReadonlyAccount<TAccountSystemProgram>
         : TAccountSystemProgram,
@@ -103,34 +97,25 @@ export function getEndGameInstructionDataCodec(): Codec<
 export type EndGameInput<
   TAccountAdmin extends string = string,
   TAccountState extends string = string,
-  TAccountRecentSlothashes extends string = string,
   TAccountSystemProgram extends string = string,
 > = {
   admin: TransactionSigner<TAccountAdmin>;
   state: Address<TAccountState>;
-  recentSlothashes?: Address<TAccountRecentSlothashes>;
   systemProgram?: Address<TAccountSystemProgram>;
 };
 
 export function getEndGameInstruction<
   TAccountAdmin extends string,
   TAccountState extends string,
-  TAccountRecentSlothashes extends string,
   TAccountSystemProgram extends string,
   TProgramAddress extends Address = typeof SANTA_VS_GRINCH_PROGRAM_ADDRESS,
 >(
-  input: EndGameInput<
-    TAccountAdmin,
-    TAccountState,
-    TAccountRecentSlothashes,
-    TAccountSystemProgram
-  >,
+  input: EndGameInput<TAccountAdmin, TAccountState, TAccountSystemProgram>,
   config?: { programAddress?: TProgramAddress }
 ): EndGameInstruction<
   TProgramAddress,
   TAccountAdmin,
   TAccountState,
-  TAccountRecentSlothashes,
   TAccountSystemProgram
 > {
   // Program address.
@@ -141,10 +126,6 @@ export function getEndGameInstruction<
   const originalAccounts = {
     admin: { value: input.admin ?? null, isWritable: true },
     state: { value: input.state ?? null, isWritable: true },
-    recentSlothashes: {
-      value: input.recentSlothashes ?? null,
-      isWritable: false,
-    },
     systemProgram: { value: input.systemProgram ?? null, isWritable: false },
   };
   const accounts = originalAccounts as Record<
@@ -153,10 +134,6 @@ export function getEndGameInstruction<
   >;
 
   // Resolve default values.
-  if (!accounts.recentSlothashes.value) {
-    accounts.recentSlothashes.value =
-      'SysvarS1otHashes111111111111111111111111111' as Address<'SysvarS1otHashes111111111111111111111111111'>;
-  }
   if (!accounts.systemProgram.value) {
     accounts.systemProgram.value =
       '11111111111111111111111111111111' as Address<'11111111111111111111111111111111'>;
@@ -167,7 +144,6 @@ export function getEndGameInstruction<
     accounts: [
       getAccountMeta(accounts.admin),
       getAccountMeta(accounts.state),
-      getAccountMeta(accounts.recentSlothashes),
       getAccountMeta(accounts.systemProgram),
     ],
     programAddress,
@@ -176,7 +152,6 @@ export function getEndGameInstruction<
     TProgramAddress,
     TAccountAdmin,
     TAccountState,
-    TAccountRecentSlothashes,
     TAccountSystemProgram
   >;
 
@@ -191,8 +166,7 @@ export type ParsedEndGameInstruction<
   accounts: {
     admin: TAccountMetas[0];
     state: TAccountMetas[1];
-    recentSlothashes: TAccountMetas[2];
-    systemProgram: TAccountMetas[3];
+    systemProgram: TAccountMetas[2];
   };
   data: EndGameInstructionData;
 };
@@ -205,7 +179,7 @@ export function parseEndGameInstruction<
     IInstructionWithAccounts<TAccountMetas> &
     IInstructionWithData<Uint8Array>
 ): ParsedEndGameInstruction<TProgram, TAccountMetas> {
-  if (instruction.accounts.length < 4) {
+  if (instruction.accounts.length < 3) {
     // TODO: Coded error.
     throw new Error('Not enough accounts');
   }
@@ -220,7 +194,6 @@ export function parseEndGameInstruction<
     accounts: {
       admin: getNextAccount(),
       state: getNextAccount(),
-      recentSlothashes: getNextAccount(),
       systemProgram: getNextAccount(),
     },
     data: getEndGameInstructionDataDecoder().decode(instruction.data),

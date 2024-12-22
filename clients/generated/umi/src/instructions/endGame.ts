@@ -30,7 +30,6 @@ import {
 export type EndGameInstructionAccounts = {
   admin: Signer;
   state: PublicKey | Pda;
-  recentSlothashes?: PublicKey | Pda;
   systemProgram?: PublicKey | Pda;
 };
 
@@ -77,26 +76,14 @@ export function endGame(
       isWritable: true as boolean,
       value: input.state ?? null,
     },
-    recentSlothashes: {
-      index: 2,
-      isWritable: false as boolean,
-      value: input.recentSlothashes ?? null,
-    },
     systemProgram: {
-      index: 3,
+      index: 2,
       isWritable: false as boolean,
       value: input.systemProgram ?? null,
     },
   } satisfies ResolvedAccountsWithIndices;
 
   // Default values.
-  if (!resolvedAccounts.recentSlothashes.value) {
-    resolvedAccounts.recentSlothashes.value = context.programs.getPublicKey(
-      'recentSlothashes',
-      'SysvarS1otHashes111111111111111111111111111'
-    );
-    resolvedAccounts.recentSlothashes.isWritable = false;
-  }
   if (!resolvedAccounts.systemProgram.value) {
     resolvedAccounts.systemProgram.value = context.programs.getPublicKey(
       'systemProgram',

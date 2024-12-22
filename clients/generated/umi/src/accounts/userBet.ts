@@ -26,7 +26,6 @@ import {
   mapSerializer,
   publicKey as publicKeySerializer,
   struct,
-  u32,
   u64,
   u8,
 } from '@metaplex-foundation/umi/serializers';
@@ -37,16 +36,16 @@ export type UserBetAccountData = {
   discriminator: Uint8Array;
   owner: PublicKey;
   amount: bigint;
+  tokenAmount: bigint;
   claimed: boolean;
-  mysterBoxCount: number;
   bump: number;
 };
 
 export type UserBetAccountDataArgs = {
   owner: PublicKey;
   amount: number | bigint;
+  tokenAmount: number | bigint;
   claimed: boolean;
-  mysterBoxCount: number;
   bump: number;
 };
 
@@ -60,8 +59,8 @@ export function getUserBetAccountDataSerializer(): Serializer<
         ['discriminator', bytes({ size: 8 })],
         ['owner', publicKeySerializer()],
         ['amount', u64()],
+        ['tokenAmount', u64()],
         ['claimed', bool()],
-        ['mysterBoxCount', u32()],
         ['bump', u8()],
       ],
       { description: 'UserBetAccountData' }
@@ -143,16 +142,16 @@ export function getUserBetGpaBuilder(
       discriminator: Uint8Array;
       owner: PublicKey;
       amount: number | bigint;
+      tokenAmount: number | bigint;
       claimed: boolean;
-      mysterBoxCount: number;
       bump: number;
     }>({
       discriminator: [0, bytes({ size: 8 })],
       owner: [8, publicKeySerializer()],
       amount: [40, u64()],
-      claimed: [48, bool()],
-      mysterBoxCount: [49, u32()],
-      bump: [53, u8()],
+      tokenAmount: [48, u64()],
+      claimed: [56, bool()],
+      bump: [57, u8()],
     })
     .deserializeUsing<UserBet>((account) => deserializeUserBet(account))
     .whereField(

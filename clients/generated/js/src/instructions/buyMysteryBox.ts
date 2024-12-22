@@ -20,6 +20,8 @@ import {
   getStructEncoder,
   getU32Decoder,
   getU32Encoder,
+  getU64Decoder,
+  getU64Encoder,
   getUtf8Decoder,
   getUtf8Encoder,
   transformEncoder,
@@ -67,6 +69,9 @@ export type BuyMysteryBoxInstruction<
   TAccountAssociatedTokenProgram extends
     | string
     | IAccountMeta<string> = 'ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL',
+  TAccountRecentSlothashes extends
+    | string
+    | IAccountMeta<string> = 'SysvarS1otHashes111111111111111111111111111',
   TAccountSystemProgram extends
     | string
     | IAccountMeta<string> = '11111111111111111111111111111111',
@@ -96,6 +101,9 @@ export type BuyMysteryBoxInstruction<
       TAccountAssociatedTokenProgram extends string
         ? ReadonlyAccount<TAccountAssociatedTokenProgram>
         : TAccountAssociatedTokenProgram,
+      TAccountRecentSlothashes extends string
+        ? ReadonlyAccount<TAccountRecentSlothashes>
+        : TAccountRecentSlothashes,
       TAccountSystemProgram extends string
         ? ReadonlyAccount<TAccountSystemProgram>
         : TAccountSystemProgram,
@@ -105,15 +113,20 @@ export type BuyMysteryBoxInstruction<
 
 export type BuyMysteryBoxInstructionData = {
   discriminator: ReadonlyUint8Array;
+  amount: bigint;
   betTag: string;
 };
 
-export type BuyMysteryBoxInstructionDataArgs = { betTag: string };
+export type BuyMysteryBoxInstructionDataArgs = {
+  amount: number | bigint;
+  betTag: string;
+};
 
 export function getBuyMysteryBoxInstructionDataEncoder(): Encoder<BuyMysteryBoxInstructionDataArgs> {
   return transformEncoder(
     getStructEncoder([
       ['discriminator', fixEncoderSize(getBytesEncoder(), 8)],
+      ['amount', getU64Encoder()],
       ['betTag', addEncoderSizePrefix(getUtf8Encoder(), getU32Encoder())],
     ]),
     (value) => ({ ...value, discriminator: BUY_MYSTERY_BOX_DISCRIMINATOR })
@@ -123,6 +136,7 @@ export function getBuyMysteryBoxInstructionDataEncoder(): Encoder<BuyMysteryBoxI
 export function getBuyMysteryBoxInstructionDataDecoder(): Decoder<BuyMysteryBoxInstructionData> {
   return getStructDecoder([
     ['discriminator', fixDecoderSize(getBytesDecoder(), 8)],
+    ['amount', getU64Decoder()],
     ['betTag', addDecoderSizePrefix(getUtf8Decoder(), getU32Decoder())],
   ]);
 }
@@ -145,6 +159,7 @@ export type BuyMysteryBoxAsyncInput<
   TAccountUserAta extends string = string,
   TAccountTokenProgram extends string = string,
   TAccountAssociatedTokenProgram extends string = string,
+  TAccountRecentSlothashes extends string = string,
   TAccountSystemProgram extends string = string,
 > = {
   user: TransactionSigner<TAccountUser>;
@@ -154,7 +169,9 @@ export type BuyMysteryBoxAsyncInput<
   userAta: Address<TAccountUserAta>;
   tokenProgram: Address<TAccountTokenProgram>;
   associatedTokenProgram?: Address<TAccountAssociatedTokenProgram>;
+  recentSlothashes?: Address<TAccountRecentSlothashes>;
   systemProgram?: Address<TAccountSystemProgram>;
+  amount: BuyMysteryBoxInstructionDataArgs['amount'];
   betTag: BuyMysteryBoxInstructionDataArgs['betTag'];
 };
 
@@ -166,6 +183,7 @@ export async function getBuyMysteryBoxInstructionAsync<
   TAccountUserAta extends string,
   TAccountTokenProgram extends string,
   TAccountAssociatedTokenProgram extends string,
+  TAccountRecentSlothashes extends string,
   TAccountSystemProgram extends string,
   TProgramAddress extends Address = typeof SANTA_VS_GRINCH_PROGRAM_ADDRESS,
 >(
@@ -177,6 +195,7 @@ export async function getBuyMysteryBoxInstructionAsync<
     TAccountUserAta,
     TAccountTokenProgram,
     TAccountAssociatedTokenProgram,
+    TAccountRecentSlothashes,
     TAccountSystemProgram
   >,
   config?: { programAddress?: TProgramAddress }
@@ -190,6 +209,7 @@ export async function getBuyMysteryBoxInstructionAsync<
     TAccountUserAta,
     TAccountTokenProgram,
     TAccountAssociatedTokenProgram,
+    TAccountRecentSlothashes,
     TAccountSystemProgram
   >
 > {
@@ -207,6 +227,10 @@ export async function getBuyMysteryBoxInstructionAsync<
     tokenProgram: { value: input.tokenProgram ?? null, isWritable: false },
     associatedTokenProgram: {
       value: input.associatedTokenProgram ?? null,
+      isWritable: false,
+    },
+    recentSlothashes: {
+      value: input.recentSlothashes ?? null,
       isWritable: false,
     },
     systemProgram: { value: input.systemProgram ?? null, isWritable: false },
@@ -236,6 +260,10 @@ export async function getBuyMysteryBoxInstructionAsync<
     accounts.associatedTokenProgram.value =
       'ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL' as Address<'ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL'>;
   }
+  if (!accounts.recentSlothashes.value) {
+    accounts.recentSlothashes.value =
+      'SysvarS1otHashes111111111111111111111111111' as Address<'SysvarS1otHashes111111111111111111111111111'>;
+  }
   if (!accounts.systemProgram.value) {
     accounts.systemProgram.value =
       '11111111111111111111111111111111' as Address<'11111111111111111111111111111111'>;
@@ -251,6 +279,7 @@ export async function getBuyMysteryBoxInstructionAsync<
       getAccountMeta(accounts.userAta),
       getAccountMeta(accounts.tokenProgram),
       getAccountMeta(accounts.associatedTokenProgram),
+      getAccountMeta(accounts.recentSlothashes),
       getAccountMeta(accounts.systemProgram),
     ],
     programAddress,
@@ -266,6 +295,7 @@ export async function getBuyMysteryBoxInstructionAsync<
     TAccountUserAta,
     TAccountTokenProgram,
     TAccountAssociatedTokenProgram,
+    TAccountRecentSlothashes,
     TAccountSystemProgram
   >;
 
@@ -280,6 +310,7 @@ export type BuyMysteryBoxInput<
   TAccountUserAta extends string = string,
   TAccountTokenProgram extends string = string,
   TAccountAssociatedTokenProgram extends string = string,
+  TAccountRecentSlothashes extends string = string,
   TAccountSystemProgram extends string = string,
 > = {
   user: TransactionSigner<TAccountUser>;
@@ -289,7 +320,9 @@ export type BuyMysteryBoxInput<
   userAta: Address<TAccountUserAta>;
   tokenProgram: Address<TAccountTokenProgram>;
   associatedTokenProgram?: Address<TAccountAssociatedTokenProgram>;
+  recentSlothashes?: Address<TAccountRecentSlothashes>;
   systemProgram?: Address<TAccountSystemProgram>;
+  amount: BuyMysteryBoxInstructionDataArgs['amount'];
   betTag: BuyMysteryBoxInstructionDataArgs['betTag'];
 };
 
@@ -301,6 +334,7 @@ export function getBuyMysteryBoxInstruction<
   TAccountUserAta extends string,
   TAccountTokenProgram extends string,
   TAccountAssociatedTokenProgram extends string,
+  TAccountRecentSlothashes extends string,
   TAccountSystemProgram extends string,
   TProgramAddress extends Address = typeof SANTA_VS_GRINCH_PROGRAM_ADDRESS,
 >(
@@ -312,6 +346,7 @@ export function getBuyMysteryBoxInstruction<
     TAccountUserAta,
     TAccountTokenProgram,
     TAccountAssociatedTokenProgram,
+    TAccountRecentSlothashes,
     TAccountSystemProgram
   >,
   config?: { programAddress?: TProgramAddress }
@@ -324,6 +359,7 @@ export function getBuyMysteryBoxInstruction<
   TAccountUserAta,
   TAccountTokenProgram,
   TAccountAssociatedTokenProgram,
+  TAccountRecentSlothashes,
   TAccountSystemProgram
 > {
   // Program address.
@@ -342,6 +378,10 @@ export function getBuyMysteryBoxInstruction<
       value: input.associatedTokenProgram ?? null,
       isWritable: false,
     },
+    recentSlothashes: {
+      value: input.recentSlothashes ?? null,
+      isWritable: false,
+    },
     systemProgram: { value: input.systemProgram ?? null, isWritable: false },
   };
   const accounts = originalAccounts as Record<
@@ -356,6 +396,10 @@ export function getBuyMysteryBoxInstruction<
   if (!accounts.associatedTokenProgram.value) {
     accounts.associatedTokenProgram.value =
       'ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL' as Address<'ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL'>;
+  }
+  if (!accounts.recentSlothashes.value) {
+    accounts.recentSlothashes.value =
+      'SysvarS1otHashes111111111111111111111111111' as Address<'SysvarS1otHashes111111111111111111111111111'>;
   }
   if (!accounts.systemProgram.value) {
     accounts.systemProgram.value =
@@ -372,6 +416,7 @@ export function getBuyMysteryBoxInstruction<
       getAccountMeta(accounts.userAta),
       getAccountMeta(accounts.tokenProgram),
       getAccountMeta(accounts.associatedTokenProgram),
+      getAccountMeta(accounts.recentSlothashes),
       getAccountMeta(accounts.systemProgram),
     ],
     programAddress,
@@ -387,6 +432,7 @@ export function getBuyMysteryBoxInstruction<
     TAccountUserAta,
     TAccountTokenProgram,
     TAccountAssociatedTokenProgram,
+    TAccountRecentSlothashes,
     TAccountSystemProgram
   >;
 
@@ -406,7 +452,8 @@ export type ParsedBuyMysteryBoxInstruction<
     userAta: TAccountMetas[4];
     tokenProgram: TAccountMetas[5];
     associatedTokenProgram: TAccountMetas[6];
-    systemProgram: TAccountMetas[7];
+    recentSlothashes: TAccountMetas[7];
+    systemProgram: TAccountMetas[8];
   };
   data: BuyMysteryBoxInstructionData;
 };
@@ -419,7 +466,7 @@ export function parseBuyMysteryBoxInstruction<
     IInstructionWithAccounts<TAccountMetas> &
     IInstructionWithData<Uint8Array>
 ): ParsedBuyMysteryBoxInstruction<TProgram, TAccountMetas> {
-  if (instruction.accounts.length < 8) {
+  if (instruction.accounts.length < 9) {
     // TODO: Coded error.
     throw new Error('Not enough accounts');
   }
@@ -439,6 +486,7 @@ export function parseBuyMysteryBoxInstruction<
       userAta: getNextAccount(),
       tokenProgram: getNextAccount(),
       associatedTokenProgram: getNextAccount(),
+      recentSlothashes: getNextAccount(),
       systemProgram: getNextAccount(),
     },
     data: getBuyMysteryBoxInstructionDataDecoder().decode(instruction.data),
