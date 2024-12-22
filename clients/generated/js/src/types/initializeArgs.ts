@@ -8,6 +8,8 @@
 
 import {
   combineCodec,
+  getAddressDecoder,
+  getAddressEncoder,
   getArrayDecoder,
   getArrayEncoder,
   getStructDecoder,
@@ -18,6 +20,7 @@ import {
   getU64Encoder,
   getU8Decoder,
   getU8Encoder,
+  type Address,
   type Codec,
   type Decoder,
   type Encoder,
@@ -35,6 +38,7 @@ export type InitializeArgs = {
   betBurnPercentageBp: number;
   mysteryBoxBurnPercentageBp: number;
   mysteryBoxPrice: bigint;
+  buybackWallet: Address;
   creators: Array<Creator>;
 };
 
@@ -44,6 +48,7 @@ export type InitializeArgsArgs = {
   betBurnPercentageBp: number;
   mysteryBoxBurnPercentageBp: number;
   mysteryBoxPrice: number | bigint;
+  buybackWallet: Address;
   creators: Array<CreatorArgs>;
 };
 
@@ -54,6 +59,7 @@ export function getInitializeArgsEncoder(): Encoder<InitializeArgsArgs> {
     ['betBurnPercentageBp', getU16Encoder()],
     ['mysteryBoxBurnPercentageBp', getU16Encoder()],
     ['mysteryBoxPrice', getU64Encoder()],
+    ['buybackWallet', getAddressEncoder()],
     ['creators', getArrayEncoder(getCreatorEncoder(), { size: 3 })],
   ]);
 }
@@ -65,6 +71,7 @@ export function getInitializeArgsDecoder(): Decoder<InitializeArgs> {
     ['betBurnPercentageBp', getU16Decoder()],
     ['mysteryBoxBurnPercentageBp', getU16Decoder()],
     ['mysteryBoxPrice', getU64Decoder()],
+    ['buybackWallet', getAddressDecoder()],
     ['creators', getArrayDecoder(getCreatorDecoder(), { size: 3 })],
   ]);
 }

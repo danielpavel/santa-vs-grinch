@@ -20,6 +20,8 @@ pub discriminator: [u8; 8],
 pub admin: Pubkey,
 #[cfg_attr(feature = "serde", serde(with = "serde_with::As::<serde_with::DisplayFromStr>"))]
 pub mint: Pubkey,
+#[cfg_attr(feature = "serde", serde(with = "serde_with::As::<serde_with::DisplayFromStr>"))]
+pub buyback_wallet: Pubkey,
 pub admin_fee_percentage_bp: u16,
 pub bet_burn_percentage_bp: u16,
 pub mystery_box_burn_percentage_bp: u16,

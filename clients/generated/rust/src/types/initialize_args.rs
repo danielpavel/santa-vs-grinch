@@ -5,6 +5,7 @@
 //! <https://github.com/kinobi-so/kinobi>
 //!
 
+use solana_program::pubkey::Pubkey;
 use crate::generated::types::Creator;
 use borsh::BorshSerialize;
 use borsh::BorshDeserialize;
@@ -17,6 +18,8 @@ pub admin_fee_percentage_bp: u16,
 pub bet_burn_percentage_bp: u16,
 pub mystery_box_burn_percentage_bp: u16,
 pub mystery_box_price: u64,
+#[cfg_attr(feature = "serde", serde(with = "serde_with::As::<serde_with::DisplayFromStr>"))]
+pub buyback_wallet: Pubkey,
 pub creators: [Creator; 3],
 }
 

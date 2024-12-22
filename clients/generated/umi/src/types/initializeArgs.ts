@@ -6,9 +6,11 @@
  * @see https://github.com/kinobi-so/kinobi
  */
 
+import { PublicKey } from '@metaplex-foundation/umi';
 import {
   Serializer,
   array,
+  publicKey as publicKeySerializer,
   struct,
   u16,
   u64,
@@ -22,6 +24,7 @@ export type InitializeArgs = {
   betBurnPercentageBp: number;
   mysteryBoxBurnPercentageBp: number;
   mysteryBoxPrice: bigint;
+  buybackWallet: PublicKey;
   creators: Array<Creator>;
 };
 
@@ -31,6 +34,7 @@ export type InitializeArgsArgs = {
   betBurnPercentageBp: number;
   mysteryBoxBurnPercentageBp: number;
   mysteryBoxPrice: number | bigint;
+  buybackWallet: PublicKey;
   creators: Array<CreatorArgs>;
 };
 
@@ -45,6 +49,7 @@ export function getInitializeArgsSerializer(): Serializer<
       ['betBurnPercentageBp', u16()],
       ['mysteryBoxBurnPercentageBp', u16()],
       ['mysteryBoxPrice', u64()],
+      ['buybackWallet', publicKeySerializer()],
       ['creators', array(getCreatorSerializer(), { size: 3 })],
     ],
     { description: 'InitializeArgs' }

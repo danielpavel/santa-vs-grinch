@@ -75,6 +75,7 @@ export type Config = {
   discriminator: ReadonlyUint8Array;
   admin: Address;
   mint: Address;
+  buybackWallet: Address;
   adminFeePercentageBp: number;
   betBurnPercentageBp: number;
   mysteryBoxBurnPercentageBp: number;
@@ -102,6 +103,7 @@ export type Config = {
 export type ConfigArgs = {
   admin: Address;
   mint: Address;
+  buybackWallet: Address;
   adminFeePercentageBp: number;
   betBurnPercentageBp: number;
   mysteryBoxBurnPercentageBp: number;
@@ -132,6 +134,7 @@ export function getConfigEncoder(): Encoder<ConfigArgs> {
       ['discriminator', fixEncoderSize(getBytesEncoder(), 8)],
       ['admin', getAddressEncoder()],
       ['mint', getAddressEncoder()],
+      ['buybackWallet', getAddressEncoder()],
       ['adminFeePercentageBp', getU16Encoder()],
       ['betBurnPercentageBp', getU16Encoder()],
       ['mysteryBoxBurnPercentageBp', getU16Encoder()],
@@ -164,6 +167,7 @@ export function getConfigDecoder(): Decoder<Config> {
     ['discriminator', fixDecoderSize(getBytesDecoder(), 8)],
     ['admin', getAddressDecoder()],
     ['mint', getAddressDecoder()],
+    ['buybackWallet', getAddressDecoder()],
     ['adminFeePercentageBp', getU16Decoder()],
     ['betBurnPercentageBp', getU16Decoder()],
     ['mysteryBoxBurnPercentageBp', getU16Decoder()],

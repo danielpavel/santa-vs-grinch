@@ -51,6 +51,7 @@ export type ConfigAccountData = {
   discriminator: Uint8Array;
   admin: PublicKey;
   mint: PublicKey;
+  buybackWallet: PublicKey;
   adminFeePercentageBp: number;
   betBurnPercentageBp: number;
   mysteryBoxBurnPercentageBp: number;
@@ -78,6 +79,7 @@ export type ConfigAccountData = {
 export type ConfigAccountDataArgs = {
   admin: PublicKey;
   mint: PublicKey;
+  buybackWallet: PublicKey;
   adminFeePercentageBp: number;
   betBurnPercentageBp: number;
   mysteryBoxBurnPercentageBp: number;
@@ -112,6 +114,7 @@ export function getConfigAccountDataSerializer(): Serializer<
         ['discriminator', bytes({ size: 8 })],
         ['admin', publicKeySerializer()],
         ['mint', publicKeySerializer()],
+        ['buybackWallet', publicKeySerializer()],
         ['adminFeePercentageBp', u16()],
         ['betBurnPercentageBp', u16()],
         ['mysteryBoxBurnPercentageBp', u16()],
@@ -214,6 +217,7 @@ export function getConfigGpaBuilder(
       discriminator: Uint8Array;
       admin: PublicKey;
       mint: PublicKey;
+      buybackWallet: PublicKey;
       adminFeePercentageBp: number;
       betBurnPercentageBp: number;
       mysteryBoxBurnPercentageBp: number;
@@ -240,23 +244,24 @@ export function getConfigGpaBuilder(
       discriminator: [0, bytes({ size: 8 })],
       admin: [8, publicKeySerializer()],
       mint: [40, publicKeySerializer()],
-      adminFeePercentageBp: [72, u16()],
-      betBurnPercentageBp: [74, u16()],
-      mysteryBoxBurnPercentageBp: [76, u16()],
-      mysteryBoxPrice: [78, u64()],
-      vault: [86, publicKeySerializer()],
-      feesVault: [118, publicKeySerializer()],
-      totalBurned: [150, u64()],
-      santaPot: [158, u64()],
-      grinchPot: [166, u64()],
-      santaBoxes: [174, u64()],
-      grinchBoxes: [182, u64()],
-      santaMultiplier: [190, u32()],
-      grinchMultiplier: [194, u32()],
-      gameEnded: [198, bool()],
-      isActiveAt: [199, i64()],
-      withdrawUnclaimedAt: [207, i64()],
-      winningSide: [215, option(getBettingSideSerializer())],
+      buybackWallet: [72, publicKeySerializer()],
+      adminFeePercentageBp: [104, u16()],
+      betBurnPercentageBp: [106, u16()],
+      mysteryBoxBurnPercentageBp: [108, u16()],
+      mysteryBoxPrice: [110, u64()],
+      vault: [118, publicKeySerializer()],
+      feesVault: [150, publicKeySerializer()],
+      totalBurned: [182, u64()],
+      santaPot: [190, u64()],
+      grinchPot: [198, u64()],
+      santaBoxes: [206, u64()],
+      grinchBoxes: [214, u64()],
+      santaMultiplier: [222, u32()],
+      grinchMultiplier: [226, u32()],
+      gameEnded: [230, bool()],
+      isActiveAt: [231, i64()],
+      withdrawUnclaimedAt: [239, i64()],
+      winningSide: [247, option(getBettingSideSerializer())],
       creators: [null, array(getCreatorSerializer(), { size: 3 })],
       vaultBump: [null, u8()],
       feesVaultBump: [null, u8()],
