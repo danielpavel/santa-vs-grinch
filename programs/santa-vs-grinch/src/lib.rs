@@ -37,24 +37,18 @@ pub mod santa_vs_grinch {
         ctx.accounts.claim_winnings(bet_tag)
     }
 
-    // NOTE: Fees are no longer charged - Disable for now!
+    // NOTE: Fees are no longer charged - Disable!
     // pub fn withdraw_fees<'info>(
     //     ctx: Context<'_, '_, '_, 'info, WithdrawFees<'info>>,
     // ) -> Result<()> {
     //     ctx.accounts.withdraw_fees(ctx.remaining_accounts)
     // }
 
+    // NOTE: Creator winnings are longer charged - Disable!
     // pub fn withdraw_creators_winnings<'info>(
     //     ctx: Context<'_, '_, '_, 'info, WithdrawCreatorsWinnings<'info>>,
     // ) -> Result<()> {
     //     ctx.accounts.withdraw_fees(ctx.remaining_accounts)
-    // }
-
-    // NOTE: Fees are no longer charged - Disable for now!
-    // pub fn withdraw_unclaimed_creators_winnings<'info>(
-    //     ctx: Context<'_, '_, '_, 'info, WithdrawCreatorsWinnings<'info>>,
-    // ) -> Result<()> {
-    //     ctx.accounts.withdraw_unclaimed_fees(ctx.remaining_accounts)
     // }
 
     // pub fn update_withdraw_unclaimed_at(ctx: Context<UpdateState>, ts: i64) -> Result<()> {

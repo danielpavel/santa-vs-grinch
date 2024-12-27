@@ -10,7 +10,7 @@ use crate::state::{Config, InitializeArgs};
 pub struct Initialize<'info> {
     #[account(
         mut,
-        address = ADMIN_2_PUBKEY
+        // address = ADMIN_2_PUBKEY
     )]
     admin: Signer<'info>,
 
