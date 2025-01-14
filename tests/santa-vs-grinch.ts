@@ -23,6 +23,7 @@ import {
   updateMysteryBoxBurnPercentageBp,
   buyMysteryBox,
   endGame,
+  claimWinnings,
 } from "../clients/generated/umi/src";
 import { CREATOR_1, CREATOR_2, CREATOR_3 } from "./constants";
 import {
@@ -31,6 +32,8 @@ import {
   initializeUmi,
   mintSplMint,
   parseAnchorError,
+  printPots,
+  printScores,
 } from "./utils";
 import {
   publicKey as publicKeySerializer,
@@ -43,6 +46,7 @@ import {
 } from "@metaplex-foundation/umi-web3js-adapters";
 import { assert, expect } from "chai";
 import { fetchMint } from "@metaplex-foundation/mpl-toolbox";
+import exp from "constants";
 
 describe("santa-vs-grinch", () => {
   // Configure the client to use the local cluster.
@@ -288,7 +292,12 @@ describe("santa-vs-grinch", () => {
         (accounts.user1 as Keypair).secretKey
       )
     );
-    let gameStateAccount = await fetchConfig(umi, accounts.configState);
+    let gameStateAccount = await fetchConfig(
+      umi,
+      accounts.configState as PublicKey
+    );
+
+    console.log("User 1 bets 1 SOL on Santa");
 
     const buybackPercentageBp = gameStateAccount.buybackPercentageBp;
     const betTag = "santa";
@@ -305,7 +314,7 @@ describe("santa-vs-grinch", () => {
 
     await bet(umi, {
       user: userSigner,
-      buybackWallet: accounts.buybackPubkey,
+      buybackWallet: accounts.buybackPubkey as PublicKey,
       state: accounts.configState as PublicKey,
       userBet: userBetPubkey,
       amount,
@@ -321,14 +330,17 @@ describe("santa-vs-grinch", () => {
     assert.deepEqual(betAccount.owner, userPubkey);
 
     const buybackBalance = await provider.connection.getBalance(
-      toWeb3JsPublicKey(accounts.buybackPubkey)
+      toWeb3JsPublicKey(accounts.buybackPubkey as PublicKey)
     );
     assert.equal(buybackBalance, amountToBuyback);
 
     const vaultBalance = await provider.connection.getBalance(
-      toWeb3JsPublicKey(accounts.vault)
+      toWeb3JsPublicKey(accounts.vault as PublicKey)
     );
     assert.equal(vaultBalance, depositAmount);
+
+    expect(gameStateAccount.santaScore).to.eq(amount * BigInt(1500));
+    expect(gameStateAccount.grinchScore).to.eq(BigInt(0));
   });
 
   it("Bet on Grinch", async () => {
@@ -339,7 +351,15 @@ describe("santa-vs-grinch", () => {
         (accounts.user2 as Keypair).secretKey
       )
     );
-    let gameStateAccount = await fetchConfig(umi, accounts.configState);
+
+    let gameStateAccount = await fetchConfig(
+      umi,
+      accounts.configState as PublicKey
+    );
+
+    const oldSantaScore = gameStateAccount.santaScore;
+
+    console.log("User 2 bets 2 SOL on Grinch");
 
     const buybackPercentageBp = gameStateAccount.buybackPercentageBp;
     const betTag = "grinch";
@@ -355,111 +375,131 @@ describe("santa-vs-grinch", () => {
     ]);
 
     const buybackBalanceOld = await provider.connection.getBalance(
-      toWeb3JsPublicKey(accounts.buybackPubkey)
+      toWeb3JsPublicKey(accounts.buybackPubkey as PublicKey)
     );
     const vaultBalanceOld = await provider.connection.getBalance(
-      toWeb3JsPublicKey(accounts.vault)
+      toWeb3JsPublicKey(accounts.vault as PublicKey)
     );
 
     await bet(umi, {
       user: userSigner,
-      buybackWallet: accounts.buybackPubkey,
+      buybackWallet: accounts.buybackPubkey as PublicKey,
       state: accounts.configState as PublicKey,
       userBet: userBetPubkey,
       amount,
       betTag,
     }).sendAndConfirm(umi, options);
 
-    gameStateAccount = await fetchConfig(umi, accounts.configState);
-    //console.log("grinch gameScore", gameStateAccount.grinchScore);
+    gameStateAccount = await fetchConfig(
+      umi,
+      accounts.configState as PublicKey
+    );
     assert.equal(gameStateAccount.grinchPot, depositAmount);
 
     const betAccount = await fetchUserBet(umi, userBetPubkey);
     assert.equal(betAccount.amount, depositAmount);
     assert.deepEqual(betAccount.owner, userPubkey);
+
+    const buybackBalanceNew = await provider.connection.getBalance(
+      toWeb3JsPublicKey(accounts.buybackPubkey as PublicKey)
+    );
+
+    // check balance of buyback wallet has been increased with `amountToBuyback`
+    expect(buybackBalanceNew).to.eq(
+      buybackBalanceOld + Number(amountToBuyback)
+    );
+
+    // check balance of vault account has been increased with `depositAmount`
+    const vaultBalanceNew = await provider.connection.getBalance(
+      toWeb3JsPublicKey(accounts.vault as PublicKey)
+    );
+
+    expect(vaultBalanceNew).to.eq(vaultBalanceOld + Number(depositAmount));
+
+    expect(gameStateAccount.santaScore).to.eq(oldSantaScore);
+    expect(gameStateAccount.grinchScore).to.eq(BigInt(1500) * amount);
   });
 
-  //
-  // it("Bet on Invalid Side", async () => {
-  //   const [user2UserStatePubkey, _bump] = web3.PublicKey.findProgramAddressSync(
-  //     [
-  //       Buffer.from("user"),
-  //       (accounts.user2 as Keypair).publicKey.toBuffer(),
-  //       Buffer.from("helga"),
-  //     ],
-  //     program.programId
-  //   );
-  //
-  //   const betTag = "grinch";
-  //   const amount = new anchor.BN(5 * LAMPORTS_PER_SOL);
-  //
-  //   try {
-  //     const tx = await program.methods
-  //       .bet(amount, betTag)
-  //       .accounts({
-  //         user: (accounts.user2 as Keypair).publicKey,
-  //         state: accounts.configState,
-  //         vault: accounts.vault,
-  //         feesVault: accounts.feesVault,
-  //         userBet: user2UserStatePubkey,
-  //       })
-  //       .signers(accounts.user2)
-  //       .rpc();
-  //
-  //     expect.fail("Transaction should have failed");
-  //   } catch (err) {
-  //     if (err instanceof anchor.AnchorError) {
-  //       expect(err.error.errorCode.code).to.equal("ConstraintSeeds");
-  //       expect(err.error.errorCode.number).to.equal(2006); // Your error number
-  //       // Optionally check the error message
-  //       expect(err.error.errorMessage).to.equal(
-  //         "A seeds constraint was violated"
-  //       );
-  //     } else {
-  //       throw err;
-  //     }
-  //   }
-  // });
-  //
-  // it("Bet with an Invalid Vault - Should Fail!", async () => {
-  //   const [user1UserStatePubkey, _bump] = web3.PublicKey.findProgramAddressSync(
-  //     [
-  //       Buffer.from("user"),
-  //       (accounts.user1 as Keypair).publicKey.toBuffer(),
-  //       Buffer.from("santa"),
-  //     ],
-  //     program.programId
-  //   );
-  //
-  //   const amount = new anchor.BN(5 * LAMPORTS_PER_SOL);
-  //   const betTag = "santa";
-  //   try {
-  //     const tx = await program.methods
-  //       .bet(amount, betTag)
-  //       .accounts({
-  //         user: (accounts.user1 as Keypair).publicKey,
-  //         state: accounts.configState,
-  //         vault: PublicKey.unique(),
-  //         feesVault: accounts.feesVault,
-  //         userBet: user1UserStatePubkey,
-  //       })
-  //       .signers(accounts.user1)
-  //       .rpc();
-  //
-  //     expect.fail("Transaction should have failed");
-  //   } catch (err) {
-  //     if (err instanceof anchor.AnchorError) {
-  //       expect(err.error.errorCode.code).to.equal("InvalidVaultDepositAccount");
-  //       expect(err.error.errorCode.number).to.equal(6000); // Your error number
-  //       // Optionally check the error message
-  //       expect(err.error.errorMessage).to.equal(
-  //         "Invalid deposit vault account"
-  //       );
-  //     } else {
-  //       throw err;
-  //     }
-  //   }
-  // });
+  it("Bet on invalid side - Expected to fail!", async () => {
+    let userPubkey = fromWeb3JsPublicKey((accounts.user2 as Keypair).publicKey);
+    const userSigner = createSignerFromKeypair(
+      umi,
+      umi.eddsa.createKeypairFromSecretKey(
+        (accounts.user2 as Keypair).secretKey
+      )
+    );
+    let gameStateAccount = await fetchConfig(umi, accounts.configState);
+
+    const buybackPercentageBp = gameStateAccount.buybackPercentageBp;
+    const betTag = "helga";
+    const amount = BigInt(2 * LAMPORTS_PER_SOL);
+    const amountToBuyback =
+      (amount * BigInt(buybackPercentageBp)) / BigInt(10_000);
+    const depositAmount = amount - amountToBuyback;
+
+    const [userBetPubkey, _] = umi.eddsa.findPda(programId, [
+      string({ size: "variable" }).serialize("user"),
+      publicKeySerializer().serialize(userPubkey),
+      string({ size: "variable" }).serialize(betTag),
+    ]);
+
+    try {
+      await bet(umi, {
+        user: userSigner,
+        buybackWallet: accounts.buybackPubkey as PublicKey,
+        state: accounts.configState as PublicKey,
+        userBet: userBetPubkey,
+        amount,
+        betTag,
+      }).sendAndConfirm(umi, options);
+    } catch (error) {
+      const { errorNumber, errorMessage, errorCode } = parseAnchorError(
+        error.transactionLogs!
+      );
+
+      expect(errorNumber).to.eq(6012);
+      expect(errorMessage).to.eq("InvalidBetTag");
+      expect(errorCode).to.eq("InvalidBetTag");
+    }
+  });
+
+  it("Bet with an Invalid Vault - Expected to fail!", async () => {
+    let userPubkey = fromWeb3JsPublicKey((accounts.user2 as Keypair).publicKey);
+    const userSigner = createSignerFromKeypair(
+      umi,
+      umi.eddsa.createKeypairFromSecretKey(
+        (accounts.user2 as Keypair).secretKey
+      )
+    );
+    let gameStateAccount = await fetchConfig(umi, accounts.configState);
+
+    const buybackPercentageBp = gameStateAccount.buybackPercentageBp;
+    const betTag = "santa";
+    const amount = BigInt(1 * LAMPORTS_PER_SOL);
+    const amountToBuyback =
+      (amount * BigInt(buybackPercentageBp)) / BigInt(10_000);
+    const depositAmount = amount - amountToBuyback;
+
+    const [userBetPubkey, _] = umi.eddsa.findPda(programId, [
+      string({ size: "variable" }).serialize("user"),
+      publicKeySerializer().serialize(userPubkey),
+      string({ size: "variable" }).serialize(betTag),
+    ]);
+
+    try {
+      await bet(umi, {
+        user: userSigner,
+        buybackWallet: accounts.buybackPubkey as PublicKey,
+        state: accounts.configState as PublicKey,
+        userBet: userBetPubkey,
+        vault: userBetPubkey, // << INVALID VAULT
+        amount,
+        betTag,
+      }).sendAndConfirm(umi, options);
+
+      expect.fail("❌ Tx expected to fail!");
+    } catch (error) {}
+  });
 
   it("Buy a Mystery Box for Grinch", async () => {
     const betTag = "grinch";
@@ -480,38 +520,44 @@ describe("santa-vs-grinch", () => {
 
     const supplyOld = (await fetchMint(umi, accounts.mint)).supply;
 
+    console.log("User 1 burns 10 tokens on Grinch");
+
     await buyMysteryBox(umi, {
       user: userSigner,
       mint: accounts.mint as PublicKey,
       state: accounts.configState as PublicKey,
       userBet: userBetPubkey,
-      userAta,
+      userAta: userAta as PublicKey,
       tokenProgram: fromWeb3JsPublicKey(TOKEN_PROGRAM_ID),
       amount,
       betTag,
     }).sendAndConfirm(umi, options);
 
+    // Check supply has been taken out of circulation (aka burned)
     const supplyNew = (await fetchMint(umi, accounts.mint)).supply;
     assert.equal(supplyNew, supplyOld - amount);
 
-    let gameStateAccount = await fetchConfig(umi, accounts.configState);
-    //console.log("gameStateAccount:", gameStateAccount);
-
     const betAccount = await fetchUserBet(umi, userBetPubkey);
-    // console.log("betAccount:", betAccount);
     assert.equal(betAccount.tokenAmount, amount);
   });
 
   it("End Game", async () => {
-    await endGame(umi, {
-      admin: umi.payer,
-      state: accounts.configState,
-    }).sendAndConfirm(umi, options);
+    try {
+      await endGame(umi, {
+        admin: umi.payer,
+        state: accounts.configState as PublicKey,
+      }).sendAndConfirm(umi, options);
+    } catch (error) {
+      console.error("[endGame] tx failed with err", error);
+      expect.fail("End Game Tx failed with err");
+    }
+
+    console.log("Game Ended");
 
     const gameStateAccount = await fetchConfig(umi, accounts.configState);
-    console.log(gameStateAccount);
-
     assert.equal(gameStateAccount.gameEnded, true);
+
+    printScores(gameStateAccount);
   });
 
   it("Buy a Mystery Box after game ended - should fail!", async () => {
@@ -537,7 +583,7 @@ describe("santa-vs-grinch", () => {
         mint: accounts.mint as PublicKey,
         state: accounts.configState as PublicKey,
         userBet: userBetPubkey,
-        userAta,
+        userAta: userAta as PublicKey,
         tokenProgram: fromWeb3JsPublicKey(TOKEN_PROGRAM_ID),
         amount,
         betTag,
@@ -553,46 +599,41 @@ describe("santa-vs-grinch", () => {
     }
   });
 
-  // it("User claim winnings - Invalid UserBet PDA - Should Fail!", async () => {
-  //   const [user1UserStatePubkey, _bump] = web3.PublicKey.findProgramAddressSync(
-  //     [
-  //       Buffer.from("user"),
-  //       (accounts.user1 as Keypair).publicKey.toBuffer(),
-  //       Buffer.from("klaus"),
-  //     ],
-  //     program.programId
-  //   );
-  //
-  //   const vaultBalanceOld = await provider.connection.getBalance(
-  //     accounts.vault
-  //   );
-  //
-  //   try {
-  //     const tx = await program.methods
-  //       .claimWinnings("santa")
-  //       .accounts({
-  //         claimer: (accounts.user1 as Keypair).publicKey,
-  //         state: accounts.configState,
-  //         vault: accounts.vault,
-  //         userBet: user1UserStatePubkey,
-  //       })
-  //       .signers(accounts.user1)
-  //       .rpc();
-  //
-  //     expect.fail("Transaction should have failed");
-  //   } catch (err) {
-  //     if (err instanceof anchor.AnchorError) {
-  //       expect(err.error.errorCode.code).to.equal("AccountNotInitialized");
-  //       expect(err.error.errorCode.number).to.equal(3012); // Your error number
-  //       // Optionally check the error message
-  //       expect(err.error.errorMessage).to.equal(
-  //         "The program expected this account to be already initialized"
-  //       );
-  //     } else {
-  //       throw err;
-  //     }
-  //   }
-  // });
+  it("User claim winnings", async () => {
+    const betTag = "grinch";
+    let userKp = accounts.user1 as Keypair;
+    let userPubkey = fromWeb3JsPublicKey(userKp.publicKey);
+    const userSigner = createSignerFromKeypair(
+      umi,
+      umi.eddsa.createKeypairFromSecretKey(userKp.secretKey)
+    );
+
+    const [userBetPubkey, _] = umi.eddsa.findPda(programId, [
+      string({ size: "variable" }).serialize("user"),
+      publicKeySerializer().serialize(userPubkey),
+      string({ size: "variable" }).serialize(betTag),
+    ]);
+
+    const gameStateAccount = await fetchConfig(umi, accounts.configState);
+    console.log("gameStateAccount:", gameStateAccount);
+
+    try {
+      await claimWinnings(umi, {
+        claimer: userSigner,
+        state: accounts.configState as PublicKey,
+        userBet: userBetPubkey,
+        betTag,
+      }).sendAndConfirm(umi, options);
+    } catch (err) {
+      console.log("err", err);
+    }
+
+    const betAccount = await fetchUserBet(umi, userBetPubkey);
+    console.log(betAccount);
+
+    console.log();
+  });
+
   //
   // it("User claim winnings - Invalid Bet Tag - Should Fail!", async () => {
   //   const [user1UserStatePubkey, _bump] = web3.PublicKey.findProgramAddressSync(

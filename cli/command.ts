@@ -12,7 +12,7 @@ import {
   Umi,
   PublicKey as UmiPublicKey,
 } from "@metaplex-foundation/umi";
-import fs from "fs";
+import fs, { readFileSync } from "fs";
 
 import {
   publicKey as publicKeySerializer,
@@ -35,6 +35,7 @@ import {
   safeFetchConfig,
   endGame,
   getConfigGpaBuilder,
+  initialize,
 } from "../clients/generated/umi/src";
 import {
   findAssociatedTokenPda,
@@ -46,6 +47,9 @@ import {
   mplTokenMetadata,
   TokenStandard,
 } from "@metaplex-foundation/mpl-token-metadata";
+import { fromWeb3JsPublicKey } from "@metaplex-foundation/umi-web3js-adapters";
+
+const CONFIG_FNAME = "cli/initialize_config.json";
 
 const opts: TransactionBuilderSendAndConfirmOptions = {
   confirm: { commitment: "confirmed" },
@@ -110,8 +114,9 @@ const initializePrereqs = async () => {
   return { umi, programId: getSantaVsGrinchProgramId(umi) };
 };
 
-const seed = BigInt(12958056478283855875);
-const mint = publicKey("AMhgLQcYuiStFWepRqJ9t64XxA5GFkH1Nr9vVfDrpump");
+// const seed = BigInt(12958056478283855875);
+// const mint = publicKey("AMhgLQcYuiStFWepRqJ9t64XxA5GFkH1Nr9vVfDrpump");
+const mint = publicKey("5bEjR2Taido5JNM4v45yK8f93PvHNnwwWP5GvtnTD637");
 
 // State Monitoring Commands
 program
@@ -645,7 +650,8 @@ program
     try {
       const { umi, programId } = await initializePrereqs();
 
-      // Read and parse the config file
+      const mint = publicKey(options.mint);
+
       const configFile = fs.readFileSync(options.config, "utf-8");
       const args: InitializeArgs = JSON.parse(configFile);
 
@@ -677,33 +683,31 @@ program
       //   }
       // });
 
-      // Convert creator pubkeys to PublicKey objects
-      const creators = args.creators.map((creator: Creator) => ({
-        pubkey: publicKey(creator.pubkey),
-        shareInBp: creator.shareInBp,
-        claimed: creator.claimed,
-      }));
-
       console.log("Initializing game with config:");
       console.log(args);
 
-      let mint = publicKey(options.mint);
       const seed = generateRandomU64Seed();
+      // const seed = BigInt(12958056478283855875);
 
-      // await initialize(umi, {
-      //   admin: umi.payer,
-      //   mint: mint,
-      //   tokenProgram: fromWeb3JsPublicKey(TOKEN_PROGRAM_ID),
-      //   args,
-      //   seed: seed.valueOf(),
-      // }).sendAndConfirm(umi, options);
+      const [configState, configStateBump] = umi.eddsa.findPda(
+        getSantaVsGrinchProgramId(umi),
+        [
+          string({ size: "variable" }).serialize("state"),
+          publicKeySerializer().serialize(umi.payer.publicKey),
+          u64().serialize(seed.valueOf()),
+          publicKeySerializer().serialize(mint.toString()),
+        ]
+      );
 
-      // await initialize(umi, {
-      //   admin: umi.payer,
-      //   creators,
-      //   maxNumCreators: creators.length,
-      //   adminFeePercentageBp: parseInt(options.fee),
-      // }).sendAndConfirm(umi, options);
+      await initialize(umi, {
+        admin: umi.payer,
+        mint: mint,
+        tokenProgram: SPL_TOKEN_PROGRAM_ID,
+        args,
+        seed: seed.valueOf(),
+      }).sendAndConfirm(umi, options);
+
+      console.log("✅ Done!", configState.toString());
     } catch (error) {
       console.error("Error:", error);
     }

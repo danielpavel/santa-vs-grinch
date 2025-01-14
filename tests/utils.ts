@@ -17,7 +17,7 @@ import {
   mplToolbox,
 } from "@metaplex-foundation/mpl-toolbox";
 import { createUmi } from "@metaplex-foundation/umi-bundle-defaults";
-import { Connection, Keypair } from "@solana/web3.js";
+import { Connection, Keypair, LAMPORTS_PER_SOL } from "@solana/web3.js";
 import {
   createMint,
   getAssociatedTokenAddressSync,
@@ -34,6 +34,7 @@ import {
   toWeb3JsPublicKey,
   toWeb3JsKeypair,
 } from "@metaplex-foundation/umi-web3js-adapters";
+import { Config } from "../clients/generated/js/src";
 
 export const confirmOpts: web3.ConfirmOptions = {
   preflightCommitment: "confirmed",
@@ -204,4 +205,29 @@ export function parseAnchorError(logs: string[]) {
   }
 
   return error;
+}
+
+export function printPots(gameState: Config) {
+  console.log(
+    "grinch sol pot:",
+    Math.floor(Number(gameState.grinchPot) / LAMPORTS_PER_SOL).toFixed(3)
+  );
+  console.log(
+    "santa sol pot:",
+    Math.floor(Number(gameState.santaPot) / LAMPORTS_PER_SOL).toFixed(3)
+  );
+}
+
+export function printScores(gameState: Config) {
+  console.log("grinch_score", gameState.grinchScore);
+  console.log("santa_score:", gameState.santaScore);
+}
+
+export function printPercentages(gameState: Config) {
+  console.log("adminFeePercentageBp:", gameState.adminFeePercentageBp);
+  console.log("buybackPercentageBp:", gameState.buybackPercentageBp);
+  console.log(
+    "mysteryBoxBurnPercentageBp:",
+    gameState.mysteryBoxBurnPercentageBp
+  );
 }
