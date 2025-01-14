@@ -220,7 +220,7 @@ const main = async () => {
   const umi = createUmi(mainnetURL, {
     commitment: "confirmed",
   });
-  const keypairPath = path.join(process.cwd(), "keypair2.json");
+  const keypairPath = path.join(process.cwd(), "./keypairs/admin2.json");
   const kp = await getKeypairFromFile(keypairPath);
   const admin = umi.eddsa.createKeypairFromSecretKey(kp.secretKey);
 

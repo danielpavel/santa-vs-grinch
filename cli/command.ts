@@ -1,6 +1,6 @@
 import { Command } from "commander";
 import { web3 } from "@coral-xyz/anchor";
-import { clusterApiUrl } from "@solana/web3.js";
+import { clusterApiUrl, PublicKey } from "@solana/web3.js";
 import { createUmi } from "@metaplex-foundation/umi-bundle-defaults";
 import path from "path";
 import { getKeypairFromFile } from "@solana-developers/helpers";
@@ -9,6 +9,8 @@ import {
   keypairIdentity,
   publicKey,
   TransactionBuilderSendAndConfirmOptions,
+  Umi,
+  PublicKey as UmiPublicKey,
 } from "@metaplex-foundation/umi";
 import fs from "fs";
 
@@ -32,11 +34,18 @@ import {
   buyMysteryBoxV2,
   safeFetchConfig,
   endGame,
+  getConfigGpaBuilder,
 } from "../clients/generated/umi/src";
 import {
   findAssociatedTokenPda,
+  mplToolbox,
   SPL_TOKEN_PROGRAM_ID,
 } from "@metaplex-foundation/mpl-toolbox";
+import {
+  mintV1,
+  mplTokenMetadata,
+  TokenStandard,
+} from "@metaplex-foundation/mpl-token-metadata";
 
 const opts: TransactionBuilderSendAndConfirmOptions = {
   confirm: { commitment: "confirmed" },
@@ -47,6 +56,31 @@ function generateRandomU64Seed() {
 
   let view = new DataView(randomBytes, 0);
   return view.getBigUint64(0, true);
+}
+
+async function mintSplMint(
+  umi: Umi,
+  mint: UmiPublicKey,
+  owner: UmiPublicKey,
+  amount: bigint,
+  options
+) {
+  try {
+    const ata = findAssociatedTokenPda(umi, { mint, owner });
+
+    await mintV1(umi, {
+      mint: mint,
+      authority: umi.payer,
+      amount,
+      tokenOwner: owner,
+      tokenStandard: TokenStandard.Fungible,
+    }).sendAndConfirm(umi, options);
+
+    return ata;
+  } catch (error) {
+    console.error("Error minting mint:", error);
+    throw error;
+  }
 }
 
 // Initialize Commander
@@ -60,24 +94,48 @@ program
 
 // Utility Functions
 const initializePrereqs = async () => {
-  const umi = createUmi(clusterApiUrl("mainnet-beta"), {
+  const umi = createUmi(clusterApiUrl("devnet"), {
     commitment: "confirmed",
   });
 
-  const keypairPath = path.join(process.cwd(), "keypair2.json");
-
-  console.log("kp", keypairPath);
+  const keypairPath = path.join(process.cwd(), "./keypairs/admin.json");
 
   const kp = await getKeypairFromFile(keypairPath);
   const admin = umi.eddsa.createKeypairFromSecretKey(kp.secretKey);
 
   umi.use(keypairIdentity(admin));
+  umi.use(mplTokenMetadata());
+  umi.use(mplToolbox());
 
   return { umi, programId: getSantaVsGrinchProgramId(umi) };
 };
 
 const seed = BigInt(12958056478283855875);
 const mint = publicKey("AMhgLQcYuiStFWepRqJ9t64XxA5GFkH1Nr9vVfDrpump");
+
+// State Monitoring Commands
+program
+  .command("mint-tokens")
+  .requiredOption("-o, --owner <pubkey>", "Public key of the owner.")
+  .requiredOption("-m, --mint <pubkey>", "Mint")
+  .requiredOption("-a, --amount <pubkey>", "Amount of tokens")
+  .action(async (options) => {
+    try {
+      const { umi } = await initializePrereqs();
+
+      const amount = BigInt(options.amount);
+      const owner = publicKey(options.owner);
+      const mint = publicKey(options.mint);
+
+      console.log("Minting tokens to", owner.toString());
+
+      await mintSplMint(umi, mint, owner, amount, opts);
+
+      console.log("✅ Done");
+    } catch (error) {
+      console.error("❌ Error:", error);
+    }
+  });
 
 // State Monitoring Commands
 program
@@ -96,6 +154,32 @@ program
       );
 
       console.log(configStateAccount);
+    } catch (error) {
+      console.error("Error:", error);
+    }
+  });
+
+program
+  .command("get-all-game-state-accounts")
+  .description("Get all the game state account")
+  .action(async (options) => {
+    try {
+      const { umi } = await initializePrereqs();
+
+      console.log("Fetching state...", options.address);
+
+      const gameStateAccounts = await getConfigGpaBuilder(
+        umi
+      ).getDeserialized();
+
+      if (gameStateAccounts.length === 0) {
+        console.log("No game state accounts found!");
+        return;
+      }
+
+      gameStateAccounts.map((game) => {
+        console.log(gameStateAccounts);
+      });
     } catch (error) {
       console.error("Error:", error);
     }
