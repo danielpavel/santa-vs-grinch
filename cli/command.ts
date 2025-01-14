@@ -26,7 +26,17 @@ import {
   InitializeArgs,
   Creator,
   updateBetBuybackPercentageBp,
+  claimWinnings,
+  betV2,
+  claimWinningsV2,
+  buyMysteryBoxV2,
+  safeFetchConfig,
+  endGame,
 } from "../clients/generated/umi/src";
+import {
+  findAssociatedTokenPda,
+  SPL_TOKEN_PROGRAM_ID,
+} from "@metaplex-foundation/mpl-toolbox";
 
 const opts: TransactionBuilderSendAndConfirmOptions = {
   confirm: { commitment: "confirmed" },
@@ -120,35 +130,55 @@ program
     }
   });
 
-// Instruction Commands
+program
+  .command("get-user-bet-v2")
+  .description("Get user bet information")
+  .requiredOption("-u, --user <pubkey>", "User public key")
+  .requiredOption("-g, --game <pubkey>", "Game state publicKey")
+  .requiredOption("-t, --tag <string>", "Bet tag")
+  .action(async (options) => {
+    try {
+      const { umi, programId } = await initializePrereqs();
+
+      const userPubkey = publicKey(options.user);
+      const gameState = publicKey(options.game);
+
+      const [userBetPubkey] = umi.eddsa.findPda(programId, [
+        string({ size: "variable" }).serialize("user"),
+        publicKeySerializer().serialize(userPubkey),
+        publicKeySerializer().serialize(gameState),
+        string({ size: "variable" }).serialize(options.tag),
+      ]);
+
+      console.log("Fetching user bet...");
+      try {
+        const userBetAccount = await fetchUserBet(umi, userBetPubkey);
+        console.log(userBetAccount);
+      } catch (err) {
+        console.log(`There's no userBet at address: ${userBetPubkey}`);
+      }
+    } catch (error) {
+      console.error("Error:", error);
+    }
+  });
+
 program
   .command("bet")
   .description("Place a bet")
   .requiredOption("-k, --keypair <keypair>", "User Keypair")
   .requiredOption("-a, --amount <number>", "Bet amount in lamports")
   .requiredOption("-t, --tag <string>", "Bet tag (santa/grinch).")
+  .requiredOption("-g, --game <pubkey>", "Game state publicKey")
   .action(async (options) => {
     try {
       const { umi, programId } = await initializePrereqs();
       const tag = options.tag;
       const amount = BigInt(options.amount);
+      const gameState = publicKey(options.game);
 
       if (tag != "grinch" && tag != "santa") {
         throw new Error(`Invalid ${tag} tag. Should be "santa" | "grinch"`);
       }
-
-      const [configState, configStateBump] = umi.eddsa.findPda(programId, [
-        string({ size: "variable" }).serialize("state"),
-        publicKeySerializer().serialize(umi.payer.publicKey),
-        u64().serialize(seed.valueOf()),
-        publicKeySerializer().serialize(mint.toString()),
-      ]);
-
-      const [userBetPubkey] = umi.eddsa.findPda(programId, [
-        string({ size: "variable" }).serialize("user"),
-        publicKeySerializer().serialize(umi.payer),
-        string({ size: "variable" }).serialize(tag),
-      ]);
 
       const userKeypairPath = path.join(process.cwd(), options.keypair);
       const userKp = await getKeypairFromFile(userKeypairPath);
@@ -157,12 +187,67 @@ program
         umi.eddsa.createKeypairFromSecretKey(userKp.secretKey)
       );
 
+      const [userBetPubkey] = umi.eddsa.findPda(programId, [
+        string({ size: "variable" }).serialize("user"),
+        publicKeySerializer().serialize(userSigner.publicKey),
+        string({ size: "variable" }).serialize(tag),
+      ]);
+
       console.log("Placing bet...");
 
       await bet(umi, {
         user: userSigner,
         buybackWallet: userSigner.publicKey,
-        state: configState,
+        state: gameState,
+        userBet: userBetPubkey,
+        amount,
+        betTag: tag,
+      }).sendAndConfirm(umi, options);
+
+      console.log("✅ Done!");
+    } catch (error) {
+      console.error("Error:", error);
+    }
+  });
+
+program
+  .command("bet-v2")
+  .description("Place a bet")
+  .requiredOption("-k, --keypair <keypair>", "User Keypair")
+  .requiredOption("-a, --amount <number>", "Bet amount in lamports")
+  .requiredOption("-t, --tag <string>", "Bet tag (santa/grinch).")
+  .requiredOption("-g, --game <pubkey>", "Game state publicKey")
+  .action(async (options) => {
+    try {
+      const { umi, programId } = await initializePrereqs();
+      const tag = options.tag;
+      const amount = BigInt(options.amount);
+      const gameState = publicKey(options.game);
+
+      if (tag != "grinch" && tag != "santa") {
+        throw new Error(`Invalid ${tag} tag. Should be "santa" | "grinch"`);
+      }
+
+      const userKeypairPath = path.join(process.cwd(), options.keypair);
+      const userKp = await getKeypairFromFile(userKeypairPath);
+      const userSigner = createSignerFromKeypair(
+        umi,
+        umi.eddsa.createKeypairFromSecretKey(userKp.secretKey)
+      );
+
+      const [userBetPubkey] = umi.eddsa.findPda(programId, [
+        string({ size: "variable" }).serialize("user"),
+        publicKeySerializer().serialize(userSigner.publicKey),
+        publicKeySerializer().serialize(gameState),
+        string({ size: "variable" }).serialize(tag),
+      ]);
+
+      console.log("Placing bet...");
+
+      await betV2(umi, {
+        user: userSigner,
+        buybackWallet: userSigner.publicKey,
+        state: gameState,
         userBet: userBetPubkey,
         amount,
         betTag: tag,
@@ -237,35 +322,32 @@ program
   });
 
 program
-  .command("buy-mystery-box")
+  .command("buy-mystery-box-v2")
   .description("Buy a mystery box")
   .requiredOption("-k, --keypair <keypair.json>", "User wallet")
   .requiredOption("-t, --tag <string>", "Bet tag")
+  .requiredOption("-a, --amount <number>", "Token amount")
+  .requiredOption("-g, --game <pubkey>", "Game state publicKey")
   .action(async (options) => {
     try {
-      const { umi, programId } = await initializePrereqs();
+      const { umi } = await initializePrereqs();
       const tag = options.tag;
+      const amount = BigInt(options.amount);
+      const gameState = publicKey(options.game);
 
       if (tag != "grinch" && tag != "santa") {
         throw new Error(`Invalid ${tag} tag. Should be "santa" | "grinch"`);
       }
 
-      const [configStatePubkey] = umi.eddsa.findPda(programId, [
-        string({ size: "variable" }).serialize("state"),
-        publicKeySerializer().serialize(umi.payer),
-      ]);
-
-      const [feesVaultPubkey] = umi.eddsa.findPda(program, [
-        string({ size: "variable" }).serialize("vault"),
-        publicKeySerializer().serialize(configStatePubkey),
-        string({ size: "variable" }).serialize("fees"),
-      ]);
-
-      const [userBetPubkey] = umi.eddsa.findPda(program, [
-        string({ size: "variable" }).serialize("user"),
-        publicKeySerializer().serialize(umi.payer),
-        string({ size: "variable" }).serialize(tag),
-      ]);
+      // const [feesVaultPubkey] = umi.eddsa.findPda(program, [
+      //   string({ size: "variable" }).serialize("vault"),
+      //   publicKeySerializer().serialize(gameState),
+      //   string({ size: "variable" }).serialize("fees"),
+      // ]);
+      const gameStateAccount = await safeFetchConfig(umi, gameState);
+      if (!gameStateAccount) {
+        throw new Error(`Could not find game state at ${gameState.toString()}`);
+      }
 
       const userKeypairPath = path.join(process.cwd(), options.keypair);
       const userKp = await getKeypairFromFile(userKeypairPath);
@@ -274,14 +356,87 @@ program
         umi.eddsa.createKeypairFromSecretKey(userKp.secretKey)
       );
 
+      const [userBetPubkey] = umi.eddsa.findPda(program, [
+        string({ size: "variable" }).serialize("user"),
+        publicKeySerializer().serialize(userSigner.publicKey),
+        publicKeySerializer().serialize(gameState),
+        string({ size: "variable" }).serialize(tag),
+      ]);
+
+      const [ata] = findAssociatedTokenPda(umi, {
+        mint: gameStateAccount.mint,
+        owner: userSigner.publicKey,
+      });
+
+      console.log("Buying mystery box...");
+
+      await buyMysteryBoxV2(umi, {
+        user: userSigner,
+        mint: gameStateAccount.mint,
+        state: gameState,
+        userBet: userBetPubkey,
+        userAta: ata,
+        tokenProgram: SPL_TOKEN_PROGRAM_ID,
+        betTag: tag,
+        amount: BigInt(amount) * BigInt(10 ** 6),
+      }).sendAndConfirm(umi, opts);
+    } catch (error) {
+      console.error("Error:", error);
+    }
+  });
+
+program
+  .command("buy-mystery-box")
+  .description("Buy a mystery box")
+  .requiredOption("-k, --keypair <keypair.json>", "User wallet")
+  .requiredOption("-t, --tag <string>", "Bet tag")
+  .requiredOption("-a, --amount <number>", "Token amount")
+  .requiredOption("-g, --game <pubkey>", "Game state publicKey")
+  .action(async (options) => {
+    try {
+      const { umi } = await initializePrereqs();
+      const tag = options.tag;
+      const amount = BigInt(options.amount);
+      const gameState = publicKey(options.game);
+
+      if (tag != "grinch" && tag != "santa") {
+        throw new Error(`Invalid ${tag} tag. Should be "santa" | "grinch"`);
+      }
+
+      const gameStateAccount = await safeFetchConfig(umi, gameState);
+      if (!gameStateAccount) {
+        throw new Error(`Could not find game state at ${gameState.toString()}`);
+      }
+
+      const userKeypairPath = path.join(process.cwd(), options.keypair);
+      const userKp = await getKeypairFromFile(userKeypairPath);
+      const userSigner = createSignerFromKeypair(
+        umi,
+        umi.eddsa.createKeypairFromSecretKey(userKp.secretKey)
+      );
+
+      const [userBetPubkey] = umi.eddsa.findPda(program, [
+        string({ size: "variable" }).serialize("user"),
+        publicKeySerializer().serialize(userSigner.publicKey),
+        string({ size: "variable" }).serialize(tag),
+      ]);
+
+      const [ata] = findAssociatedTokenPda(umi, {
+        mint: gameStateAccount.mint,
+        owner: userSigner.publicKey,
+      });
+
       console.log("Buying mystery box...");
 
       await buyMysteryBox(umi, {
         user: userSigner,
-        state: configStatePubkey,
-        feesVault: feesVaultPubkey,
+        mint: gameStateAccount.mint,
+        state: gameState,
         userBet: userBetPubkey,
+        userAta: ata,
+        tokenProgram: SPL_TOKEN_PROGRAM_ID,
         betTag: tag,
+        amount: BigInt(amount) * BigInt(10 ** 6),
       }).sendAndConfirm(umi, opts);
     } catch (error) {
       console.error("Error:", error);
@@ -291,12 +446,87 @@ program
 program
   .command("claim-winnings")
   .description("Claim winnings")
-  .requiredOption("-u, --user <pubkey>", "User wallet")
-  .requiredOption("-t, --tag <string>", "Bet tag")
+  .requiredOption("-k, --keypair <keypair>", "User Keypair")
+  .requiredOption("-t, --tag <string>", "Bet tag (santa/grinch).")
+  .requiredOption("-g, --game <pubkey>", "Game state publicKey")
   .action(async (options) => {
     try {
-      console.log("Claiming winnings...");
-      // TODO: Implement claim winnings instruction handler
+      const { umi, programId } = await initializePrereqs();
+      const tag = options.tag;
+      const gameState = publicKey(options.game);
+
+      if (tag != "grinch" && tag != "santa") {
+        throw new Error(`Invalid ${tag} tag. Should be "santa" | "grinch"`);
+      }
+
+      const userKeypairPath = path.join(process.cwd(), options.keypair);
+      const userKp = await getKeypairFromFile(userKeypairPath);
+      const userSigner = createSignerFromKeypair(
+        umi,
+        umi.eddsa.createKeypairFromSecretKey(userKp.secretKey)
+      );
+
+      const [userBetPubkey] = umi.eddsa.findPda(programId, [
+        string({ size: "variable" }).serialize("user"),
+        publicKeySerializer().serialize(userSigner.publicKey),
+        string({ size: "variable" }).serialize(tag),
+      ]);
+
+      console.log("Claim winnings...");
+
+      await claimWinnings(umi, {
+        claimer: userSigner,
+        state: gameState,
+        userBet: userBetPubkey,
+        betTag: tag,
+      }).sendAndConfirm(umi, options);
+
+      console.log("✅ Done!");
+    } catch (error) {
+      console.error("Error:", error);
+    }
+  });
+
+program
+  .command("claim-winnings-v2")
+  .description("Claim winnings")
+  .requiredOption("-k, --keypair <keypair>", "User Keypair")
+  .requiredOption("-t, --tag <string>", "Bet tag (santa/grinch).")
+  .requiredOption("-g, --game <pubkey>", "Game state publicKey")
+  .action(async (options) => {
+    try {
+      const { umi, programId } = await initializePrereqs();
+      const tag = options.tag;
+      const gameState = publicKey(options.game);
+
+      if (tag != "grinch" && tag != "santa") {
+        throw new Error(`Invalid ${tag} tag. Should be "santa" | "grinch"`);
+      }
+
+      const userKeypairPath = path.join(process.cwd(), options.keypair);
+      const userKp = await getKeypairFromFile(userKeypairPath);
+      const userSigner = createSignerFromKeypair(
+        umi,
+        umi.eddsa.createKeypairFromSecretKey(userKp.secretKey)
+      );
+
+      const [userBetPubkey] = umi.eddsa.findPda(programId, [
+        string({ size: "variable" }).serialize("user"),
+        publicKeySerializer().serialize(userSigner.publicKey),
+        publicKeySerializer().serialize(gameState),
+        string({ size: "variable" }).serialize(tag),
+      ]);
+
+      console.log("Claim winnings...");
+
+      await claimWinningsV2(umi, {
+        claimer: userSigner,
+        state: gameState,
+        userBet: userBetPubkey,
+        betTag: tag,
+      }).sendAndConfirm(umi, options);
+
+      console.log("✅ Done!");
     } catch (error) {
       console.error("Error:", error);
     }
@@ -305,11 +535,17 @@ program
 program
   .command("end-game")
   .description("End the game")
-  .requiredOption("-a, --admin <pubkey>", "Admin wallet")
+  .requiredOption("-g, --game <pubkey>", "Game state publicKey")
   .action(async (options) => {
     try {
+      const { umi } = await initializePrereqs();
+      const gameState = publicKey(options.game);
+
       console.log("Ending game...");
-      // TODO: Implement end game instruction handler
+      await endGame(umi, {
+        admin: umi.payer,
+        state: gameState,
+      }).sendAndConfirm(umi, options);
     } catch (error) {
       console.error("Error:", error);
     }

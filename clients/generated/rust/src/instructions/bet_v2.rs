@@ -7,16 +7,15 @@
 
 use borsh::BorshDeserialize;
 use borsh::BorshSerialize;
-use crate::generated::types::InitializeArgs;
 
 /// Accounts.
-pub struct Initialize {
+pub struct BetV2 {
       
               
-          pub admin: solana_program::pubkey::Pubkey,
+          pub user: solana_program::pubkey::Pubkey,
           
               
-          pub mint: solana_program::pubkey::Pubkey,
+          pub buyback_wallet: solana_program::pubkey::Pubkey,
           
               
           pub state: solana_program::pubkey::Pubkey,
@@ -25,44 +24,37 @@ pub struct Initialize {
           pub vault: solana_program::pubkey::Pubkey,
           
               
-          pub fees_vault: solana_program::pubkey::Pubkey,
-          
-              
-          pub token_program: solana_program::pubkey::Pubkey,
+          pub user_bet: solana_program::pubkey::Pubkey,
           
               
           pub system_program: solana_program::pubkey::Pubkey,
       }
 
-impl Initialize {
-  pub fn instruction(&self, args: InitializeInstructionArgs) -> solana_program::instruction::Instruction {
+impl BetV2 {
+  pub fn instruction(&self, args: BetV2InstructionArgs) -> solana_program::instruction::Instruction {
     self.instruction_with_remaining_accounts(args, &[])
   }
   #[allow(clippy::vec_init_then_push)]
-  pub fn instruction_with_remaining_accounts(&self, args: InitializeInstructionArgs, remaining_accounts: &[solana_program::instruction::AccountMeta]) -> solana_program::instruction::Instruction {
-    let mut accounts = Vec::with_capacity(7 + remaining_accounts.len());
+  pub fn instruction_with_remaining_accounts(&self, args: BetV2InstructionArgs, remaining_accounts: &[solana_program::instruction::AccountMeta]) -> solana_program::instruction::Instruction {
+    let mut accounts = Vec::with_capacity(6 + remaining_accounts.len());
                             accounts.push(solana_program::instruction::AccountMeta::new(
-            self.admin,
+            self.user,
             true
           ));
-                                          accounts.push(solana_program::instruction::AccountMeta::new_readonly(
-            self.mint,
+                                          accounts.push(solana_program::instruction::AccountMeta::new(
+            self.buyback_wallet,
             false
           ));
                                           accounts.push(solana_program::instruction::AccountMeta::new(
             self.state,
             false
           ));
-                                          accounts.push(solana_program::instruction::AccountMeta::new_readonly(
+                                          accounts.push(solana_program::instruction::AccountMeta::new(
             self.vault,
             false
           ));
                                           accounts.push(solana_program::instruction::AccountMeta::new(
-            self.fees_vault,
-            false
-          ));
-                                          accounts.push(solana_program::instruction::AccountMeta::new_readonly(
-            self.token_program,
+            self.user_bet,
             false
           ));
                                           accounts.push(solana_program::instruction::AccountMeta::new_readonly(
@@ -70,7 +62,7 @@ impl Initialize {
             false
           ));
                       accounts.extend_from_slice(remaining_accounts);
-    let mut data = InitializeInstructionData::new().try_to_vec().unwrap();
+    let mut data = BetV2InstructionData::new().try_to_vec().unwrap();
           let mut args = args.try_to_vec().unwrap();
       data.append(&mut args);
     
@@ -83,19 +75,19 @@ impl Initialize {
 }
 
 #[derive(BorshDeserialize, BorshSerialize)]
-pub struct InitializeInstructionData {
+pub struct BetV2InstructionData {
             discriminator: [u8; 8],
                   }
 
-impl InitializeInstructionData {
+impl BetV2InstructionData {
   pub fn new() -> Self {
     Self {
-                        discriminator: [175, 175, 109, 31, 13, 152, 155, 237],
+                        discriminator: [5, 72, 133, 11, 203, 203, 149, 106],
                                               }
   }
 }
 
-impl Default for InitializeInstructionData {
+impl Default for BetV2InstructionData {
   fn default() -> Self {
     Self::new()
   }
@@ -103,49 +95,47 @@ impl Default for InitializeInstructionData {
 
 #[derive(BorshSerialize, BorshDeserialize, Clone, Debug, Eq, PartialEq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
-pub struct InitializeInstructionArgs {
-                  pub args: InitializeArgs,
-                pub seed: u64,
+pub struct BetV2InstructionArgs {
+                  pub amount: u64,
+                pub bet_tag: String,
       }
 
 
-/// Instruction builder for `Initialize`.
+/// Instruction builder for `BetV2`.
 ///
 /// ### Accounts:
 ///
-                      ///   0. `[writable, signer]` admin
-          ///   1. `[]` mint
+                      ///   0. `[writable, signer]` user
+                ///   1. `[writable]` buyback_wallet
                 ///   2. `[writable]` state
-          ///   3. `[]` vault
-                ///   4. `[writable]` fees_vault
-          ///   5. `[]` token_program
-                ///   6. `[optional]` system_program (default to `11111111111111111111111111111111`)
+                ///   3. `[writable]` vault
+                ///   4. `[writable]` user_bet
+                ///   5. `[optional]` system_program (default to `11111111111111111111111111111111`)
 #[derive(Clone, Debug, Default)]
-pub struct InitializeBuilder {
-            admin: Option<solana_program::pubkey::Pubkey>,
-                mint: Option<solana_program::pubkey::Pubkey>,
+pub struct BetV2Builder {
+            user: Option<solana_program::pubkey::Pubkey>,
+                buyback_wallet: Option<solana_program::pubkey::Pubkey>,
                 state: Option<solana_program::pubkey::Pubkey>,
                 vault: Option<solana_program::pubkey::Pubkey>,
-                fees_vault: Option<solana_program::pubkey::Pubkey>,
-                token_program: Option<solana_program::pubkey::Pubkey>,
+                user_bet: Option<solana_program::pubkey::Pubkey>,
                 system_program: Option<solana_program::pubkey::Pubkey>,
-                        args: Option<InitializeArgs>,
-                seed: Option<u64>,
+                        amount: Option<u64>,
+                bet_tag: Option<String>,
         __remaining_accounts: Vec<solana_program::instruction::AccountMeta>,
 }
 
-impl InitializeBuilder {
+impl BetV2Builder {
   pub fn new() -> Self {
     Self::default()
   }
             #[inline(always)]
-    pub fn admin(&mut self, admin: solana_program::pubkey::Pubkey) -> &mut Self {
-                        self.admin = Some(admin);
+    pub fn user(&mut self, user: solana_program::pubkey::Pubkey) -> &mut Self {
+                        self.user = Some(user);
                     self
     }
             #[inline(always)]
-    pub fn mint(&mut self, mint: solana_program::pubkey::Pubkey) -> &mut Self {
-                        self.mint = Some(mint);
+    pub fn buyback_wallet(&mut self, buyback_wallet: solana_program::pubkey::Pubkey) -> &mut Self {
+                        self.buyback_wallet = Some(buyback_wallet);
                     self
     }
             #[inline(always)]
@@ -159,13 +149,8 @@ impl InitializeBuilder {
                     self
     }
             #[inline(always)]
-    pub fn fees_vault(&mut self, fees_vault: solana_program::pubkey::Pubkey) -> &mut Self {
-                        self.fees_vault = Some(fees_vault);
-                    self
-    }
-            #[inline(always)]
-    pub fn token_program(&mut self, token_program: solana_program::pubkey::Pubkey) -> &mut Self {
-                        self.token_program = Some(token_program);
+    pub fn user_bet(&mut self, user_bet: solana_program::pubkey::Pubkey) -> &mut Self {
+                        self.user_bet = Some(user_bet);
                     self
     }
             /// `[optional account, default to '11111111111111111111111111111111']`
@@ -175,13 +160,13 @@ impl InitializeBuilder {
                     self
     }
                     #[inline(always)]
-      pub fn args(&mut self, args: InitializeArgs) -> &mut Self {
-        self.args = Some(args);
+      pub fn amount(&mut self, amount: u64) -> &mut Self {
+        self.amount = Some(amount);
         self
       }
                 #[inline(always)]
-      pub fn seed(&mut self, seed: u64) -> &mut Self {
-        self.seed = Some(seed);
+      pub fn bet_tag(&mut self, bet_tag: String) -> &mut Self {
+        self.bet_tag = Some(bet_tag);
         self
       }
         /// Add an additional account to the instruction.
@@ -198,32 +183,31 @@ impl InitializeBuilder {
   }
   #[allow(clippy::clone_on_copy)]
   pub fn instruction(&self) -> solana_program::instruction::Instruction {
-    let accounts = Initialize {
-                              admin: self.admin.expect("admin is not set"),
-                                        mint: self.mint.expect("mint is not set"),
+    let accounts = BetV2 {
+                              user: self.user.expect("user is not set"),
+                                        buyback_wallet: self.buyback_wallet.expect("buyback_wallet is not set"),
                                         state: self.state.expect("state is not set"),
                                         vault: self.vault.expect("vault is not set"),
-                                        fees_vault: self.fees_vault.expect("fees_vault is not set"),
-                                        token_program: self.token_program.expect("token_program is not set"),
+                                        user_bet: self.user_bet.expect("user_bet is not set"),
                                         system_program: self.system_program.unwrap_or(solana_program::pubkey!("11111111111111111111111111111111")),
                       };
-          let args = InitializeInstructionArgs {
-                                                              args: self.args.clone().expect("args is not set"),
-                                                                  seed: self.seed.clone().expect("seed is not set"),
+          let args = BetV2InstructionArgs {
+                                                              amount: self.amount.clone().expect("amount is not set"),
+                                                                  bet_tag: self.bet_tag.clone().expect("bet_tag is not set"),
                                     };
     
     accounts.instruction_with_remaining_accounts(args, &self.__remaining_accounts)
   }
 }
 
-  /// `initialize` CPI accounts.
-  pub struct InitializeCpiAccounts<'a, 'b> {
+  /// `bet_v2` CPI accounts.
+  pub struct BetV2CpiAccounts<'a, 'b> {
           
                     
-              pub admin: &'b solana_program::account_info::AccountInfo<'a>,
+              pub user: &'b solana_program::account_info::AccountInfo<'a>,
                 
                     
-              pub mint: &'b solana_program::account_info::AccountInfo<'a>,
+              pub buyback_wallet: &'b solana_program::account_info::AccountInfo<'a>,
                 
                     
               pub state: &'b solana_program::account_info::AccountInfo<'a>,
@@ -232,25 +216,22 @@ impl InitializeBuilder {
               pub vault: &'b solana_program::account_info::AccountInfo<'a>,
                 
                     
-              pub fees_vault: &'b solana_program::account_info::AccountInfo<'a>,
-                
-                    
-              pub token_program: &'b solana_program::account_info::AccountInfo<'a>,
+              pub user_bet: &'b solana_program::account_info::AccountInfo<'a>,
                 
                     
               pub system_program: &'b solana_program::account_info::AccountInfo<'a>,
             }
 
-/// `initialize` CPI instruction.
-pub struct InitializeCpi<'a, 'b> {
+/// `bet_v2` CPI instruction.
+pub struct BetV2Cpi<'a, 'b> {
   /// The program to invoke.
   pub __program: &'b solana_program::account_info::AccountInfo<'a>,
       
               
-          pub admin: &'b solana_program::account_info::AccountInfo<'a>,
+          pub user: &'b solana_program::account_info::AccountInfo<'a>,
           
               
-          pub mint: &'b solana_program::account_info::AccountInfo<'a>,
+          pub buyback_wallet: &'b solana_program::account_info::AccountInfo<'a>,
           
               
           pub state: &'b solana_program::account_info::AccountInfo<'a>,
@@ -259,31 +240,27 @@ pub struct InitializeCpi<'a, 'b> {
           pub vault: &'b solana_program::account_info::AccountInfo<'a>,
           
               
-          pub fees_vault: &'b solana_program::account_info::AccountInfo<'a>,
-          
-              
-          pub token_program: &'b solana_program::account_info::AccountInfo<'a>,
+          pub user_bet: &'b solana_program::account_info::AccountInfo<'a>,
           
               
           pub system_program: &'b solana_program::account_info::AccountInfo<'a>,
             /// The arguments for the instruction.
-    pub __args: InitializeInstructionArgs,
+    pub __args: BetV2InstructionArgs,
   }
 
-impl<'a, 'b> InitializeCpi<'a, 'b> {
+impl<'a, 'b> BetV2Cpi<'a, 'b> {
   pub fn new(
     program: &'b solana_program::account_info::AccountInfo<'a>,
-          accounts: InitializeCpiAccounts<'a, 'b>,
-              args: InitializeInstructionArgs,
+          accounts: BetV2CpiAccounts<'a, 'b>,
+              args: BetV2InstructionArgs,
       ) -> Self {
     Self {
       __program: program,
-              admin: accounts.admin,
-              mint: accounts.mint,
+              user: accounts.user,
+              buyback_wallet: accounts.buyback_wallet,
               state: accounts.state,
               vault: accounts.vault,
-              fees_vault: accounts.fees_vault,
-              token_program: accounts.token_program,
+              user_bet: accounts.user_bet,
               system_program: accounts.system_program,
                     __args: args,
           }
@@ -307,29 +284,25 @@ impl<'a, 'b> InitializeCpi<'a, 'b> {
     signers_seeds: &[&[&[u8]]],
     remaining_accounts: &[(&'b solana_program::account_info::AccountInfo<'a>, bool, bool)]
   ) -> solana_program::entrypoint::ProgramResult {
-    let mut accounts = Vec::with_capacity(7 + remaining_accounts.len());
+    let mut accounts = Vec::with_capacity(6 + remaining_accounts.len());
                             accounts.push(solana_program::instruction::AccountMeta::new(
-            *self.admin.key,
+            *self.user.key,
             true
           ));
-                                          accounts.push(solana_program::instruction::AccountMeta::new_readonly(
-            *self.mint.key,
+                                          accounts.push(solana_program::instruction::AccountMeta::new(
+            *self.buyback_wallet.key,
             false
           ));
                                           accounts.push(solana_program::instruction::AccountMeta::new(
             *self.state.key,
             false
           ));
-                                          accounts.push(solana_program::instruction::AccountMeta::new_readonly(
+                                          accounts.push(solana_program::instruction::AccountMeta::new(
             *self.vault.key,
             false
           ));
                                           accounts.push(solana_program::instruction::AccountMeta::new(
-            *self.fees_vault.key,
-            false
-          ));
-                                          accounts.push(solana_program::instruction::AccountMeta::new_readonly(
-            *self.token_program.key,
+            *self.user_bet.key,
             false
           ));
                                           accounts.push(solana_program::instruction::AccountMeta::new_readonly(
@@ -343,7 +316,7 @@ impl<'a, 'b> InitializeCpi<'a, 'b> {
           is_writable: remaining_account.2,
       })
     });
-    let mut data = InitializeInstructionData::new().try_to_vec().unwrap();
+    let mut data = BetV2InstructionData::new().try_to_vec().unwrap();
           let mut args = self.__args.try_to_vec().unwrap();
       data.append(&mut args);
     
@@ -352,14 +325,13 @@ impl<'a, 'b> InitializeCpi<'a, 'b> {
       accounts,
       data,
     };
-    let mut account_infos = Vec::with_capacity(7 + 1 + remaining_accounts.len());
+    let mut account_infos = Vec::with_capacity(6 + 1 + remaining_accounts.len());
     account_infos.push(self.__program.clone());
-                  account_infos.push(self.admin.clone());
-                        account_infos.push(self.mint.clone());
+                  account_infos.push(self.user.clone());
+                        account_infos.push(self.buyback_wallet.clone());
                         account_infos.push(self.state.clone());
                         account_infos.push(self.vault.clone());
-                        account_infos.push(self.fees_vault.clone());
-                        account_infos.push(self.token_program.clone());
+                        account_infos.push(self.user_bet.clone());
                         account_infos.push(self.system_program.clone());
               remaining_accounts.iter().for_each(|remaining_account| account_infos.push(remaining_account.0.clone()));
 
@@ -371,47 +343,45 @@ impl<'a, 'b> InitializeCpi<'a, 'b> {
   }
 }
 
-/// Instruction builder for `Initialize` via CPI.
+/// Instruction builder for `BetV2` via CPI.
 ///
 /// ### Accounts:
 ///
-                      ///   0. `[writable, signer]` admin
-          ///   1. `[]` mint
+                      ///   0. `[writable, signer]` user
+                ///   1. `[writable]` buyback_wallet
                 ///   2. `[writable]` state
-          ///   3. `[]` vault
-                ///   4. `[writable]` fees_vault
-          ///   5. `[]` token_program
-          ///   6. `[]` system_program
+                ///   3. `[writable]` vault
+                ///   4. `[writable]` user_bet
+          ///   5. `[]` system_program
 #[derive(Clone, Debug)]
-pub struct InitializeCpiBuilder<'a, 'b> {
-  instruction: Box<InitializeCpiBuilderInstruction<'a, 'b>>,
+pub struct BetV2CpiBuilder<'a, 'b> {
+  instruction: Box<BetV2CpiBuilderInstruction<'a, 'b>>,
 }
 
-impl<'a, 'b> InitializeCpiBuilder<'a, 'b> {
+impl<'a, 'b> BetV2CpiBuilder<'a, 'b> {
   pub fn new(program: &'b solana_program::account_info::AccountInfo<'a>) -> Self {
-    let instruction = Box::new(InitializeCpiBuilderInstruction {
+    let instruction = Box::new(BetV2CpiBuilderInstruction {
       __program: program,
-              admin: None,
-              mint: None,
+              user: None,
+              buyback_wallet: None,
               state: None,
               vault: None,
-              fees_vault: None,
-              token_program: None,
+              user_bet: None,
               system_program: None,
-                                            args: None,
-                                seed: None,
+                                            amount: None,
+                                bet_tag: None,
                     __remaining_accounts: Vec::new(),
     });
     Self { instruction }
   }
       #[inline(always)]
-    pub fn admin(&mut self, admin: &'b solana_program::account_info::AccountInfo<'a>) -> &mut Self {
-                        self.instruction.admin = Some(admin);
+    pub fn user(&mut self, user: &'b solana_program::account_info::AccountInfo<'a>) -> &mut Self {
+                        self.instruction.user = Some(user);
                     self
     }
       #[inline(always)]
-    pub fn mint(&mut self, mint: &'b solana_program::account_info::AccountInfo<'a>) -> &mut Self {
-                        self.instruction.mint = Some(mint);
+    pub fn buyback_wallet(&mut self, buyback_wallet: &'b solana_program::account_info::AccountInfo<'a>) -> &mut Self {
+                        self.instruction.buyback_wallet = Some(buyback_wallet);
                     self
     }
       #[inline(always)]
@@ -425,13 +395,8 @@ impl<'a, 'b> InitializeCpiBuilder<'a, 'b> {
                     self
     }
       #[inline(always)]
-    pub fn fees_vault(&mut self, fees_vault: &'b solana_program::account_info::AccountInfo<'a>) -> &mut Self {
-                        self.instruction.fees_vault = Some(fees_vault);
-                    self
-    }
-      #[inline(always)]
-    pub fn token_program(&mut self, token_program: &'b solana_program::account_info::AccountInfo<'a>) -> &mut Self {
-                        self.instruction.token_program = Some(token_program);
+    pub fn user_bet(&mut self, user_bet: &'b solana_program::account_info::AccountInfo<'a>) -> &mut Self {
+                        self.instruction.user_bet = Some(user_bet);
                     self
     }
       #[inline(always)]
@@ -440,13 +405,13 @@ impl<'a, 'b> InitializeCpiBuilder<'a, 'b> {
                     self
     }
                     #[inline(always)]
-      pub fn args(&mut self, args: InitializeArgs) -> &mut Self {
-        self.instruction.args = Some(args);
+      pub fn amount(&mut self, amount: u64) -> &mut Self {
+        self.instruction.amount = Some(amount);
         self
       }
                 #[inline(always)]
-      pub fn seed(&mut self, seed: u64) -> &mut Self {
-        self.instruction.seed = Some(seed);
+      pub fn bet_tag(&mut self, bet_tag: String) -> &mut Self {
+        self.instruction.bet_tag = Some(bet_tag);
         self
       }
         /// Add an additional account to the instruction.
@@ -471,24 +436,22 @@ impl<'a, 'b> InitializeCpiBuilder<'a, 'b> {
   #[allow(clippy::clone_on_copy)]
   #[allow(clippy::vec_init_then_push)]
   pub fn invoke_signed(&self, signers_seeds: &[&[&[u8]]]) -> solana_program::entrypoint::ProgramResult {
-          let args = InitializeInstructionArgs {
-                                                              args: self.instruction.args.clone().expect("args is not set"),
-                                                                  seed: self.instruction.seed.clone().expect("seed is not set"),
+          let args = BetV2InstructionArgs {
+                                                              amount: self.instruction.amount.clone().expect("amount is not set"),
+                                                                  bet_tag: self.instruction.bet_tag.clone().expect("bet_tag is not set"),
                                     };
-        let instruction = InitializeCpi {
+        let instruction = BetV2Cpi {
         __program: self.instruction.__program,
                   
-          admin: self.instruction.admin.expect("admin is not set"),
+          user: self.instruction.user.expect("user is not set"),
                   
-          mint: self.instruction.mint.expect("mint is not set"),
+          buyback_wallet: self.instruction.buyback_wallet.expect("buyback_wallet is not set"),
                   
           state: self.instruction.state.expect("state is not set"),
                   
           vault: self.instruction.vault.expect("vault is not set"),
                   
-          fees_vault: self.instruction.fees_vault.expect("fees_vault is not set"),
-                  
-          token_program: self.instruction.token_program.expect("token_program is not set"),
+          user_bet: self.instruction.user_bet.expect("user_bet is not set"),
                   
           system_program: self.instruction.system_program.expect("system_program is not set"),
                           __args: args,
@@ -498,17 +461,16 @@ impl<'a, 'b> InitializeCpiBuilder<'a, 'b> {
 }
 
 #[derive(Clone, Debug)]
-struct InitializeCpiBuilderInstruction<'a, 'b> {
+struct BetV2CpiBuilderInstruction<'a, 'b> {
   __program: &'b solana_program::account_info::AccountInfo<'a>,
-            admin: Option<&'b solana_program::account_info::AccountInfo<'a>>,
-                mint: Option<&'b solana_program::account_info::AccountInfo<'a>>,
+            user: Option<&'b solana_program::account_info::AccountInfo<'a>>,
+                buyback_wallet: Option<&'b solana_program::account_info::AccountInfo<'a>>,
                 state: Option<&'b solana_program::account_info::AccountInfo<'a>>,
                 vault: Option<&'b solana_program::account_info::AccountInfo<'a>>,
-                fees_vault: Option<&'b solana_program::account_info::AccountInfo<'a>>,
-                token_program: Option<&'b solana_program::account_info::AccountInfo<'a>>,
+                user_bet: Option<&'b solana_program::account_info::AccountInfo<'a>>,
                 system_program: Option<&'b solana_program::account_info::AccountInfo<'a>>,
-                        args: Option<InitializeArgs>,
-                seed: Option<u64>,
+                        amount: Option<u64>,
+                bet_tag: Option<String>,
         /// Additional instruction accounts `(AccountInfo, is_writable, is_signer)`.
   __remaining_accounts: Vec<(&'b solana_program::account_info::AccountInfo<'a>, bool, bool)>,
 }

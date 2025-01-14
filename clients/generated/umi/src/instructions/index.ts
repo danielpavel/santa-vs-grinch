@@ -7,8 +7,11 @@
  */
 
 export * from './bet';
+export * from './betV2';
 export * from './buyMysteryBox';
+export * from './buyMysteryBoxV2';
 export * from './claimWinnings';
+export * from './claimWinningsV2';
 export * from './endGame';
 export * from './initialize';
 export * from './updateBetBuybackPercentageBp';

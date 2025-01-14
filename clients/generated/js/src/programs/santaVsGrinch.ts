@@ -15,8 +15,11 @@ import {
 } from '@solana/web3.js';
 import {
   type ParsedBetInstruction,
+  type ParsedBetV2Instruction,
   type ParsedBuyMysteryBoxInstruction,
+  type ParsedBuyMysteryBoxV2Instruction,
   type ParsedClaimWinningsInstruction,
+  type ParsedClaimWinningsV2Instruction,
   type ParsedEndGameInstruction,
   type ParsedInitializeInstruction,
   type ParsedUpdateBetBuybackPercentageBpInstruction,
@@ -64,8 +67,11 @@ export function identifySantaVsGrinchAccount(
 
 export enum SantaVsGrinchInstruction {
   Bet,
+  BetV2,
   BuyMysteryBox,
+  BuyMysteryBoxV2,
   ClaimWinnings,
+  ClaimWinningsV2,
   EndGame,
   Initialize,
   UpdateBetBuybackPercentageBp,
@@ -91,6 +97,17 @@ export function identifySantaVsGrinchInstruction(
     containsBytes(
       data,
       fixEncoderSize(getBytesEncoder(), 8).encode(
+        new Uint8Array([5, 72, 133, 11, 203, 203, 149, 106])
+      ),
+      0
+    )
+  ) {
+    return SantaVsGrinchInstruction.BetV2;
+  }
+  if (
+    containsBytes(
+      data,
+      fixEncoderSize(getBytesEncoder(), 8).encode(
         new Uint8Array([150, 161, 180, 220, 54, 128, 128, 242])
       ),
       0
@@ -102,12 +119,34 @@ export function identifySantaVsGrinchInstruction(
     containsBytes(
       data,
       fixEncoderSize(getBytesEncoder(), 8).encode(
+        new Uint8Array([103, 175, 214, 250, 179, 239, 126, 113])
+      ),
+      0
+    )
+  ) {
+    return SantaVsGrinchInstruction.BuyMysteryBoxV2;
+  }
+  if (
+    containsBytes(
+      data,
+      fixEncoderSize(getBytesEncoder(), 8).encode(
         new Uint8Array([161, 215, 24, 59, 14, 236, 242, 221])
       ),
       0
     )
   ) {
     return SantaVsGrinchInstruction.ClaimWinnings;
+  }
+  if (
+    containsBytes(
+      data,
+      fixEncoderSize(getBytesEncoder(), 8).encode(
+        new Uint8Array([184, 77, 105, 92, 126, 80, 168, 189])
+      ),
+      0
+    )
+  ) {
+    return SantaVsGrinchInstruction.ClaimWinningsV2;
   }
   if (
     containsBytes(
@@ -165,11 +204,20 @@ export type ParsedSantaVsGrinchInstruction<
       instructionType: SantaVsGrinchInstruction.Bet;
     } & ParsedBetInstruction<TProgram>)
   | ({
+      instructionType: SantaVsGrinchInstruction.BetV2;
+    } & ParsedBetV2Instruction<TProgram>)
+  | ({
       instructionType: SantaVsGrinchInstruction.BuyMysteryBox;
     } & ParsedBuyMysteryBoxInstruction<TProgram>)
   | ({
+      instructionType: SantaVsGrinchInstruction.BuyMysteryBoxV2;
+    } & ParsedBuyMysteryBoxV2Instruction<TProgram>)
+  | ({
       instructionType: SantaVsGrinchInstruction.ClaimWinnings;
     } & ParsedClaimWinningsInstruction<TProgram>)
+  | ({
+      instructionType: SantaVsGrinchInstruction.ClaimWinningsV2;
+    } & ParsedClaimWinningsV2Instruction<TProgram>)
   | ({
       instructionType: SantaVsGrinchInstruction.EndGame;
     } & ParsedEndGameInstruction<TProgram>)

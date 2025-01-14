@@ -7,6 +7,8 @@
  */
 
 import {
+  addDecoderSizePrefix,
+  addEncoderSizePrefix,
   combineCodec,
   fixDecoderSize,
   fixEncoderSize,
@@ -16,8 +18,10 @@ import {
   getProgramDerivedAddress,
   getStructDecoder,
   getStructEncoder,
-  getU64Decoder,
-  getU64Encoder,
+  getU32Decoder,
+  getU32Encoder,
+  getUtf8Decoder,
+  getUtf8Encoder,
   transformEncoder,
   type Address,
   type Codec,
@@ -41,29 +45,23 @@ import {
   getAccountMetaFactory,
   type ResolvedAccount,
 } from '../shared';
-import {
-  getInitializeArgsDecoder,
-  getInitializeArgsEncoder,
-  type InitializeArgs,
-  type InitializeArgsArgs,
-} from '../types';
 
-export const INITIALIZE_DISCRIMINATOR = new Uint8Array([
-  175, 175, 109, 31, 13, 152, 155, 237,
+export const CLAIM_WINNINGS_V2_DISCRIMINATOR = new Uint8Array([
+  184, 77, 105, 92, 126, 80, 168, 189,
 ]);
 
-export function getInitializeDiscriminatorBytes() {
-  return fixEncoderSize(getBytesEncoder(), 8).encode(INITIALIZE_DISCRIMINATOR);
+export function getClaimWinningsV2DiscriminatorBytes() {
+  return fixEncoderSize(getBytesEncoder(), 8).encode(
+    CLAIM_WINNINGS_V2_DISCRIMINATOR
+  );
 }
 
-export type InitializeInstruction<
+export type ClaimWinningsV2Instruction<
   TProgram extends string = typeof SANTA_VS_GRINCH_PROGRAM_ADDRESS,
-  TAccountAdmin extends string | IAccountMeta<string> = string,
-  TAccountMint extends string | IAccountMeta<string> = string,
+  TAccountClaimer extends string | IAccountMeta<string> = string,
   TAccountState extends string | IAccountMeta<string> = string,
   TAccountVault extends string | IAccountMeta<string> = string,
-  TAccountFeesVault extends string | IAccountMeta<string> = string,
-  TAccountTokenProgram extends string | IAccountMeta<string> = string,
+  TAccountUserBet extends string | IAccountMeta<string> = string,
   TAccountSystemProgram extends
     | string
     | IAccountMeta<string> = '11111111111111111111111111111111',
@@ -72,25 +70,19 @@ export type InitializeInstruction<
   IInstructionWithData<Uint8Array> &
   IInstructionWithAccounts<
     [
-      TAccountAdmin extends string
-        ? WritableSignerAccount<TAccountAdmin> &
-            IAccountSignerMeta<TAccountAdmin>
-        : TAccountAdmin,
-      TAccountMint extends string
-        ? ReadonlyAccount<TAccountMint>
-        : TAccountMint,
+      TAccountClaimer extends string
+        ? WritableSignerAccount<TAccountClaimer> &
+            IAccountSignerMeta<TAccountClaimer>
+        : TAccountClaimer,
       TAccountState extends string
         ? WritableAccount<TAccountState>
         : TAccountState,
       TAccountVault extends string
-        ? ReadonlyAccount<TAccountVault>
+        ? WritableAccount<TAccountVault>
         : TAccountVault,
-      TAccountFeesVault extends string
-        ? WritableAccount<TAccountFeesVault>
-        : TAccountFeesVault,
-      TAccountTokenProgram extends string
-        ? ReadonlyAccount<TAccountTokenProgram>
-        : TAccountTokenProgram,
+      TAccountUserBet extends string
+        ? WritableAccount<TAccountUserBet>
+        : TAccountUserBet,
       TAccountSystemProgram extends string
         ? ReadonlyAccount<TAccountSystemProgram>
         : TAccountSystemProgram,
@@ -98,95 +90,78 @@ export type InitializeInstruction<
     ]
   >;
 
-export type InitializeInstructionData = {
+export type ClaimWinningsV2InstructionData = {
   discriminator: ReadonlyUint8Array;
-  args: InitializeArgs;
-  seed: bigint;
+  betTag: string;
 };
 
-export type InitializeInstructionDataArgs = {
-  args: InitializeArgsArgs;
-  seed: number | bigint;
-};
+export type ClaimWinningsV2InstructionDataArgs = { betTag: string };
 
-export function getInitializeInstructionDataEncoder(): Encoder<InitializeInstructionDataArgs> {
+export function getClaimWinningsV2InstructionDataEncoder(): Encoder<ClaimWinningsV2InstructionDataArgs> {
   return transformEncoder(
     getStructEncoder([
       ['discriminator', fixEncoderSize(getBytesEncoder(), 8)],
-      ['args', getInitializeArgsEncoder()],
-      ['seed', getU64Encoder()],
+      ['betTag', addEncoderSizePrefix(getUtf8Encoder(), getU32Encoder())],
     ]),
-    (value) => ({ ...value, discriminator: INITIALIZE_DISCRIMINATOR })
+    (value) => ({ ...value, discriminator: CLAIM_WINNINGS_V2_DISCRIMINATOR })
   );
 }
 
-export function getInitializeInstructionDataDecoder(): Decoder<InitializeInstructionData> {
+export function getClaimWinningsV2InstructionDataDecoder(): Decoder<ClaimWinningsV2InstructionData> {
   return getStructDecoder([
     ['discriminator', fixDecoderSize(getBytesDecoder(), 8)],
-    ['args', getInitializeArgsDecoder()],
-    ['seed', getU64Decoder()],
+    ['betTag', addDecoderSizePrefix(getUtf8Decoder(), getU32Decoder())],
   ]);
 }
 
-export function getInitializeInstructionDataCodec(): Codec<
-  InitializeInstructionDataArgs,
-  InitializeInstructionData
+export function getClaimWinningsV2InstructionDataCodec(): Codec<
+  ClaimWinningsV2InstructionDataArgs,
+  ClaimWinningsV2InstructionData
 > {
   return combineCodec(
-    getInitializeInstructionDataEncoder(),
-    getInitializeInstructionDataDecoder()
+    getClaimWinningsV2InstructionDataEncoder(),
+    getClaimWinningsV2InstructionDataDecoder()
   );
 }
 
-export type InitializeAsyncInput<
-  TAccountAdmin extends string = string,
-  TAccountMint extends string = string,
+export type ClaimWinningsV2AsyncInput<
+  TAccountClaimer extends string = string,
   TAccountState extends string = string,
   TAccountVault extends string = string,
-  TAccountFeesVault extends string = string,
-  TAccountTokenProgram extends string = string,
+  TAccountUserBet extends string = string,
   TAccountSystemProgram extends string = string,
 > = {
-  admin: TransactionSigner<TAccountAdmin>;
-  mint: Address<TAccountMint>;
-  state?: Address<TAccountState>;
+  claimer: TransactionSigner<TAccountClaimer>;
+  state: Address<TAccountState>;
   vault?: Address<TAccountVault>;
-  feesVault?: Address<TAccountFeesVault>;
-  tokenProgram: Address<TAccountTokenProgram>;
+  userBet?: Address<TAccountUserBet>;
   systemProgram?: Address<TAccountSystemProgram>;
-  args: InitializeInstructionDataArgs['args'];
-  seed: InitializeInstructionDataArgs['seed'];
+  betTag: ClaimWinningsV2InstructionDataArgs['betTag'];
 };
 
-export async function getInitializeInstructionAsync<
-  TAccountAdmin extends string,
-  TAccountMint extends string,
+export async function getClaimWinningsV2InstructionAsync<
+  TAccountClaimer extends string,
   TAccountState extends string,
   TAccountVault extends string,
-  TAccountFeesVault extends string,
-  TAccountTokenProgram extends string,
+  TAccountUserBet extends string,
   TAccountSystemProgram extends string,
   TProgramAddress extends Address = typeof SANTA_VS_GRINCH_PROGRAM_ADDRESS,
 >(
-  input: InitializeAsyncInput<
-    TAccountAdmin,
-    TAccountMint,
+  input: ClaimWinningsV2AsyncInput<
+    TAccountClaimer,
     TAccountState,
     TAccountVault,
-    TAccountFeesVault,
-    TAccountTokenProgram,
+    TAccountUserBet,
     TAccountSystemProgram
   >,
   config?: { programAddress?: TProgramAddress }
 ): Promise<
-  InitializeInstruction<
+  ClaimWinningsV2Instruction<
     TProgramAddress,
-    TAccountAdmin,
-    TAccountMint,
+    TAccountClaimer,
     TAccountState,
     TAccountVault,
-    TAccountFeesVault,
-    TAccountTokenProgram,
+    TAccountUserBet,
     TAccountSystemProgram
   >
 > {
@@ -196,12 +171,10 @@ export async function getInitializeInstructionAsync<
 
   // Original accounts.
   const originalAccounts = {
-    admin: { value: input.admin ?? null, isWritable: true },
-    mint: { value: input.mint ?? null, isWritable: false },
+    claimer: { value: input.claimer ?? null, isWritable: true },
     state: { value: input.state ?? null, isWritable: true },
-    vault: { value: input.vault ?? null, isWritable: false },
-    feesVault: { value: input.feesVault ?? null, isWritable: true },
-    tokenProgram: { value: input.tokenProgram ?? null, isWritable: false },
+    vault: { value: input.vault ?? null, isWritable: true },
+    userBet: { value: input.userBet ?? null, isWritable: true },
     systemProgram: { value: input.systemProgram ?? null, isWritable: false },
   };
   const accounts = originalAccounts as Record<
@@ -213,17 +186,6 @@ export async function getInitializeInstructionAsync<
   const args = { ...input };
 
   // Resolve default values.
-  if (!accounts.state.value) {
-    accounts.state.value = await getProgramDerivedAddress({
-      programAddress,
-      seeds: [
-        getBytesEncoder().encode(new Uint8Array([115, 116, 97, 116, 101])),
-        getAddressEncoder().encode(expectAddress(accounts.admin.value)),
-        getU64Encoder().encode(expectSome(args.seed)),
-        getAddressEncoder().encode(expectAddress(accounts.mint.value)),
-      ],
-    });
-  }
   if (!accounts.vault.value) {
     accounts.vault.value = await getProgramDerivedAddress({
       programAddress,
@@ -239,13 +201,16 @@ export async function getInitializeInstructionAsync<
       ],
     });
   }
-  if (!accounts.feesVault.value) {
-    accounts.feesVault.value = await getProgramDerivedAddress({
+  if (!accounts.userBet.value) {
+    accounts.userBet.value = await getProgramDerivedAddress({
       programAddress,
       seeds: [
-        getBytesEncoder().encode(new Uint8Array([118, 97, 117, 108, 116])),
+        getBytesEncoder().encode(new Uint8Array([117, 115, 101, 114])),
+        getAddressEncoder().encode(expectAddress(accounts.claimer.value)),
         getAddressEncoder().encode(expectAddress(accounts.state.value)),
-        getBytesEncoder().encode(new Uint8Array([102, 101, 101, 115])),
+        addEncoderSizePrefix(getUtf8Encoder(), getU32Encoder()).encode(
+          expectSome(args.betTag)
+        ),
       ],
     });
   }
@@ -257,80 +222,65 @@ export async function getInitializeInstructionAsync<
   const getAccountMeta = getAccountMetaFactory(programAddress, 'programId');
   const instruction = {
     accounts: [
-      getAccountMeta(accounts.admin),
-      getAccountMeta(accounts.mint),
+      getAccountMeta(accounts.claimer),
       getAccountMeta(accounts.state),
       getAccountMeta(accounts.vault),
-      getAccountMeta(accounts.feesVault),
-      getAccountMeta(accounts.tokenProgram),
+      getAccountMeta(accounts.userBet),
       getAccountMeta(accounts.systemProgram),
     ],
     programAddress,
-    data: getInitializeInstructionDataEncoder().encode(
-      args as InitializeInstructionDataArgs
+    data: getClaimWinningsV2InstructionDataEncoder().encode(
+      args as ClaimWinningsV2InstructionDataArgs
     ),
-  } as InitializeInstruction<
+  } as ClaimWinningsV2Instruction<
     TProgramAddress,
-    TAccountAdmin,
-    TAccountMint,
+    TAccountClaimer,
     TAccountState,
     TAccountVault,
-    TAccountFeesVault,
-    TAccountTokenProgram,
+    TAccountUserBet,
     TAccountSystemProgram
   >;
 
   return instruction;
 }
 
-export type InitializeInput<
-  TAccountAdmin extends string = string,
-  TAccountMint extends string = string,
+export type ClaimWinningsV2Input<
+  TAccountClaimer extends string = string,
   TAccountState extends string = string,
   TAccountVault extends string = string,
-  TAccountFeesVault extends string = string,
-  TAccountTokenProgram extends string = string,
+  TAccountUserBet extends string = string,
   TAccountSystemProgram extends string = string,
 > = {
-  admin: TransactionSigner<TAccountAdmin>;
-  mint: Address<TAccountMint>;
+  claimer: TransactionSigner<TAccountClaimer>;
   state: Address<TAccountState>;
   vault: Address<TAccountVault>;
-  feesVault: Address<TAccountFeesVault>;
-  tokenProgram: Address<TAccountTokenProgram>;
+  userBet: Address<TAccountUserBet>;
   systemProgram?: Address<TAccountSystemProgram>;
-  args: InitializeInstructionDataArgs['args'];
-  seed: InitializeInstructionDataArgs['seed'];
+  betTag: ClaimWinningsV2InstructionDataArgs['betTag'];
 };
 
-export function getInitializeInstruction<
-  TAccountAdmin extends string,
-  TAccountMint extends string,
+export function getClaimWinningsV2Instruction<
+  TAccountClaimer extends string,
   TAccountState extends string,
   TAccountVault extends string,
-  TAccountFeesVault extends string,
-  TAccountTokenProgram extends string,
+  TAccountUserBet extends string,
   TAccountSystemProgram extends string,
   TProgramAddress extends Address = typeof SANTA_VS_GRINCH_PROGRAM_ADDRESS,
 >(
-  input: InitializeInput<
-    TAccountAdmin,
-    TAccountMint,
+  input: ClaimWinningsV2Input<
+    TAccountClaimer,
     TAccountState,
     TAccountVault,
-    TAccountFeesVault,
-    TAccountTokenProgram,
+    TAccountUserBet,
     TAccountSystemProgram
   >,
   config?: { programAddress?: TProgramAddress }
-): InitializeInstruction<
+): ClaimWinningsV2Instruction<
   TProgramAddress,
-  TAccountAdmin,
-  TAccountMint,
+  TAccountClaimer,
   TAccountState,
   TAccountVault,
-  TAccountFeesVault,
-  TAccountTokenProgram,
+  TAccountUserBet,
   TAccountSystemProgram
 > {
   // Program address.
@@ -339,12 +289,10 @@ export function getInitializeInstruction<
 
   // Original accounts.
   const originalAccounts = {
-    admin: { value: input.admin ?? null, isWritable: true },
-    mint: { value: input.mint ?? null, isWritable: false },
+    claimer: { value: input.claimer ?? null, isWritable: true },
     state: { value: input.state ?? null, isWritable: true },
-    vault: { value: input.vault ?? null, isWritable: false },
-    feesVault: { value: input.feesVault ?? null, isWritable: true },
-    tokenProgram: { value: input.tokenProgram ?? null, isWritable: false },
+    vault: { value: input.vault ?? null, isWritable: true },
+    userBet: { value: input.userBet ?? null, isWritable: true },
     systemProgram: { value: input.systemProgram ?? null, isWritable: false },
   };
   const accounts = originalAccounts as Record<
@@ -364,58 +312,52 @@ export function getInitializeInstruction<
   const getAccountMeta = getAccountMetaFactory(programAddress, 'programId');
   const instruction = {
     accounts: [
-      getAccountMeta(accounts.admin),
-      getAccountMeta(accounts.mint),
+      getAccountMeta(accounts.claimer),
       getAccountMeta(accounts.state),
       getAccountMeta(accounts.vault),
-      getAccountMeta(accounts.feesVault),
-      getAccountMeta(accounts.tokenProgram),
+      getAccountMeta(accounts.userBet),
       getAccountMeta(accounts.systemProgram),
     ],
     programAddress,
-    data: getInitializeInstructionDataEncoder().encode(
-      args as InitializeInstructionDataArgs
+    data: getClaimWinningsV2InstructionDataEncoder().encode(
+      args as ClaimWinningsV2InstructionDataArgs
     ),
-  } as InitializeInstruction<
+  } as ClaimWinningsV2Instruction<
     TProgramAddress,
-    TAccountAdmin,
-    TAccountMint,
+    TAccountClaimer,
     TAccountState,
     TAccountVault,
-    TAccountFeesVault,
-    TAccountTokenProgram,
+    TAccountUserBet,
     TAccountSystemProgram
   >;
 
   return instruction;
 }
 
-export type ParsedInitializeInstruction<
+export type ParsedClaimWinningsV2Instruction<
   TProgram extends string = typeof SANTA_VS_GRINCH_PROGRAM_ADDRESS,
   TAccountMetas extends readonly IAccountMeta[] = readonly IAccountMeta[],
 > = {
   programAddress: Address<TProgram>;
   accounts: {
-    admin: TAccountMetas[0];
-    mint: TAccountMetas[1];
-    state: TAccountMetas[2];
-    vault: TAccountMetas[3];
-    feesVault: TAccountMetas[4];
-    tokenProgram: TAccountMetas[5];
-    systemProgram: TAccountMetas[6];
+    claimer: TAccountMetas[0];
+    state: TAccountMetas[1];
+    vault: TAccountMetas[2];
+    userBet: TAccountMetas[3];
+    systemProgram: TAccountMetas[4];
   };
-  data: InitializeInstructionData;
+  data: ClaimWinningsV2InstructionData;
 };
 
-export function parseInitializeInstruction<
+export function parseClaimWinningsV2Instruction<
   TProgram extends string,
   TAccountMetas extends readonly IAccountMeta[],
 >(
   instruction: IInstruction<TProgram> &
     IInstructionWithAccounts<TAccountMetas> &
     IInstructionWithData<Uint8Array>
-): ParsedInitializeInstruction<TProgram, TAccountMetas> {
-  if (instruction.accounts.length < 7) {
+): ParsedClaimWinningsV2Instruction<TProgram, TAccountMetas> {
+  if (instruction.accounts.length < 5) {
     // TODO: Coded error.
     throw new Error('Not enough accounts');
   }
@@ -428,14 +370,12 @@ export function parseInitializeInstruction<
   return {
     programAddress: instruction.programAddress,
     accounts: {
-      admin: getNextAccount(),
-      mint: getNextAccount(),
+      claimer: getNextAccount(),
       state: getNextAccount(),
       vault: getNextAccount(),
-      feesVault: getNextAccount(),
-      tokenProgram: getNextAccount(),
+      userBet: getNextAccount(),
       systemProgram: getNextAccount(),
     },
-    data: getInitializeInstructionDataDecoder().decode(instruction.data),
+    data: getClaimWinningsV2InstructionDataDecoder().decode(instruction.data),
   };
 }

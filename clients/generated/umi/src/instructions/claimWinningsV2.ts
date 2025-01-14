@@ -19,8 +19,8 @@ import {
   bytes,
   mapSerializer,
   publicKey as publicKeySerializer,
+  string,
   struct,
-  u64,
 } from '@metaplex-foundation/umi/serializers';
 import {
   ResolvedAccount,
@@ -29,66 +29,57 @@ import {
   expectSome,
   getAccountMetasAndSigners,
 } from '../shared';
-import {
-  InitializeArgs,
-  InitializeArgsArgs,
-  getInitializeArgsSerializer,
-} from '../types';
 
 // Accounts.
-export type InitializeInstructionAccounts = {
-  admin: Signer;
-  mint: PublicKey | Pda;
-  state?: PublicKey | Pda;
+export type ClaimWinningsV2InstructionAccounts = {
+  claimer: Signer;
+  state: PublicKey | Pda;
   vault?: PublicKey | Pda;
-  feesVault?: PublicKey | Pda;
-  tokenProgram: PublicKey | Pda;
+  userBet?: PublicKey | Pda;
   systemProgram?: PublicKey | Pda;
 };
 
 // Data.
-export type InitializeInstructionData = {
+export type ClaimWinningsV2InstructionData = {
   discriminator: Uint8Array;
-  args: InitializeArgs;
-  seed: bigint;
+  betTag: string;
 };
 
-export type InitializeInstructionDataArgs = {
-  args: InitializeArgsArgs;
-  seed: number | bigint;
-};
+export type ClaimWinningsV2InstructionDataArgs = { betTag: string };
 
-export function getInitializeInstructionDataSerializer(): Serializer<
-  InitializeInstructionDataArgs,
-  InitializeInstructionData
+export function getClaimWinningsV2InstructionDataSerializer(): Serializer<
+  ClaimWinningsV2InstructionDataArgs,
+  ClaimWinningsV2InstructionData
 > {
   return mapSerializer<
-    InitializeInstructionDataArgs,
+    ClaimWinningsV2InstructionDataArgs,
     any,
-    InitializeInstructionData
+    ClaimWinningsV2InstructionData
   >(
-    struct<InitializeInstructionData>(
+    struct<ClaimWinningsV2InstructionData>(
       [
         ['discriminator', bytes({ size: 8 })],
-        ['args', getInitializeArgsSerializer()],
-        ['seed', u64()],
+        ['betTag', string()],
       ],
-      { description: 'InitializeInstructionData' }
+      { description: 'ClaimWinningsV2InstructionData' }
     ),
     (value) => ({
       ...value,
-      discriminator: new Uint8Array([175, 175, 109, 31, 13, 152, 155, 237]),
+      discriminator: new Uint8Array([184, 77, 105, 92, 126, 80, 168, 189]),
     })
-  ) as Serializer<InitializeInstructionDataArgs, InitializeInstructionData>;
+  ) as Serializer<
+    ClaimWinningsV2InstructionDataArgs,
+    ClaimWinningsV2InstructionData
+  >;
 }
 
 // Args.
-export type InitializeInstructionArgs = InitializeInstructionDataArgs;
+export type ClaimWinningsV2InstructionArgs = ClaimWinningsV2InstructionDataArgs;
 
 // Instruction.
-export function initialize(
+export function claimWinningsV2(
   context: Pick<Context, 'eddsa' | 'programs'>,
-  input: InitializeInstructionAccounts & InitializeInstructionArgs
+  input: ClaimWinningsV2InstructionAccounts & ClaimWinningsV2InstructionArgs
 ): TransactionBuilder {
   // Program ID.
   const programId = context.programs.getPublicKey(
@@ -98,55 +89,37 @@ export function initialize(
 
   // Accounts.
   const resolvedAccounts = {
-    admin: {
+    claimer: {
       index: 0,
       isWritable: true as boolean,
-      value: input.admin ?? null,
+      value: input.claimer ?? null,
     },
-    mint: { index: 1, isWritable: false as boolean, value: input.mint ?? null },
     state: {
-      index: 2,
+      index: 1,
       isWritable: true as boolean,
       value: input.state ?? null,
     },
     vault: {
-      index: 3,
-      isWritable: false as boolean,
+      index: 2,
+      isWritable: true as boolean,
       value: input.vault ?? null,
     },
-    feesVault: {
-      index: 4,
+    userBet: {
+      index: 3,
       isWritable: true as boolean,
-      value: input.feesVault ?? null,
-    },
-    tokenProgram: {
-      index: 5,
-      isWritable: false as boolean,
-      value: input.tokenProgram ?? null,
+      value: input.userBet ?? null,
     },
     systemProgram: {
-      index: 6,
+      index: 4,
       isWritable: false as boolean,
       value: input.systemProgram ?? null,
     },
   } satisfies ResolvedAccountsWithIndices;
 
   // Arguments.
-  const resolvedArgs: InitializeInstructionArgs = { ...input };
+  const resolvedArgs: ClaimWinningsV2InstructionArgs = { ...input };
 
   // Default values.
-  if (!resolvedAccounts.state.value) {
-    resolvedAccounts.state.value = context.eddsa.findPda(programId, [
-      bytes().serialize(new Uint8Array([115, 116, 97, 116, 101])),
-      publicKeySerializer().serialize(
-        expectPublicKey(resolvedAccounts.admin.value)
-      ),
-      u64().serialize(expectSome(resolvedArgs.seed)),
-      publicKeySerializer().serialize(
-        expectPublicKey(resolvedAccounts.mint.value)
-      ),
-    ]);
-  }
   if (!resolvedAccounts.vault.value) {
     resolvedAccounts.vault.value = context.eddsa.findPda(programId, [
       bytes().serialize(new Uint8Array([118, 97, 117, 108, 116])),
@@ -160,13 +133,16 @@ export function initialize(
       ),
     ]);
   }
-  if (!resolvedAccounts.feesVault.value) {
-    resolvedAccounts.feesVault.value = context.eddsa.findPda(programId, [
-      bytes().serialize(new Uint8Array([118, 97, 117, 108, 116])),
+  if (!resolvedAccounts.userBet.value) {
+    resolvedAccounts.userBet.value = context.eddsa.findPda(programId, [
+      bytes().serialize(new Uint8Array([117, 115, 101, 114])),
+      publicKeySerializer().serialize(
+        expectPublicKey(resolvedAccounts.claimer.value)
+      ),
       publicKeySerializer().serialize(
         expectPublicKey(resolvedAccounts.state.value)
       ),
-      bytes().serialize(new Uint8Array([102, 101, 101, 115])),
+      string().serialize(expectSome(resolvedArgs.betTag)),
     ]);
   }
   if (!resolvedAccounts.systemProgram.value) {
@@ -190,8 +166,8 @@ export function initialize(
   );
 
   // Data.
-  const data = getInitializeInstructionDataSerializer().serialize(
-    resolvedArgs as InitializeInstructionDataArgs
+  const data = getClaimWinningsV2InstructionDataSerializer().serialize(
+    resolvedArgs as ClaimWinningsV2InstructionDataArgs
   );
 
   // Bytes Created On Chain.
