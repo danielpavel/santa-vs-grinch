@@ -30,6 +30,7 @@ import {
   generateRandomU64Seed,
   initializeUmi,
   mintSplMint,
+  parseAnchorError,
 } from "./utils";
 import {
   publicKey as publicKeySerializer,
@@ -59,7 +60,7 @@ describe("santa-vs-grinch", () => {
   let programId: PublicKey<string>;
 
   const options: TransactionBuilderSendAndConfirmOptions = {
-    send: { skipPreflight: true },
+    send: { skipPreflight: false },
     confirm: { commitment: "confirmed" },
   };
 
@@ -312,7 +313,7 @@ describe("santa-vs-grinch", () => {
     }).sendAndConfirm(umi, options);
 
     gameStateAccount = await fetchConfig(umi, accounts.configState);
-    console.log("santa gameScore", gameStateAccount.santaScore);
+    //console.log("santa gameScore", gameStateAccount.santaScore);
     assert.equal(gameStateAccount.santaPot, depositAmount);
 
     const betAccount = await fetchUserBet(umi, userBetPubkey);
@@ -370,7 +371,7 @@ describe("santa-vs-grinch", () => {
     }).sendAndConfirm(umi, options);
 
     gameStateAccount = await fetchConfig(umi, accounts.configState);
-    console.log("grinch gameScore", gameStateAccount.grinchScore);
+    //console.log("grinch gameScore", gameStateAccount.grinchScore);
     assert.equal(gameStateAccount.grinchPot, depositAmount);
 
     const betAccount = await fetchUserBet(umi, userBetPubkey);
@@ -494,85 +495,12 @@ describe("santa-vs-grinch", () => {
     assert.equal(supplyNew, supplyOld - amount);
 
     let gameStateAccount = await fetchConfig(umi, accounts.configState);
-    console.log("gameStateAccount:", gameStateAccount);
+    //console.log("gameStateAccount:", gameStateAccount);
 
     const betAccount = await fetchUserBet(umi, userBetPubkey);
     // console.log("betAccount:", betAccount);
     assert.equal(betAccount.tokenAmount, amount);
   });
-
-  // it("Buy 2 Mystery Boxes for Grinch", async () => {
-  //   const [user2UserStatePubkey, _bump] = web3.PublicKey.findProgramAddressSync(
-  //     [
-  //       Buffer.from("user"),
-  //       (accounts.user2 as Keypair).publicKey.toBuffer(),
-  //       Buffer.from("grinch"),
-  //     ],
-  //     program.programId
-  //   );
-  //
-  //   const side = "grinch"; // On-chain BettingSide Enum Representation
-  //   const BOX_PRICE = 500_000_000;
-  //
-  //   let feeVaultBalanceOld = await provider.connection.getBalance(
-  //     accounts.feesVault
-  //   );
-  //
-  //   await program.methods
-  //     .buyMysteryBox(side)
-  //     .accounts({
-  //       user: (accounts.user2 as Keypair).publicKey,
-  //       state: accounts.configState,
-  //       feesVault: accounts.feesVault,
-  //       userBet: user2UserStatePubkey,
-  //     })
-  //     .signers([accounts.user2])
-  //     .rpc();
-  //
-  //   const configStateAccount = await program.account.config.fetch(
-  //     accounts.configState as PublicKey
-  //   );
-  //
-  //   assert.equal(configStateAccount.grinchBoxes.toNumber(), 1);
-  //
-  //   const feeVaultBalance = await provider.connection.getBalance(
-  //     accounts.feesVault as PublicKey
-  //   );
-  //   assert.equal(feeVaultBalance, feeVaultBalanceOld + BOX_PRICE);
-  //
-  //   let user2UserStateAccount = await program.account.userBet.fetch(
-  //     user2UserStatePubkey
-  //   );
-  //
-  //   assert.equal(user2UserStateAccount.mysterBoxCount, 1);
-  //
-  //   await program.methods
-  //     .buyMysteryBox(side)
-  //     .accounts({
-  //       user: (accounts.user2 as Keypair).publicKey,
-  //       state: accounts.configState,
-  //       feesVault: accounts.feesVault,
-  //     })
-  //     .signers([accounts.user2])
-  //     .rpc();
-  //
-  //   const configStateAccountNew = await program.account.config.fetch(
-  //     accounts.configState as PublicKey
-  //   );
-  //
-  //   assert.equal(configStateAccountNew.grinchBoxes.toNumber(), 2);
-  //
-  //   const feeVaultBalanceNew = await provider.connection.getBalance(
-  //     accounts.feesVault as PublicKey
-  //   );
-  //   assert.equal(feeVaultBalanceNew, feeVaultBalance + BOX_PRICE);
-  //
-  //   user2UserStateAccount = await program.account.userBet.fetch(
-  //     user2UserStatePubkey
-  //   );
-  //
-  //   assert.equal(user2UserStateAccount.mysterBoxCount, 2);
-  // });
 
   it("End Game", async () => {
     await endGame(umi, {
@@ -580,98 +508,51 @@ describe("santa-vs-grinch", () => {
       state: accounts.configState,
     }).sendAndConfirm(umi, options);
 
-    // const tx = await program.methods
-    //   .endGame()
-    //   .accounts({
-    //     admin: provider.publicKey,
-    //     state: accounts.configState as PublicKey,
-    //     recentSlothashes: new PublicKey(
-    //       "SysvarS1otHashes111111111111111111111111111"
-    //     ),
-    //   })
-    //   .rpc();
-
     const gameStateAccount = await fetchConfig(umi, accounts.configState);
-    console.log("... winning_side", gameStateAccount.winningSide);
+    console.log(gameStateAccount);
 
     assert.equal(gameStateAccount.gameEnded, true);
   });
 
-  // it("Buy Mystery Box after game ended - should fail!", async () => {
-  //   const [user2UserStatePubkey, _bump] = web3.PublicKey.findProgramAddressSync(
-  //     [
-  //       Buffer.from("user"),
-  //       (accounts.user1 as Keypair).publicKey.toBuffer(),
-  //       Buffer.from("grinch"),
-  //     ],
-  //     program.programId
-  //   );
-  //
-  //   const side = "grinch";
-  //
-  //   try {
-  //     const tx = await program.methods
-  //       .buyMysteryBox(side)
-  //       .accounts({
-  //         user: (accounts.user1 as Keypair).publicKey,
-  //         state: accounts.configState,
-  //         feesVault: accounts.feesVault,
-  //         userBet: user2UserStatePubkey,
-  //       })
-  //       .signers([accounts.user1])
-  //       .rpc();
-  //
-  //     expect.fail("Transaction should have failed");
-  //   } catch (err) {
-  //     if (err instanceof anchor.AnchorError) {
-  //       expect(err.error.errorCode.code).to.equal("GameEnded");
-  //       expect(err.error.errorCode.number).to.equal(6006); // Your error number
-  //       // Optionally check the error message
-  //       expect(err.error.errorMessage).to.equal("Game has already ended");
-  //     } else {
-  //       throw err;
-  //     }
-  //   }
-  // });
-  //
-  // it("Bet on Grinch after game has ended - Should fail!", async () => {
-  //   const [user2UserStatePubkey, _bump] = web3.PublicKey.findProgramAddressSync(
-  //     [
-  //       Buffer.from("user"),
-  //       (accounts.user2 as Keypair).publicKey.toBuffer(),
-  //       Buffer.from("santa"),
-  //     ],
-  //     program.programId
-  //   );
-  //
-  //   try {
-  //     const amount = new anchor.BN(5 * LAMPORTS_PER_SOL);
-  //     const betTag = "santa";
-  //     const tx = await program.methods
-  //       .bet(amount, betTag)
-  //       .accounts({
-  //         user: (accounts.user2 as Keypair).publicKey,
-  //         state: accounts.configState,
-  //         vault: accounts.vault,
-  //         feesVault: accounts.feesVault,
-  //         userBet: user2UserStatePubkey,
-  //       })
-  //       .signers(accounts.user2)
-  //       .rpc();
-  //
-  //     expect.fail("Transaction should have failed");
-  //   } catch (err) {
-  //     if (err instanceof anchor.AnchorError) {
-  //       expect(err.error.errorCode.code).to.equal("GameEnded");
-  //       expect(err.error.errorCode.number).to.equal(6006); // Your error number
-  //       // Optionally check the error message
-  //       expect(err.error.errorMessage).to.equal("Game has already ended");
-  //     } else {
-  //       throw err;
-  //     }
-  //   }
-  // });
-  //
+  it("Buy a Mystery Box after game ended - should fail!", async () => {
+    const betTag = "grinch";
+    let userKp = accounts.user1 as Keypair;
+    let userPubkey = fromWeb3JsPublicKey(userKp.publicKey);
+    const userSigner = createSignerFromKeypair(
+      umi,
+      umi.eddsa.createKeypairFromSecretKey(userKp.secretKey)
+    );
+    const userAta = accounts.user1Ata;
+    const [userBetPubkey, _] = umi.eddsa.findPda(programId, [
+      string({ size: "variable" }).serialize("user"),
+      publicKeySerializer().serialize(userPubkey),
+      string({ size: "variable" }).serialize(betTag),
+    ]);
+
+    const amount = BigInt(10_000_000);
+
+    try {
+      await buyMysteryBox(umi, {
+        user: userSigner,
+        mint: accounts.mint as PublicKey,
+        state: accounts.configState as PublicKey,
+        userBet: userBetPubkey,
+        userAta,
+        tokenProgram: fromWeb3JsPublicKey(TOKEN_PROGRAM_ID),
+        amount,
+        betTag,
+      }).sendAndConfirm(umi, options);
+    } catch (error) {
+      const { errorNumber, errorMessage, errorCode } = parseAnchorError(
+        error.transactionLogs!
+      );
+
+      expect(errorNumber).to.eq(6006);
+      expect(errorMessage).to.eq("Game has already ended");
+      expect(errorCode).to.eq("GameEnded");
+    }
+  });
+
   // it("User claim winnings - Invalid UserBet PDA - Should Fail!", async () => {
   //   const [user1UserStatePubkey, _bump] = web3.PublicKey.findProgramAddressSync(
   //     [
