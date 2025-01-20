@@ -79,8 +79,6 @@ impl<'info> MysteryBox<'info> {
         let rand = generate_random_seed(&self.recent_slothashes, true)?;
         let mul = calculate_perk_multiplier(rand, amount, self.mint.decimals);
 
-        msg!("rand {:?} | mul {:?}", rand, mul);
-
         let score = amount
             .checked_mul(mul as u64)
             .ok_or(ProgramError::ArithmeticOverflow)?

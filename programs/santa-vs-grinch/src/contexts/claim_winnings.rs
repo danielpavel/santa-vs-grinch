@@ -64,6 +64,8 @@ impl<'info> ClaimWinnings<'info> {
         // Calculate winnings based on the game outcome
         let winning_amount = calculate_winnings(user_bet.amount, user_bet_side, config)?;
 
+        msg!("side: {:?} | wa: {:?}", user_bet_side, winning_amount);
+
         if winning_amount > 0 {
             let bump = [self.state.vault_bump];
             let state = self.state.clone();

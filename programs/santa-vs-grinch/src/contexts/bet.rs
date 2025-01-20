@@ -9,7 +9,7 @@ use anchor_lang::{
 // };
 
 use crate::{
-    constants::{GRINCH_BET_TAG, SANTA_BET_TAG},
+    constants::{GRINCH_BET_TAG, SANTA_BET_TAG, SCALING_FACTOR},
     errors::SantaVsGrinchErrorCode,
     state::{Config, UserBet},
     utils::{assert_bet_tag, assert_game_is_active, calculate_percentage_amount},
@@ -73,18 +73,21 @@ impl<'info> Bet<'info> {
         self.transfer_to_vault(amount_to_deposit)?;
         self.transfer_to_buyback(amount_to_buyback)?;
 
-        let mul = if self.state.total_burned > 0 {
-            self.state
-                .total_burned
-                .checked_div(self.state.total_sol)
+        let mul = if self.state.total_burned > 0 && self.state.total_sol > 0 {
+            (self.state.total_burned as u128)
+                .checked_mul(SCALING_FACTOR as u128)
                 .ok_or(ProgramError::ArithmeticOverflow)?
+                .checked_div(self.state.total_sol as u128)
+                .ok_or(ProgramError::ArithmeticOverflow)? as u64
         } else {
-            1500
+            1500 * SCALING_FACTOR
         };
 
-        let score = amount
-            .checked_mul(mul as u64)
-            .ok_or(ProgramError::ArithmeticOverflow)?;
+        let score = (amount as u128)
+            .checked_mul(mul as u128)
+            .ok_or(ProgramError::ArithmeticOverflow)?
+            .checked_div(SCALING_FACTOR as u128)
+            .ok_or(ProgramError::ArithmeticOverflow)? as u64;
 
         msg!("mul {:?} | sc: {:?}", mul, score);
 

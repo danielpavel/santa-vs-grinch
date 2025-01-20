@@ -473,12 +473,8 @@ describe("santa-vs-grinch", () => {
     );
     let gameStateAccount = await fetchConfig(umi, accounts.configState);
 
-    const buybackPercentageBp = gameStateAccount.buybackPercentageBp;
     const betTag = "santa";
     const amount = BigInt(1 * LAMPORTS_PER_SOL);
-    const amountToBuyback =
-      (amount * BigInt(buybackPercentageBp)) / BigInt(10_000);
-    const depositAmount = amount - amountToBuyback;
 
     const [userBetPubkey, _] = umi.eddsa.findPda(programId, [
       string({ size: "variable" }).serialize("user"),

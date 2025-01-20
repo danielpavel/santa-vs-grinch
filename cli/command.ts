@@ -1,6 +1,6 @@
 import { Command } from "commander";
 import { web3 } from "@coral-xyz/anchor";
-import { clusterApiUrl, PublicKey } from "@solana/web3.js";
+import { clusterApiUrl } from "@solana/web3.js";
 import { createUmi } from "@metaplex-foundation/umi-bundle-defaults";
 import path from "path";
 import { getKeypairFromFile } from "@solana-developers/helpers";
@@ -12,9 +12,10 @@ import {
   Umi,
   PublicKey as UmiPublicKey,
 } from "@metaplex-foundation/umi";
-import fs, { readFileSync } from "fs";
+import fs from "fs";
 
 import {
+  base58,
   publicKey as publicKeySerializer,
   string,
   u64,
@@ -26,7 +27,6 @@ import {
   fetchUserBet,
   getSantaVsGrinchProgramId,
   InitializeArgs,
-  Creator,
   updateBetBuybackPercentageBp,
   claimWinnings,
   betV2,
@@ -47,7 +47,6 @@ import {
   mplTokenMetadata,
   TokenStandard,
 } from "@metaplex-foundation/mpl-token-metadata";
-import { fromWeb3JsPublicKey } from "@metaplex-foundation/umi-web3js-adapters";
 
 const CONFIG_FNAME = "cli/initialize_config.json";
 
@@ -58,7 +57,7 @@ const opts: TransactionBuilderSendAndConfirmOptions = {
 function generateRandomU64Seed() {
   const randomBytes = web3.Keypair.generate().secretKey.slice(0, 8);
 
-  let view = new DataView(randomBytes, 0);
+  let view = new DataView(randomBytes.buffer, 0);
   return view.getBigUint64(0, true);
 }
 
@@ -134,7 +133,7 @@ program
 
       console.log("Minting tokens to", owner.toString());
 
-      await mintSplMint(umi, mint, owner, amount, opts);
+      await mintSplMint(umi, mint, owner, amount * BigInt(10 ** 6), opts);
 
       console.log("✅ Done");
     } catch (error) {
@@ -144,7 +143,7 @@ program
 
 // State Monitoring Commands
 program
-  .command("get-state")
+  .command("get-game-state")
   .description("Get the current state of the game")
   .requiredOption("-a, --address <pubkey>", "Public key of config account")
   .action(async (options) => {
@@ -167,11 +166,11 @@ program
 program
   .command("get-all-game-state-accounts")
   .description("Get all the game state account")
-  .action(async (options) => {
+  .action(async () => {
     try {
       const { umi } = await initializePrereqs();
 
-      console.log("Fetching state...", options.address);
+      console.log("Fetching all game state accoutns...");
 
       const gameStateAccounts = await getConfigGpaBuilder(
         umi
@@ -183,7 +182,7 @@ program
       }
 
       gameStateAccounts.map((game) => {
-        console.log(gameStateAccounts);
+        console.log(game.publicKey.toString());
       });
     } catch (error) {
       console.error("Error:", error);
@@ -331,18 +330,24 @@ program
         string({ size: "variable" }).serialize(tag),
       ]);
 
+      //Fetch game state so we get buyback publicKey.
+      const gameStateAccount = await safeFetchConfig(umi, gameState);
+      if (!gameStateAccount) {
+        throw new Error(`Could not find game state at ${gameState.toString()}`);
+      }
+
       console.log("Placing bet...");
 
-      await betV2(umi, {
+      const ret = await betV2(umi, {
         user: userSigner,
-        buybackWallet: userSigner.publicKey,
+        buybackWallet: gameStateAccount.buybackWallet,
         state: gameState,
         userBet: userBetPubkey,
         amount,
         betTag: tag,
       }).sendAndConfirm(umi, options);
 
-      console.log("✅ Done!");
+      console.log("✅ Done with sig:", base58.deserialize(ret.signature)[0]);
     } catch (error) {
       console.error("Error:", error);
     }
@@ -419,7 +424,7 @@ program
   .requiredOption("-g, --game <pubkey>", "Game state publicKey")
   .action(async (options) => {
     try {
-      const { umi } = await initializePrereqs();
+      const { umi, programId } = await initializePrereqs();
       const tag = options.tag;
       const amount = BigInt(options.amount);
       const gameState = publicKey(options.game);
@@ -428,11 +433,6 @@ program
         throw new Error(`Invalid ${tag} tag. Should be "santa" | "grinch"`);
       }
 
-      // const [feesVaultPubkey] = umi.eddsa.findPda(program, [
-      //   string({ size: "variable" }).serialize("vault"),
-      //   publicKeySerializer().serialize(gameState),
-      //   string({ size: "variable" }).serialize("fees"),
-      // ]);
       const gameStateAccount = await safeFetchConfig(umi, gameState);
       if (!gameStateAccount) {
         throw new Error(`Could not find game state at ${gameState.toString()}`);
@@ -445,10 +445,10 @@ program
         umi.eddsa.createKeypairFromSecretKey(userKp.secretKey)
       );
 
-      const [userBetPubkey] = umi.eddsa.findPda(program, [
+      const [userBetPubkey] = umi.eddsa.findPda(programId, [
         string({ size: "variable" }).serialize("user"),
         publicKeySerializer().serialize(userSigner.publicKey),
-        publicKeySerializer().serialize(gameState),
+        publicKeySerializer().serialize(gameStateAccount.publicKey),
         string({ size: "variable" }).serialize(tag),
       ]);
 
@@ -459,7 +459,7 @@ program
 
       console.log("Buying mystery box...");
 
-      await buyMysteryBoxV2(umi, {
+      const result = await buyMysteryBoxV2(umi, {
         user: userSigner,
         mint: gameStateAccount.mint,
         state: gameState,
@@ -469,6 +469,8 @@ program
         betTag: tag,
         amount: BigInt(amount) * BigInt(10 ** 6),
       }).sendAndConfirm(umi, opts);
+
+      console.log("✅ Done with sig:", base58.deserialize(result.signature)[0]);
     } catch (error) {
       console.error("Error:", error);
     }
@@ -517,7 +519,7 @@ program
 
       console.log("Buying mystery box...");
 
-      await buyMysteryBox(umi, {
+      const result = await buyMysteryBox(umi, {
         user: userSigner,
         mint: gameStateAccount.mint,
         state: gameState,
@@ -527,6 +529,11 @@ program
         betTag: tag,
         amount: BigInt(amount) * BigInt(10 ** 6),
       }).sendAndConfirm(umi, opts);
+
+      console.log(
+        "✅ Done with sig: ",
+        base58.deserialize(result.signature)[0]
+      );
     } catch (error) {
       console.error("Error:", error);
     }
@@ -563,14 +570,17 @@ program
 
       console.log("Claim winnings...");
 
-      await claimWinnings(umi, {
+      const result = await claimWinnings(umi, {
         claimer: userSigner,
         state: gameState,
         userBet: userBetPubkey,
         betTag: tag,
       }).sendAndConfirm(umi, options);
 
-      console.log("✅ Done!");
+      console.log(
+        "✅ Done with sig: ",
+        base58.deserialize(result.signature)[0]
+      );
     } catch (error) {
       console.error("Error:", error);
     }
@@ -608,13 +618,17 @@ program
 
       console.log("Claim winnings...");
 
-      await claimWinningsV2(umi, {
+      const result = await claimWinningsV2(umi, {
         claimer: userSigner,
         state: gameState,
         userBet: userBetPubkey,
         betTag: tag,
       }).sendAndConfirm(umi, options);
 
+      console.log(
+        "✅ Done with sig: ",
+        base58.deserialize(result.signature)[0]
+      );
       console.log("✅ Done!");
     } catch (error) {
       console.error("Error:", error);
@@ -631,10 +645,15 @@ program
       const gameState = publicKey(options.game);
 
       console.log("Ending game...");
-      await endGame(umi, {
+      const result = await endGame(umi, {
         admin: umi.payer,
         state: gameState,
       }).sendAndConfirm(umi, options);
+
+      console.log(
+        "✅ Done with sig: ",
+        base58.deserialize(result.signature)[0]
+      );
     } catch (error) {
       console.error("Error:", error);
     }
@@ -648,7 +667,7 @@ program
   .requiredOption("-m, --mint <pubkey>", "Mint Pubkey")
   .action(async (options) => {
     try {
-      const { umi, programId } = await initializePrereqs();
+      const { umi } = await initializePrereqs();
 
       const mint = publicKey(options.mint);
 
@@ -689,15 +708,12 @@ program
       const seed = generateRandomU64Seed();
       // const seed = BigInt(12958056478283855875);
 
-      const [configState, configStateBump] = umi.eddsa.findPda(
-        getSantaVsGrinchProgramId(umi),
-        [
-          string({ size: "variable" }).serialize("state"),
-          publicKeySerializer().serialize(umi.payer.publicKey),
-          u64().serialize(seed.valueOf()),
-          publicKeySerializer().serialize(mint.toString()),
-        ]
-      );
+      const [configState] = umi.eddsa.findPda(getSantaVsGrinchProgramId(umi), [
+        string({ size: "variable" }).serialize("state"),
+        publicKeySerializer().serialize(umi.payer.publicKey),
+        u64().serialize(seed.valueOf()),
+        publicKeySerializer().serialize(mint.toString()),
+      ]);
 
       await initialize(umi, {
         admin: umi.payer,
